@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="so">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,7 +14,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -22,14 +22,8 @@
         extend: {
           fontFamily: {
             sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
-          },
-          colors: {
-            brand: {
-              400: '#38bdf8',
-              500: '#0ea5e9',
-              600: '#0284c7',
-            }
           }
         }
       }
@@ -54,12 +48,12 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .glass-card {
-      background: rgba(13, 19, 33, 0.8);
+      background: rgba(13, 19, 33, 0.7);
       backdrop-filter: blur(14px);
       border: 1px solid rgba(56, 189, 248, 0.08);
     }
     .glass-card:hover {
-      border-color: rgba(56, 189, 248, 0.25);
+      border-color: rgba(56, 189, 248, 0.2);
     }
     input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
   </style>
@@ -73,12 +67,10 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Layers, Filter, CheckCircle2, AlertCircle, Sparkles,
-      BarChart3, Clock, Wallet, ShieldAlert, Award, MessageSquare, BookOpen,
-      Send, CheckSquare, Share2, ExternalLink
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award
     } from "lucide-react";
 
-    // Firebase SDKs
+    // Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
@@ -101,6 +93,86 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
+
+    // Multilingual Dictionary
+    const DICT = {
+      en: {
+        journal: "Journal",
+        dashboard: "Dashboard",
+        accounts: "Accounts",
+        notes: "Notes",
+        community: "Community",
+        newTrade: "New Trade",
+        cancel: "Cancel",
+        trades: "Trades",
+        winRate: "Win Rate",
+        winLoss: "Win / Loss",
+        netReturn: "Net Return",
+        thisWeek: "This Week",
+        symbol: "Symbol",
+        date: "Date",
+        accountLabel: "Account",
+        session: "Session",
+        purgeTime: "Purge Time",
+        direction: "Direction",
+        outcome: "Outcome",
+        risk: "Risk %",
+        rrRatio: "R:R",
+        checklistTitle: "Confluence Checklist",
+        chartsTitle: "Execution Charts",
+        notesLabel: "Notes & Execution Rules",
+        saveTrade: "Save Trade",
+        updateTrade: "Update Trade",
+        noTrades: "No trades recorded yet.",
+        noAccounts: "No accounts added yet.",
+        noNotes: "No notes added yet.",
+        allAccounts: "All Accounts",
+        addAccount: "Add Account",
+        addNote: "New Note",
+        quoteText: "“Wanka weyn ninkii heli karoow, waxarka haw leexan.”",
+        signInGoogle: "Continue with Google",
+        chatPlaceholder: "Share market idea...",
+        devBy: "Developed by"
+      },
+      so: {
+        journal: "Diiwaanka",
+        dashboard: "Dashboard",
+        accounts: "Accounts",
+        notes: "Casharrada",
+        community: "Sheekada",
+        newTrade: "Ganacsi Cusub",
+        cancel: "Jooji",
+        trades: "Wadarta",
+        winRate: "Guusha %",
+        winLoss: "Guul / Khasaar",
+        netReturn: "Net R",
+        thisWeek: "Toddobaadkan",
+        symbol: "Symbol",
+        date: "Taariikh",
+        accountLabel: "Account",
+        session: "Session",
+        purgeTime: "Waqtiga Purge",
+        direction: "Jihada",
+        outcome: "Natiijada",
+        risk: "Risk %",
+        rrRatio: "R:R",
+        checklistTitle: "ICT Checklist",
+        chartsTitle: "Sawirrada Chart-ka",
+        notesLabel: "Falanqaynta & Fiiro Gaar ah",
+        saveTrade: "Kaydi Ganacsiga",
+        updateTrade: "Cusboonaysii Trade",
+        noTrades: "Weli wax trade ah lama diiwaangelin.",
+        noAccounts: "Weli ma jiro akoon la galiyay.",
+        noNotes: "Weli ma jiro cashar la qoray.",
+        allAccounts: "Dhammaan Akoonnada",
+        addAccount: "Ku dar Akoon",
+        addNote: "Qor Cashar",
+        quoteText: "“Wanka weyn ninkii heli karoow, waxarka haw leexan.”",
+        signInGoogle: "Ku gal Google",
+        chatPlaceholder: "Qor fikrad ama fariin...",
+        devBy: "Waxaa dhisay"
+      }
+    };
 
     const SESSIONS = [
       { id: "asian", label: "Asian", flag: "🇯🇵", time: "8PM–9PM" },
@@ -165,6 +237,9 @@
     }
 
     function App() {
+      const [lang, setLang] = useState("en"); // 'en' | 'so'
+      const t = DICT[lang];
+
       const [user, setUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
       const [trades, setTrades] = useState([]);
@@ -173,30 +248,22 @@
       const [chatMessages, setChatMessages] = useState([]);
       const [loading, setLoading] = useState(true);
 
-      // Main Navigation: 'journal' | 'dashboard' | 'accounts' | 'notes' | 'community'
       const [tab, setTab] = useState("journal");
-      const [dashView, setDashView] = useState("overview"); // 'overview' | 'sessions' | 'purging' | 'calendar'
-
-      // Form & Editing State
       const [showForm, setShowForm] = useState(false);
       const [editingId, setEditingId] = useState(null);
       const [form, setForm] = useState(EMPTY_FORM);
       const [error, setError] = useState("");
       const [lightbox, setLightbox] = useState(null);
 
-      // New Account Modal State
       const [newAcc, setNewAcc] = useState({ name: "", type: "Funded", balance: "$100,000", mt5Id: "" });
       const [showAccModal, setShowAccModal] = useState(false);
 
-      // New Note State
       const [noteForm, setNoteForm] = useState({ title: "", tag: "ICT Model", content: "" });
       const [showNoteForm, setShowNoteForm] = useState(false);
 
-      // Chat Input State
       const [chatInput, setChatInput] = useState("");
       const chatScrollRef = useRef(null);
 
-      // Filter State
       const [filterAccount, setFilterAccount] = useState("all");
 
       const [viewMonth, setViewMonth] = useState(new Date().getMonth());
@@ -251,20 +318,19 @@
         return () => unsub();
       }, [user]);
 
-      // Realtime Public Chat
+      // Realtime Chat
       useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, "public_chat"), orderBy("timestamp", "asc"), limit(70));
+        const q = query(collection(db, "public_chat"), orderBy("timestamp", "asc"), limit(60));
         const unsub = onSnapshot(q, (snap) => {
           const msgs = [];
           snap.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
           setChatMessages(msgs);
-          setTimeout(() => chatScrollRef.current?.scrollIntoView({ behavior: "smooth" }), 150);
+          setTimeout(() => chatScrollRef.current?.scrollIntoView({ behavior: "smooth" }), 120);
         });
         return () => unsub();
       }, [user]);
 
-      // Multi-image upload
       const handleMultipleImages = async (e) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
@@ -285,7 +351,7 @@
             images: [...(prev.images || []), ...newImgs]
           }));
         } catch (err) {
-          setError("Sawirrada lama wada shubi karin, isku day mar kale.");
+          setError("Image upload failed.");
         }
       };
 
@@ -298,10 +364,9 @@
         }
       };
 
-      // Add / Edit Trade
       const saveTrade = async () => {
         if (!form.symbol || !form.date) {
-          setError("Geli symbol-ka (tusaale: NQ) iyo taariikhda.");
+          setError("Symbol and Date required.");
           return;
         }
         const risk = parseFloat(form.risk) || 0;
@@ -336,32 +401,32 @@
           setShowForm(false);
           setError("");
         } catch (err) {
-          setError("Lama kaydin karin: " + err.message);
+          setError(err.message);
         }
       };
 
-      const startEditTrade = (t) => {
+      const startEditTrade = (tr) => {
         setForm({
-          symbol: t.symbol,
-          date: t.date,
-          accountName: t.accountName || "Default Account",
-          session: t.session,
-          purgeTime: t.purgeTime,
-          direction: t.direction,
-          outcome: t.outcome,
-          risk: t.risk?.toString() || "1",
-          rrRatio: t.rrRatio?.toString() || "2",
-          notes: t.notes || "",
-          images: t.images || (t.image ? [t.image] : []),
-          checklist: t.checklist || []
+          symbol: tr.symbol,
+          date: tr.date,
+          accountName: tr.accountName || "Default Account",
+          session: tr.session,
+          purgeTime: tr.purgeTime,
+          direction: tr.direction,
+          outcome: tr.outcome,
+          risk: tr.risk?.toString() || "1",
+          rrRatio: tr.rrRatio?.toString() || "2",
+          notes: tr.notes || "",
+          images: tr.images || (tr.image ? [tr.image] : []),
+          checklist: tr.checklist || []
         });
-        setEditingId(t.id);
+        setEditingId(tr.id);
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
       };
 
       const removeTrade = async (id) => {
-        if (!confirm("Ma hubtaa inaad tirtirto trade-kan?")) return;
+        if (!confirm("Delete this trade?")) return;
         try {
           await deleteDoc(doc(db, "users", user.uid, "trades", id));
         } catch (err) {
@@ -369,7 +434,6 @@
         }
       };
 
-      // Add New Account
       const saveAccount = async () => {
         if (!newAcc.name) return;
         try {
@@ -384,7 +448,6 @@
         }
       };
 
-      // Add Note
       const saveNote = async () => {
         if (!noteForm.title) return;
         try {
@@ -399,7 +462,6 @@
         }
       };
 
-      // Send Chat Message
       const sendChatMessage = async (e) => {
         e.preventDefault();
         if (!chatInput.trim()) return;
@@ -415,48 +477,45 @@
       };
 
       const deleteChatMessage = async (msgId) => {
-        if (!confirm("Tirtir fariintan?")) return;
+        if (!confirm("Delete message?")) return;
         await deleteDoc(doc(db, "public_chat", msgId));
       };
 
       // Filtered Trades
       const filteredTrades = useMemo(() => {
-        return trades.filter((t) => {
-          if (filterAccount !== "all" && t.accountName !== filterAccount) return false;
+        return trades.filter((tr) => {
+          if (filterAccount !== "all" && tr.accountName !== filterAccount) return false;
           return true;
         });
       }, [trades, filterAccount]);
 
-      // Comprehensive Stats
+      // Stats
       const stats = useMemo(() => {
         const total = filteredTrades.length;
-        const wins = filteredTrades.filter((t) => t.outcome === "win").length;
-        const losses = filteredTrades.filter((t) => t.outcome === "loss").length;
-        const netR = filteredTrades.reduce((acc, t) => acc + (t.rMultiple || 0), 0);
+        const wins = filteredTrades.filter((tr) => tr.outcome === "win").length;
+        const losses = filteredTrades.filter((tr) => tr.outcome === "loss").length;
+        const netR = filteredTrades.reduce((acc, tr) => acc + (tr.rMultiple || 0), 0);
         const winRate = total ? Math.round((wins / total) * 100) : 0;
 
-        // Session Stats
         const sessionsStats = {};
         ["asian", "london", "newyork"].forEach((s) => {
-          const list = filteredTrades.filter((t) => t.session === s);
-          const w = list.filter((t) => t.outcome === "win").length;
-          const r = list.reduce((sum, t) => sum + (t.rMultiple || 0), 0);
+          const list = filteredTrades.filter((tr) => tr.session === s);
+          const w = list.filter((tr) => tr.outcome === "win").length;
+          const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
           sessionsStats[s] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
         });
 
-        // Purge Stats
         const purgeStats = {};
         Object.values(PURGE_TIMES).flat().forEach((pt) => {
-          const list = filteredTrades.filter((t) => t.purgeTime === pt);
-          const w = list.filter((t) => t.outcome === "win").length;
-          const r = list.reduce((sum, t) => sum + (t.rMultiple || 0), 0);
+          const list = filteredTrades.filter((tr) => tr.purgeTime === pt);
+          const w = list.filter((tr) => tr.outcome === "win").length;
+          const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
           purgeStats[pt] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
         });
 
         return { total, wins, losses, netR, winRate, sessionsStats, purgeStats };
       }, [filteredTrades]);
 
-      // Consistency Metric
       const weeklyConsistency = useMemo(() => {
         const now = new Date();
         const startOfWeek = new Date(now);
@@ -465,10 +524,10 @@
         startOfWeek.setDate(diff);
         const mondayStr = startOfWeek.toISOString().slice(0, 10);
 
-        const thisWeekTrades = trades.filter((t) => t.date >= mondayStr);
+        const thisWeekTrades = trades.filter((tr) => tr.date >= mondayStr);
         const count = thisWeekTrades.length;
-        const wins = thisWeekTrades.filter((t) => t.outcome === "win").length;
-        const netR = thisWeekTrades.reduce((acc, t) => acc + (t.rMultiple || 0), 0);
+        const wins = thisWeekTrades.filter((tr) => tr.outcome === "win").length;
+        const netR = thisWeekTrades.reduce((acc, tr) => acc + (tr.rMultiple || 0), 0);
         const winRate = count ? Math.round((wins / count) * 100) : 0;
         return { count, wins, netR, winRate };
       }, [trades]);
@@ -476,10 +535,10 @@
       // Calendar
       const dayMap = useMemo(() => {
         const map = {};
-        filteredTrades.forEach((t) => {
-          if (!map[t.date]) map[t.date] = { net: 0, count: 0 };
-          map[t.date].net += t.rMultiple || 0;
-          map[t.date].count += 1;
+        filteredTrades.forEach((tr) => {
+          if (!map[tr.date]) map[tr.date] = { net: 0, count: 0 };
+          map[tr.date].net += tr.rMultiple || 0;
+          map[tr.date].count += 1;
         });
         return map;
       }, [filteredTrades]);
@@ -502,7 +561,7 @@
       if (authLoading) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-[#06090e]">
-            <div className="w-9 h-9 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
           </div>
         );
       }
@@ -510,13 +569,13 @@
       // ================= LOGIN PAGE =================
       if (!user) {
         return (
-          <div className="min-h-screen flex flex-col justify-between items-center px-4 bg-[#06090e] relative overflow-hidden py-10">
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="min-h-screen flex flex-col justify-between items-center px-4 bg-[#06090e] relative py-12">
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div className="my-auto w-full max-w-sm glass-card p-8 rounded-2xl shadow-2xl relative z-10 border border-slate-800 text-center">
-              {/* Profile Picture of Amiir */}
-              <div className="relative w-24 h-24 mx-auto mb-5">
-                <div className="absolute -inset-1 bg-gradient-to-r from-sky-400 to-blue-600 rounded-full blur-sm opacity-70"></div>
+            <div className="my-auto w-full max-w-sm glass-card p-8 rounded-3xl shadow-2xl relative z-10 border border-slate-800 text-center">
+              {/* Photo */}
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <div className="absolute -inset-1 bg-sky-400/20 rounded-full blur-sm"></div>
                 <img
                   src="profile.jpg"
                   alt="Amiir"
@@ -524,22 +583,22 @@
                     e.target.onerror = null;
                     e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200";
                   }}
-                  className="relative w-24 h-24 rounded-full object-cover border-2 border-sky-400 shadow-xl"
+                  className="relative w-24 h-24 rounded-full object-cover border border-sky-400/60 shadow-xl"
                 />
               </div>
 
-              <h1 className="text-2xl font-bold tracking-tight text-white mb-2">Amiir Journal</h1>
+              <h1 className="text-xl font-bold tracking-tight text-white mb-4">Amiir Journal</h1>
               
-              {/* Quote Requested */}
-              <p className="text-xs text-sky-400 font-medium italic mb-6 px-2 leading-relaxed">
-                “Wanka weyn ninkii heli karoow, waxarka haw leexan.”
-              </p>
-
-              {error && <div className="text-xs text-rose-400 mb-4 bg-rose-950/40 p-2.5 rounded-lg border border-rose-900/50">{error}</div>}
+              {/* Editorial Quote */}
+              <div className="mb-8 px-2">
+                <p className="text-sm text-sky-400 font-serif italic leading-relaxed">
+                  {t.quoteText}
+                </p>
+              </div>
 
               <button
                 onClick={() => signInWithPopup(auth, provider)}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-semibold text-sm bg-white hover:bg-slate-100 text-slate-950 transition-all duration-200 shadow-lg hover:shadow-sky-500/10 cursor-pointer"
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium text-xs bg-white hover:bg-slate-100 text-slate-950 transition-all shadow-md cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -547,13 +606,12 @@
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
-                Sign in with Google
+                {t.signInGoogle}
               </button>
             </div>
 
-            {/* Footer with TikTok */}
-            <footer className="text-center text-xs text-slate-500 z-10">
-              Developed by <span className="text-slate-300 font-semibold">Amiir</span> · TikTok: <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
+            <footer className="text-center text-[11px] text-slate-500 z-10 font-mono">
+              Amiir Journal · Developed by <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
             </footer>
           </div>
         );
@@ -563,178 +621,166 @@
       return (
         <div className="min-h-screen bg-[#06090e] text-slate-200 flex flex-col justify-between">
           <div>
-            {/* Top Bar */}
-            <header className="border-b border-slate-800/80 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-30">
-              <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="profile.jpg"
-                    alt="Amiir"
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                    className="w-8 h-8 rounded-full object-cover border border-sky-400"
-                  />
-                  <div>
-                    <h1 className="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
-                      Amiir Journal <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">ICT Pro</span>
-                    </h1>
-                  </div>
+            {/* Minimal Header */}
+            <header className="border-b border-slate-800/60 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-30">
+              <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+                
+                {/* Left Branding */}
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm tracking-tight text-white">Amiir Journal</span>
+                  <span className="text-slate-600 text-xs">·</span>
+                  <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-xs text-sky-400/90 hover:text-sky-300 font-mono">
+                    @amiir_pr
+                  </a>
                 </div>
 
-                {/* Top Action & Profile */}
+                {/* Right Actions */}
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1.5 rounded-full border border-slate-800">
+                  {/* Language Toggle */}
+                  <button
+                    onClick={() => setLang(lang === "en" ? "so" : "en")}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 hover:border-sky-500/40 cursor-pointer"
+                  >
+                    <Globe size={12} className="text-sky-400" />
+                    <span>{lang.toUpperCase()}</span>
+                  </button>
+
+                  {/* User Chip */}
+                  <div className="flex items-center gap-2 bg-slate-900/90 px-2 py-1 rounded-full border border-slate-800">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="user" className="w-5 h-5 rounded-full" />
                     ) : (
-                      <User size={14} className="text-slate-400" />
+                      <User size={13} className="text-slate-400" />
                     )}
-                    <span className="text-xs text-slate-300 font-medium hidden sm:inline">{user.displayName?.split(" ")[0] || "Trader"}</span>
-                    <button onClick={() => signOut(auth)} title="Ka bax" className="text-slate-400 hover:text-rose-400 ml-1 cursor-pointer">
-                      <LogOut size={13} />
+                    <span className="text-xs text-slate-300 hidden sm:inline">{user.displayName?.split(" ")[0] || "Trader"}</span>
+                    <button onClick={() => signOut(auth)} title="Sign out" className="text-slate-500 hover:text-rose-400 ml-0.5 cursor-pointer">
+                      <LogOut size={12} />
                     </button>
                   </div>
 
+                  {/* New Trade Button */}
                   <button
                     onClick={() => {
-                      if (showForm) {
-                        setShowForm(false);
-                        setEditingId(null);
-                        setForm(EMPTY_FORM);
-                      } else {
-                        setShowForm(true);
-                      }
+                      if (showForm) { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); }
+                      else { setShowForm(true); }
                     }}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all duration-200 shadow-md shadow-sky-500/20 cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20"
                   >
-                    {showForm ? <X size={14} /> : <Plus size={14} />}
-                    <span>{showForm ? "Jooji" : "New Trade"}</span>
+                    {showForm ? <X size={13} /> : <Plus size={13} />}
+                    <span>{showForm ? t.cancel : t.newTrade}</span>
                   </button>
                 </div>
               </div>
             </header>
 
-            <main className="max-w-6xl mx-auto px-4 py-6">
+            <main className="max-w-5xl mx-auto px-4 py-6">
               
-              {/* Navigation Bar */}
-              <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-                <div className="flex gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800/80 overflow-x-auto">
-                  {[
-                    { id: "journal", label: "Diiwaanka", icon: ListChecks },
-                    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-                    { id: "accounts", label: "Accounts", icon: Wallet },
-                    { id: "notes", label: "Casharrada (Notes)", icon: BookOpen },
-                    { id: "community", label: "Community Chat", icon: MessageSquare }
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setTab(item.id)}
-                      className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer whitespace-nowrap ${
-                        tab === item.id 
-                          ? "bg-sky-500/15 text-sky-300 border border-sky-500/30 shadow-sm" 
-                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
-                      }`}
-                    >
-                      <item.icon size={14} />
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Filter by MT5 Account */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">Account:</span>
-                  <select
-                    value={filterAccount}
-                    onChange={(e) => setFilterAccount(e.target.value)}
-                    className="bg-slate-900 text-xs px-3 py-1.5 rounded-lg border border-slate-800 text-slate-300 focus:outline-none focus:border-sky-500/50 cursor-pointer"
+              {/* Main Tabs */}
+              <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-6 overflow-x-auto w-fit">
+                {[
+                  { id: "journal", label: t.journal, icon: ListChecks },
+                  { id: "dashboard", label: t.dashboard, icon: LayoutGrid },
+                  { id: "accounts", label: t.accounts, icon: Wallet },
+                  { id: "notes", label: t.notes, icon: BookOpen },
+                  { id: "community", label: t.community, icon: MessageSquare }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setTab(item.id)}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                      tab === item.id 
+                        ? "bg-sky-500/15 text-sky-300 border border-sky-500/30" 
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
                   >
-                    <option value="all">Dhammaan (All Accounts)</option>
-                    {accounts.map((a) => <option key={a.id} value={a.name}>{a.name} ({a.type})</option>)}
-                  </select>
-                </div>
+                    <item.icon size={13} />
+                    {item.label}
+                  </button>
+                ))}
               </div>
 
-              {/* Stats Overview */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-                <div className="glass-card p-4 rounded-xl border border-slate-800">
-                  <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Trades</div>
-                  <div className="text-xl font-bold font-mono text-white">{stats.total}</div>
-                </div>
+              {/* STATS BANNER: ONLY ON JOURNAL TAB */}
+              {tab === "journal" && (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-6">
+                  <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.trades}</div>
+                    <div className="text-lg font-bold font-mono text-white mt-0.5">{stats.total}</div>
+                  </div>
 
-                <div className="glass-card p-4 rounded-xl border border-slate-800">
-                  <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Win Rate</div>
-                  <div className="text-xl font-bold font-mono text-sky-400">{stats.winRate}%</div>
-                </div>
+                  <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.winRate}</div>
+                    <div className="text-lg font-bold font-mono text-sky-400 mt-0.5">{stats.winRate}%</div>
+                  </div>
 
-                <div className="glass-card p-4 rounded-xl border border-slate-800">
-                  <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Win / Loss</div>
-                  <div className="text-xl font-bold font-mono">
-                    <span className="text-emerald-400">{stats.wins}</span>
-                    <span className="text-slate-600 mx-1">/</span>
-                    <span className="text-rose-400">{stats.losses}</span>
+                  <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.winLoss}</div>
+                    <div className="text-lg font-bold font-mono mt-0.5">
+                      <span className="text-emerald-400">{stats.wins}</span>
+                      <span className="text-slate-600 mx-1">/</span>
+                      <span className="text-rose-400">{stats.losses}</span>
+                    </div>
+                  </div>
+
+                  <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.netReturn}</div>
+                    <div className={`text-lg font-bold font-mono mt-0.5 ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      {fmtR(stats.netR)}
+                    </div>
+                  </div>
+
+                  <div className="glass-card p-3 rounded-xl border border-sky-500/20 col-span-2 sm:col-span-1 bg-sky-950/20">
+                    <div className="text-[10px] text-sky-400 uppercase font-mono flex items-center gap-1">
+                      <Award size={11} /> {t.thisWeek}
+                    </div>
+                    <div className="text-sm font-bold font-mono text-white mt-1 flex items-center justify-between">
+                      <span>{fmtR(weeklyConsistency.netR)}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-sans">
+                        {weeklyConsistency.winRate}%
+                      </span>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div className="glass-card p-4 rounded-xl border border-slate-800">
-                  <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Net R Multiple</div>
-                  <div className={`text-xl font-bold font-mono ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                    {fmtR(stats.netR)}
-                  </div>
-                </div>
-
-                <div className="glass-card p-4 rounded-xl border border-sky-500/20 col-span-2 sm:col-span-1 bg-gradient-to-br from-slate-900 to-sky-950/30">
-                  <div className="text-[11px] text-sky-400 font-medium uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <Award size={12} /> This Week
-                  </div>
-                  <div className="text-base font-bold font-mono text-white flex items-center justify-between">
-                    <span>{fmtR(weeklyConsistency.netR)}</span>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-sans">
-                      {weeklyConsistency.winRate}% WR
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* ================= TRADE FORM (ADD / EDIT) ================= */}
+              {/* ================= TRADE FORM ================= */}
               {showForm && (
-                <div className="glass-card p-6 rounded-2xl mb-8 border border-sky-500/30 shadow-2xl relative">
-                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
-                    <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                      {editingId ? <Edit3 size={16} className="text-sky-400" /> : <Plus size={16} className="text-sky-400" />}
-                      {editingId ? "Wax Ka Beddel Trade-kan (Edit Trade)" : "Diiwaangeli Ganacsi Cusub"}
+                <div className="glass-card p-5 rounded-2xl mb-6 border border-sky-500/30 shadow-xl">
+                  <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+                    <h3 className="font-bold text-xs text-white uppercase tracking-wider">
+                      {editingId ? t.updateTrade : t.newTrade}
                     </h3>
-                    <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-slate-400 hover:text-white cursor-pointer"><X size={16} /></button>
+                    <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-slate-500 hover:text-white cursor-pointer"><X size={15} /></button>
                   </div>
 
-                  {error && <div className="text-xs text-rose-400 bg-rose-950/40 p-2.5 rounded-lg mb-4 border border-rose-900/50">{error}</div>}
+                  {error && <div className="text-xs text-rose-400 bg-rose-950/40 p-2 rounded mb-3 border border-rose-900/50">{error}</div>}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Symbol / Pair</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.symbol}</label>
                       <input
                         value={form.symbol}
                         onChange={(e) => setForm({ ...form, symbol: e.target.value })}
-                        placeholder="NQ, EURUSD, XAUUSD"
-                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-400 font-mono"
+                        placeholder="NQ, EURUSD"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-sky-400 font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Taariikhda</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.date}</label>
                       <input
                         type="date"
                         value={form.date}
                         onChange={(e) => setForm({ ...form, date: e.target.value })}
-                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-400 font-mono"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-sky-400 font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Account-ka Aad Ku Qadatay</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.accountLabel}</label>
                       <select
                         value={form.accountName}
                         onChange={(e) => setForm({ ...form, accountName: e.target.value })}
-                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-400 cursor-pointer"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-sky-400 cursor-pointer"
                       >
                         {accounts.length === 0 && <option value="Default Account">Default Account</option>}
                         {accounts.map((a) => (
@@ -744,41 +790,41 @@
                     </div>
                   </div>
 
-                  {/* Sessions & Purge Times */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  {/* Sessions & Purging */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Trading Session</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.session}</label>
+                      <div className="grid grid-cols-3 gap-1.5">
                         {SESSIONS.map((s) => (
                           <button
                             key={s.id}
                             type="button"
                             onClick={() => setForm({ ...form, session: s.id, purgeTime: PURGE_TIMES[s.id][0] })}
-                            className={`py-2 px-2 rounded-lg text-xs font-medium border flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
+                            className={`py-1.5 px-2 rounded-lg text-xs border flex items-center justify-center gap-1 transition-all cursor-pointer ${
                               form.session === s.id
-                                ? "bg-sky-500/20 border-sky-400 text-sky-300 shadow-sm"
+                                ? "bg-sky-500/20 border-sky-400 text-sky-300"
                                 : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
                             }`}
                           >
-                            <span>{s.flag} {s.label}</span>
-                            <span className="text-[10px] text-slate-500 font-mono">{s.time}</span>
+                            <span>{s.flag}</span>
+                            <span>{s.label}</span>
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Purging Time (Entry Time)</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.purgeTime}</label>
+                      <div className="grid grid-cols-2 gap-1.5">
                         {PURGE_TIMES[form.session].map((pt) => (
                           <button
                             key={pt}
                             type="button"
                             onClick={() => setForm({ ...form, purgeTime: pt })}
-                            className={`py-2.5 rounded-lg text-xs font-mono font-medium border transition-all cursor-pointer ${
+                            className={`py-1.5 rounded-lg text-xs font-mono border transition-all cursor-pointer ${
                               form.purgeTime === pt
                                 ? "bg-sky-500/20 border-sky-400 text-sky-300"
-                                : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                                : "border-slate-800 bg-slate-900/60 text-slate-400"
                             }`}
                           >
                             {pt}
@@ -789,18 +835,15 @@
                   </div>
 
                   {/* Direction, Outcome, Risk, R:R */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                    {/* Buy vs Sell (Distinct Colors: Blue for Buy, Rose for Sell) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Direction</label>
-                      <div className="flex gap-2">
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.direction}</label>
+                      <div className="flex gap-1.5">
                         <button
                           type="button"
                           onClick={() => setForm({ ...form, direction: "buy" })}
-                          className={`flex-1 py-2 rounded-lg text-xs uppercase font-mono font-bold border transition-all cursor-pointer ${
-                            form.direction === "buy"
-                              ? "bg-sky-500/25 border-sky-400 text-sky-300 shadow-lg shadow-sky-500/20"
-                              : "border-slate-800 bg-slate-900/60 text-slate-400"
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+                            form.direction === "buy" ? "bg-sky-500/20 border-sky-400 text-sky-300" : "border-slate-800 bg-slate-900 text-slate-400"
                           }`}
                         >
                           BUY
@@ -808,10 +851,8 @@
                         <button
                           type="button"
                           onClick={() => setForm({ ...form, direction: "sell" })}
-                          className={`flex-1 py-2 rounded-lg text-xs uppercase font-mono font-bold border transition-all cursor-pointer ${
-                            form.direction === "sell"
-                              ? "bg-rose-500/25 border-rose-400 text-rose-300 shadow-lg shadow-rose-500/20"
-                              : "border-slate-800 bg-slate-900/60 text-slate-400"
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+                            form.direction === "sell" ? "bg-rose-500/20 border-rose-400 text-rose-300" : "border-slate-800 bg-slate-900 text-slate-400"
                           }`}
                         >
                           SELL
@@ -820,8 +861,8 @@
                     </div>
 
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Outcome</label>
-                      <div className="flex gap-1.5">
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.outcome}</label>
+                      <div className="flex gap-1">
                         {[
                           { id: "win", label: "WIN", bg: "bg-emerald-500/20 border-emerald-400 text-emerald-300" },
                           { id: "loss", label: "LOSS", bg: "bg-rose-500/20 border-rose-400 text-rose-300" },
@@ -831,8 +872,8 @@
                             key={o.id}
                             type="button"
                             onClick={() => setForm({ ...form, outcome: o.id })}
-                            className={`flex-1 py-2 rounded-lg text-xs uppercase font-mono font-semibold border transition-all cursor-pointer ${
-                              form.outcome === o.id ? o.bg : "border-slate-800 bg-slate-900/60 text-slate-400"
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono font-semibold border cursor-pointer ${
+                              form.outcome === o.id ? o.bg : "border-slate-800 bg-slate-900 text-slate-400"
                             }`}
                           >
                             {o.label}
@@ -842,34 +883,34 @@
                     </div>
 
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Risk %</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.risk}</label>
                       <input
                         type="number"
                         step="0.1"
                         value={form.risk}
                         onChange={(e) => setForm({ ...form, risk: e.target.value })}
-                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-sky-400"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">R:R Ratio (1 : x)</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.rrRatio}</label>
                       <input
                         type="number"
                         step="0.1"
                         value={form.rrRatio}
                         onChange={(e) => setForm({ ...form, rrRatio: e.target.value })}
-                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-sky-400"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400"
                       />
                     </div>
                   </div>
 
-                  {/* ICT Confluence Checklist */}
-                  <div className="mb-4">
-                    <label className="text-[11px] uppercase tracking-wider text-sky-400 block mb-1.5 flex items-center gap-1">
-                      <CheckSquare size={13} /> ICT Confluence Checklist:
+                  {/* Checklist */}
+                  <div className="mb-3">
+                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1 flex items-center gap-1">
+                      <CheckSquare size={12} /> {t.checklistTitle}:
                     </label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {ICT_CHECKLIST.map((item) => {
                         const checked = (form.checklist || []).includes(item);
                         return (
@@ -877,7 +918,7 @@
                             key={item}
                             type="button"
                             onClick={() => toggleChecklistItem(item)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all border cursor-pointer ${
+                            className={`px-2 py-1 rounded text-[11px] font-mono transition-all border cursor-pointer ${
                               checked
                                 ? "bg-sky-500/20 border-sky-400 text-sky-300"
                                 : "bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700"
@@ -890,56 +931,52 @@
                     </div>
                   </div>
 
-                  {/* Multi-Image Upload */}
-                  <div className="mb-4">
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">
-                      Sawirrada Chart-ka (HTF & LTF Execution)
-                    </label>
-                    <div className="border border-dashed border-slate-700 rounded-xl p-4 bg-slate-900/50 hover:border-sky-500/50 transition-colors">
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleMultipleImages}
-                        className="block w-full text-xs text-slate-400 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-sky-500/20 file:text-sky-300 file:font-semibold hover:file:bg-sky-500/30"
-                      />
-                      {form.images?.length > 0 && (
-                        <div className="flex gap-2 mt-3 flex-wrap">
-                          {form.images.map((img, i) => (
-                            <div key={i} className="relative group w-20 h-16 rounded-lg overflow-hidden border border-slate-700">
-                              <img src={img} alt="chart" className="w-full h-full object-cover" />
-                              <button
-                                type="button"
-                                onClick={() => setForm((p) => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }))}
-                                className="absolute top-1 right-1 bg-black/80 text-rose-400 p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X size={12} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                  {/* Multiple Images Upload */}
+                  <div className="mb-3">
+                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.chartsTitle}</label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleMultipleImages}
+                      className="block w-full text-xs text-slate-400 cursor-pointer file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:bg-sky-500/15 file:text-sky-300 file:text-xs"
+                    />
+                    {form.images?.length > 0 && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {form.images.map((img, i) => (
+                          <div key={i} className="relative group w-16 h-12 rounded overflow-hidden border border-slate-700">
+                            <img src={img} alt="thumb" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setForm((p) => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }))}
+                              className="absolute top-0.5 right-0.5 bg-black/80 text-rose-400 p-0.5 rounded-full"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Notes */}
-                  <div className="mb-4">
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Falanqaynta & Fiiro Gaar ah</label>
+                  <div className="mb-3">
+                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.notesLabel}</label>
                     <textarea
                       rows={2}
                       value={form.notes}
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                      placeholder="Sababta entry-ga, dareenkaaga, iyo wixii cashar ah..."
-                      className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-sky-400 resize-none"
+                      placeholder="Analysis notes..."
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:border-sky-400 resize-none"
                     />
                   </div>
 
                   <button
                     type="button"
                     onClick={saveTrade}
-                    className="w-full py-2.5 rounded-xl font-semibold text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all duration-200 shadow-lg shadow-sky-500/20 cursor-pointer"
+                    className="w-full py-2 rounded-xl text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20"
                   >
-                    {editingId ? "Cusboonaysii Trade-kan (Save Changes)" : "Kaydi Ganacsiga"}
+                    {editingId ? t.updateTrade : t.saveTrade}
                   </button>
                 </div>
               )}
@@ -948,110 +985,84 @@
               {tab === "journal" && (
                 <div>
                   {loading ? (
-                    <div className="py-20 text-center text-slate-500 font-mono text-sm">Soo raraya ganacsiyada...</div>
+                    <div className="py-16 text-center text-slate-500 font-mono text-xs">Loading...</div>
                   ) : filteredTrades.length === 0 ? (
-                    <div className="glass-card py-16 text-center rounded-2xl border border-slate-800/80">
-                      <p className="text-sm text-slate-400">Weli wax trade ah lama helin.</p>
-                      <p className="text-xs text-slate-500 mt-1">Guji "New Trade" si aad u bilowdo.</p>
+                    <div className="glass-card py-12 text-center rounded-2xl border border-slate-800">
+                      <p className="text-xs text-slate-400">{t.noTrades}</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      <div className="text-xs text-slate-500 px-1 font-mono flex items-center justify-between">
-                        <span>Tip: <strong>Labo jeer ku dhufo (Double Click)</strong> trade kasta si aad sawirkiisa u furto!</span>
-                        <span>{filteredTrades.length} Trades</span>
+                    <div className="space-y-2">
+                      <div className="text-right text-[11px] text-slate-500 font-mono px-1">
+                        {filteredTrades.length} {t.trades}
                       </div>
 
-                      {filteredTrades.map((t) => {
-                        const sessionInfo = SESSIONS.find((s) => s.id === t.session);
-                        const imgs = t.images || (t.image ? [t.image] : []);
+                      {filteredTrades.map((tr) => {
+                        const sessionInfo = SESSIONS.find((s) => s.id === tr.session);
+                        const imgs = tr.images || (tr.image ? [tr.image] : []);
 
                         return (
                           <div
-                            key={t.id}
-                            onDoubleClick={() => {
-                              if (imgs.length > 0) setLightbox(imgs[0]);
-                            }}
-                            className="glass-card rounded-xl border border-slate-800/90 overflow-hidden hover:border-sky-500/40 transition-all duration-150 select-none cursor-pointer"
+                            key={tr.id}
+                            onDoubleClick={() => { if (imgs.length > 0) setLightbox(imgs[0]); }}
+                            className="glass-card rounded-xl border border-slate-800/80 p-3 flex items-center justify-between gap-3 hover:border-sky-500/30 transition-all select-none cursor-pointer"
                           >
-                            <div className="p-4 flex items-center justify-between flex-wrap gap-3">
-                              <div className="flex items-center gap-3 flex-wrap">
-                                {t.outcome === "win" ? (
-                                  <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-                                    <TrendingUp size={16} />
-                                  </div>
-                                ) : (
-                                  <div className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
-                                    <TrendingDown size={16} />
-                                  </div>
-                                )}
-
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-sm font-mono text-white">{t.symbol}</span>
-                                    <span className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded font-bold border ${
-                                      t.direction === "buy"
-                                        ? "bg-sky-500/20 text-sky-300 border-sky-400/40"
-                                        : "bg-rose-500/20 text-rose-300 border-rose-400/40"
-                                    }`}>
-                                      {t.direction}
-                                    </span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">
-                                      {t.accountName}
-                                    </span>
-                                  </div>
-                                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                                    {t.date} · {sessionInfo?.flag} {sessionInfo?.label} · {t.purgeTime}
-                                  </div>
+                            <div className="flex items-center gap-2.5">
+                              {tr.outcome === "win" ? (
+                                <div className="w-6 h-6 rounded-md bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                                  <TrendingUp size={14} />
                                 </div>
-                              </div>
-
-                              <div className="flex items-center gap-3">
-                                {imgs.length > 0 && (
-                                  <div className="flex items-center gap-1 text-slate-400 text-xs bg-slate-800/60 px-2 py-1 rounded-md border border-slate-700">
-                                    <ImageIcon size={13} className="text-sky-400" />
-                                    <span>{imgs.length}</span>
-                                  </div>
-                                )}
-
-                                <div className={`text-sm font-bold font-mono ${t.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                  {fmtR(t.rMultiple || 0)}
+                              ) : (
+                                <div className="w-6 h-6 rounded-md bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                                  <TrendingDown size={14} />
                                 </div>
+                              )}
 
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); startEditTrade(t); }}
-                                  title="Edit Trade"
-                                  className="p-1 text-slate-400 hover:text-sky-400 transition-colors"
-                                >
-                                  <Edit3 size={15} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); removeTrade(t.id); }}
-                                  title="Tirtir Trade"
-                                  className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-xs font-mono text-white">{tr.symbol}</span>
+                                  <span className={`text-[9px] uppercase font-mono px-1 rounded font-bold border ${
+                                    tr.direction === "buy" ? "bg-sky-500/20 text-sky-300 border-sky-400/30" : "bg-rose-500/20 text-rose-300 border-rose-400/30"
+                                  }`}>
+                                    {tr.direction}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    {tr.accountName}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono">
+                                  {tr.date} · {sessionInfo?.flag} {sessionInfo?.label} · {tr.purgeTime}
+                                </div>
                               </div>
                             </div>
 
-                            {/* Checklist & Notes Preview */}
-                            {(t.checklist?.length > 0 || t.notes) && (
-                              <div className="px-4 pb-3 pt-1 border-t border-slate-800/50 bg-slate-950/20 text-xs flex flex-wrap gap-2 items-center justify-between">
-                                {t.checklist?.length > 0 && (
-                                  <div className="flex gap-1.5 flex-wrap">
-                                    {t.checklist.map((c) => (
-                                      <span key={c} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                                        ✓ {c}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                                {t.notes && <span className="text-slate-400 italic truncate max-w-md">{t.notes}</span>}
+                            <div className="flex items-center gap-3">
+                              {imgs.length > 0 && (
+                                <div className="flex items-center gap-1 text-slate-400 text-[10px] bg-slate-800/60 px-1.5 py-0.5 rounded border border-slate-700">
+                                  <ImageIcon size={11} className="text-sky-400" />
+                                  <span>{imgs.length}</span>
+                                </div>
+                              )}
+
+                              <div className={`text-xs font-bold font-mono ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                {fmtR(tr.rMultiple || 0)}
                               </div>
-                            )}
+
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); startEditTrade(tr); }}
+                                className="text-slate-500 hover:text-sky-400 p-1"
+                              >
+                                <Edit3 size={13} />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); removeTrade(tr.id); }}
+                                className="text-slate-500 hover:text-rose-400 p-1"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -1060,172 +1071,151 @@
                 </div>
               )}
 
-              {/* ================= TAB 2: DASHBOARD (SELECTIVE VIEWS) ================= */}
+              {/* ================= TAB 2: DASHBOARD (CALENDAR ALWAYS VISIBLE) ================= */}
               {tab === "dashboard" && (
                 <div className="space-y-6">
-                  {/* Dashboard Sub-navigation Tabs */}
-                  <div className="flex gap-2 border-b border-slate-800 pb-3">
-                    {[
-                      { id: "overview", label: "Purging & Performance" },
-                      { id: "sessions", label: "Sessions Breakdown" },
-                      { id: "calendar", label: "Calendar Heatmap" }
-                    ].map((btn) => (
-                      <button
-                        key={btn.id}
-                        onClick={() => setDashView(btn.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                          dashView === btn.id
-                            ? "bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20"
-                            : "bg-slate-900 text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        {btn.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* SUBVIEW 1: PURGING PERFORMANCE */}
-                  {dashView === "overview" && (
-                    <div className="glass-card p-6 rounded-2xl border border-slate-800">
-                      <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                        <Clock size={16} className="text-sky-400" /> Purging Times Performance Matrix (8am, 9am, 2am, 3am)
-                      </h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+                  
+                  {/* Top Compact Cards: Purging & Sessions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Purge Matrix */}
+                    <div className="glass-card p-4 rounded-xl border border-slate-800">
+                      <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
+                        <Clock size={13} className="text-sky-400" /> Purge Times Matrix
+                      </div>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                         {Object.entries(stats.purgeStats).map(([time, data]) => (
-                          <div key={time} className="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800 text-center">
-                            <div className="text-xs font-mono font-bold text-sky-400 uppercase">{time}</div>
-                            <div className={`text-lg font-bold font-mono mt-1 ${data.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                          <div key={time} className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
+                            <div className="text-[10px] font-mono text-sky-400 uppercase font-bold">{time}</div>
+                            <div className={`text-xs font-bold font-mono mt-0.5 ${data.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
                               {data.winRate}%
                             </div>
-                            <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                              {data.count} trades ({fmtR(data.netR)})
-                            </div>
+                            <div className="text-[9px] text-slate-500 font-mono">{data.count}t</div>
                           </div>
                         ))}
                       </div>
                     </div>
-                  )}
 
-                  {/* SUBVIEW 2: SESSIONS BREAKDOWN */}
-                  {dashView === "sessions" && (
-                    <div className="glass-card p-6 rounded-2xl border border-slate-800">
-                      <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                        <Clock size={16} className="text-sky-400" /> Sessions Breakdown
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Sessions Matrix */}
+                    <div className="glass-card p-4 rounded-xl border border-slate-800">
+                      <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
+                        <Clock size={13} className="text-sky-400" /> Sessions Performance
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
                         {SESSIONS.map((s) => {
                           const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0 };
                           return (
-                            <div key={s.id} className="bg-slate-900/70 p-4 rounded-xl border border-slate-800">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-2xl">{s.flag}</span>
-                                <span className="text-xs text-slate-500 font-mono">{s.time}</span>
+                            <div key={s.id} className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
+                              <div className="text-xs">{s.flag} <span className="font-semibold text-white">{s.label}</span></div>
+                              <div className={`text-xs font-bold font-mono mt-0.5 ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                                {st.winRate}%
                               </div>
-                              <div className="font-bold text-white text-base">{s.label}</div>
-                              <div className={`text-xl font-bold font-mono mt-1 ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
-                                {st.winRate}% WR
-                              </div>
-                              <div className="text-xs text-slate-400 font-mono mt-1">
-                                {st.count} trades · {fmtR(st.netR)}
-                              </div>
+                              <div className="text-[9px] text-slate-500 font-mono">{st.count}t · {fmtR(st.netR)}</div>
                             </div>
                           );
                         })}
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  {/* SUBVIEW 3: CALENDAR */}
-                  {dashView === "calendar" && (
-                    <div className="glass-card p-6 rounded-2xl border border-slate-800">
-                      <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800">
-                          <ChevronLeft size={18} />
-                        </button>
-                        <div className="font-bold text-sm text-white">{MONTH_NAMES[viewMonth]} {viewYear}</div>
-                        <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800">
-                          <ChevronRight size={18} />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-7 gap-1.5 mb-1.5">
-                        {WEEKDAYS.map((d) => (
-                          <div key={d} className="text-[10px] font-mono text-slate-500 text-center uppercase py-1">{d}</div>
-                        ))}
-                      </div>
-
-                      <div className="grid grid-cols-7 gap-1.5">
-                        {calendarCells.map((cell, idx) => {
-                          if (!cell) return <div key={idx} className="aspect-square"></div>;
-                          const net = cell.data?.net || 0;
-                          return (
-                            <div
-                              key={idx}
-                              className={`aspect-square rounded-xl p-1.5 flex flex-col justify-between border text-xs ${
-                                !cell.data
-                                  ? "bg-slate-900/40 border-slate-800/60"
-                                  : net > 0
-                                  ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                                  : net < 0
-                                  ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
-                                  : "bg-slate-800 border-slate-700 text-slate-300"
-                              }`}
-                            >
-                              <span className="text-[10px] font-mono text-slate-400">{cell.day}</span>
-                              {cell.data && (
-                                <div className="text-right font-mono text-[10px] font-bold">
-                                  {fmtR(net)}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                  {/* Calendar Heatmap (ALWAYS VISIBLE) */}
+                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
+                        <ChevronLeft size={16} />
+                      </button>
+                      <div className="font-bold text-xs text-white font-mono">{MONTH_NAMES[viewMonth]} {viewYear}</div>
+                      <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
+                        <ChevronRight size={16} />
+                      </button>
                     </div>
-                  )}
+
+                    <div className="grid grid-cols-7 gap-1 mb-1">
+                      {WEEKDAYS.map((d) => (
+                        <div key={d} className="text-[9px] font-mono text-slate-500 text-center uppercase py-0.5">{d}</div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {calendarCells.map((cell, idx) => {
+                        if (!cell) return <div key={idx} className="aspect-square"></div>;
+                        const net = cell.data?.net || 0;
+                        return (
+                          <div
+                            key={idx}
+                            className={`aspect-square rounded-lg p-1 flex flex-col justify-between border text-[10px] ${
+                              !cell.data
+                                ? "bg-slate-900/30 border-slate-800/40"
+                                : net > 0
+                                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
+                                : net < 0
+                                ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
+                                : "bg-slate-800 border-slate-700 text-slate-300"
+                            }`}
+                          >
+                            <span className="text-[9px] font-mono text-slate-500">{cell.day}</span>
+                            {cell.data && (
+                              <div className="text-right font-mono text-[9px] font-bold">
+                                {fmtR(net)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                 </div>
               )}
 
-              {/* ================= TAB 3: ACCOUNTS MANAGEMENT ================= */}
+              {/* ================= TAB 3: ACCOUNTS ================= */}
               {tab === "accounts" && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-base font-bold text-white">Accounts Management</h3>
-                      <p className="text-xs text-slate-400">Geli akoonnadaada Funded, Challenge, Real ama Demo ee MT5.</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    {/* Account Filter placed only here */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">{t.accountLabel}:</span>
+                      <select
+                        value={filterAccount}
+                        onChange={(e) => setFilterAccount(e.target.value)}
+                        className="bg-slate-900 text-xs px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300 focus:border-sky-500 cursor-pointer"
+                      >
+                        <option value="all">{t.allAccounts}</option>
+                        {accounts.map((a) => <option key={a.id} value={a.name}>{a.name} ({a.type})</option>)}
+                      </select>
                     </div>
+
                     <button
                       onClick={() => setShowAccModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
                     >
-                      <Plus size={14} /> Add Account
+                      <Plus size={13} /> {t.addAccount}
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {accounts.length === 0 ? (
-                      <div className="col-span-3 py-12 text-center text-slate-500 glass-card rounded-xl">
-                        Weli ma jiro akoon la galiyay. Riix "Add Account".
+                      <div className="col-span-3 py-10 text-center text-slate-500 glass-card rounded-xl text-xs">
+                        {t.noAccounts}
                       </div>
                     ) : (
                       accounts.map((acc) => {
-                        const accTrades = trades.filter((t) => t.accountName === acc.name);
+                        const accTrades = trades.filter((tr) => tr.accountName === acc.name);
                         const net = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
                         return (
-                          <div key={acc.id} className="glass-card p-5 rounded-xl border border-slate-800 relative">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                          <div key={acc.id} className="glass-card p-4 rounded-xl border border-slate-800">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/20">
                                 {acc.type}
                               </span>
                               <button onClick={() => deleteDoc(doc(db, "users", user.uid, "accounts", acc.id))} className="text-slate-500 hover:text-rose-400">
-                                <Trash2 size={13} />
+                                <Trash2 size={12} />
                               </button>
                             </div>
-                            <h4 className="font-bold text-white text-base">{acc.name}</h4>
-                            <div className="text-xs text-slate-400 font-mono mt-1">Starting: {acc.balance}</div>
-                            {acc.mt5Id && <div className="text-xs text-slate-500 font-mono">MT5 ID: {acc.mt5Id}</div>}
-                            <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between font-mono text-xs">
-                              <span className="text-slate-400">{accTrades.length} trades</span>
+                            <h4 className="font-bold text-white text-sm">{acc.name}</h4>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">{acc.balance}</div>
+                            {acc.mt5Id && <div className="text-[10px] text-slate-500 font-mono">MT5: {acc.mt5Id}</div>}
+                            <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between font-mono text-[11px]">
+                              <span className="text-slate-500">{accTrades.length} trades</span>
                               <span className={`font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtR(net)}</span>
                             </div>
                           </div>
@@ -1237,9 +1227,9 @@
                   {/* Add Account Modal */}
                   {showAccModal && (
                     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                      <div className="glass-card p-6 rounded-2xl max-w-sm w-full border border-sky-500/30">
-                        <h4 className="text-sm font-bold text-white mb-3">Add Trading Account</h4>
-                        <div className="space-y-3 mb-4">
+                      <div className="glass-card p-5 rounded-2xl max-w-xs w-full border border-sky-500/30">
+                        <h4 className="text-xs font-bold text-white mb-3">{t.addAccount}</h4>
+                        <div className="space-y-2 mb-3">
                           <input
                             placeholder="Account Name (e.g. FTMO 100K #1)"
                             value={newAcc.name}
@@ -1257,21 +1247,21 @@
                             <option value="Demo">Demo</option>
                           </select>
                           <input
-                            placeholder="Initial Balance (e.g. $100,000)"
+                            placeholder="Balance (e.g. $100,000)"
                             value={newAcc.balance}
                             onChange={(e) => setNewAcc({ ...newAcc, balance: e.target.value })}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
                           />
                           <input
-                            placeholder="MT5 Account Number (Optional)"
+                            placeholder="MT5 ID (Optional)"
                             value={newAcc.mt5Id}
                             onChange={(e) => setNewAcc({ ...newAcc, mt5Id: e.target.value })}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
                           />
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => setShowAccModal(false)} className="flex-1 py-2 rounded-lg bg-slate-800 text-xs text-slate-300">Jooji</button>
-                          <button onClick={saveAccount} className="flex-1 py-2 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
+                          <button onClick={() => setShowAccModal(false)} className="flex-1 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">{t.cancel}</button>
+                          <button onClick={saveAccount} className="flex-1 py-1.5 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
                         </div>
                       </div>
                     </div>
@@ -1279,39 +1269,36 @@
                 </div>
               )}
 
-              {/* ================= TAB 4: NOTES & LESSONS ================= */}
+              {/* ================= TAB 4: NOTES ================= */}
               {tab === "notes" && (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-base font-bold text-white">Casharrada & Qoraallada (Trading Notes)</h3>
-                      <p className="text-xs text-slate-400">Ku qoro casharrada ICT, xeerarkaaga gaarka ah iyo khaladaadka aad baratay.</p>
-                    </div>
+                    <h3 className="text-sm font-bold text-white">{t.notes}</h3>
                     <button
                       onClick={() => setShowNoteForm(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
                     >
-                      <Plus size={14} /> Qor Qoraal Cusub
+                      <Plus size={13} /> {t.addNote}
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {notes.length === 0 ? (
-                      <div className="col-span-2 py-12 text-center text-slate-500 glass-card rounded-xl">
-                        Weli qoraal ma jiro. Riix "Qor Qoraal Cusub".
+                      <div className="col-span-2 py-10 text-center text-slate-500 glass-card rounded-xl text-xs">
+                        {t.noNotes}
                       </div>
                     ) : (
                       notes.map((n) => (
-                        <div key={n.id} className="glass-card p-5 rounded-xl border border-slate-800 relative group">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">
+                        <div key={n.id} className="glass-card p-4 rounded-xl border border-slate-800">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">
                               {n.tag}
                             </span>
                             <button onClick={() => deleteDoc(doc(db, "users", user.uid, "notes", n.id))} className="text-slate-500 hover:text-rose-400">
-                              <Trash2 size={13} />
+                              <Trash2 size={12} />
                             </button>
                           </div>
-                          <h4 className="text-sm font-bold text-white mb-2">{n.title}</h4>
+                          <h4 className="text-xs font-bold text-white mb-1">{n.title}</h4>
                           <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{n.content}</p>
                         </div>
                       ))
@@ -1321,32 +1308,32 @@
                   {/* Add Note Modal */}
                   {showNoteForm && (
                     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                      <div className="glass-card p-6 rounded-2xl max-w-md w-full border border-sky-500/30">
-                        <h4 className="text-sm font-bold text-white mb-3">Qor Cashar Cusub</h4>
-                        <div className="space-y-3 mb-4">
+                      <div className="glass-card p-5 rounded-2xl max-w-sm w-full border border-sky-500/30">
+                        <h4 className="text-xs font-bold text-white mb-3">{t.addNote}</h4>
+                        <div className="space-y-2.5 mb-3">
                           <input
-                            placeholder="Cinwaanka (e.g. London Judas Swing Strategy)"
+                            placeholder="Title (e.g. London Judas Setup)"
                             value={noteForm.title}
                             onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
                           />
                           <input
-                            placeholder="Tag (e.g. ICT, Psychology, Risk Rule)"
+                            placeholder="Tag (e.g. ICT, Psychology)"
                             value={noteForm.tag}
                             onChange={(e) => setNoteForm({ ...noteForm, tag: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
                           />
                           <textarea
-                            rows={5}
-                            placeholder="Qor casharka ama faahfaahinta..."
+                            rows={4}
+                            placeholder="Write your note..."
                             value={noteForm.content}
                             onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white resize-none"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white resize-none"
                           />
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => setShowNoteForm(false)} className="flex-1 py-2 rounded-lg bg-slate-800 text-xs text-slate-300">Jooji</button>
-                          <button onClick={saveNote} className="flex-1 py-2 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
+                          <button onClick={() => setShowNoteForm(false)} className="flex-1 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">{t.cancel}</button>
+                          <button onClick={saveNote} className="flex-1 py-1.5 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
                         </div>
                       </div>
                     </div>
@@ -1354,34 +1341,29 @@
                 </div>
               )}
 
-              {/* ================= TAB 5: PUBLIC COMMUNITY CHAT ================= */}
+              {/* ================= TAB 5: COMMUNITY CHAT ================= */}
               {tab === "community" && (
-                <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[550px]">
-                  <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare size={16} className="text-sky-400" />
-                      <span className="font-bold text-sm text-white">Traders Public Room</span>
-                    </div>
-                    <span className="text-[11px] text-slate-500 font-mono">Live Discussion</span>
+                <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[500px]">
+                  <div className="p-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+                    <span className="font-bold text-xs text-white font-mono">{t.community} Chat</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Live</span>
                   </div>
 
-                  {/* Messages Feed */}
-                  <div className="flex-1 p-4 overflow-y-auto space-y-3">
+                  <div className="flex-1 p-3 overflow-y-auto space-y-2.5">
                     {chatMessages.map((m) => {
                       const isMe = m.uid === user.uid;
                       return (
-                        <div key={m.id} className={`flex gap-2.5 ${isMe ? "justify-end" : "justify-start"}`}>
+                        <div key={m.id} className={`flex gap-2 ${isMe ? "justify-end" : "justify-start"}`}>
                           {!isMe && (
-                            <img src={m.photo || "https://api.dicebear.com/7.x/bottts/svg"} className="w-7 h-7 rounded-full bg-slate-800 flex-shrink-0" />
+                            <img src={m.photo || "https://api.dicebear.com/7.x/bottts/svg"} className="w-6 h-6 rounded-full bg-slate-800 flex-shrink-0" />
                           )}
-                          <div className={`max-w-xs sm:max-w-md p-3 rounded-xl text-xs relative group ${
+                          <div className={`max-w-xs p-2.5 rounded-xl text-xs relative group ${
                             isMe ? "bg-sky-500/20 text-slate-100 border border-sky-500/30" : "bg-slate-900 text-slate-200 border border-slate-800"
                           }`}>
-                            <div className="flex items-center justify-between gap-4 mb-1">
-                              <span className="font-bold text-[10px] text-sky-400">{m.author}</span>
-                              {/* Admin / Owner delete button */}
+                            <div className="flex items-center justify-between gap-3 mb-0.5">
+                              <span className="font-bold text-[9px] text-sky-400">{m.author}</span>
                               <button onClick={() => deleteChatMessage(m.id)} className="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 size={11} />
+                                <Trash2 size={10} />
                               </button>
                             </div>
                             <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>
@@ -1392,16 +1374,15 @@
                     <div ref={chatScrollRef}></div>
                   </div>
 
-                  {/* Chat Input */}
-                  <form onSubmit={sendChatMessage} className="p-3 border-t border-slate-800 bg-slate-950/60 flex gap-2">
+                  <form onSubmit={sendChatMessage} className="p-2.5 border-t border-slate-800 bg-slate-950/60 flex gap-2">
                     <input
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Qor fariintaada ama trade idea..."
-                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400"
+                      placeholder={t.chatPlaceholder}
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400"
                     />
-                    <button type="submit" className="p-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer">
-                      <Send size={15} />
+                    <button type="submit" className="p-2 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer">
+                      <Send size={13} />
                     </button>
                   </form>
                 </div>
@@ -1410,16 +1391,9 @@
             </main>
           </div>
 
-          {/* ================= FOOTER ================= */}
-          <footer className="mt-12 py-6 border-t border-slate-800/80 bg-[#090e17]/80 text-center text-xs text-slate-500">
-            <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div>
-                © {new Date().getFullYear()} <strong>Amiir Journal</strong> · Professional Execution Ledger
-              </div>
-              <div>
-                Developed by <span className="text-white font-semibold">Amiir</span> · TikTok: <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
-              </div>
-            </div>
+          {/* Minimal Footer */}
+          <footer className="mt-8 py-4 border-t border-slate-800/60 text-center text-[11px] text-slate-500 font-mono">
+            Amiir Journal · {t.devBy} <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
           </footer>
 
           {/* LIGHTBOX FOR IMAGES */}
@@ -1428,7 +1402,7 @@
               onClick={() => setLightbox(null)}
               className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out"
             >
-              <img src={lightbox} alt="Chart" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-slate-800" />
+              <img src={lightbox} alt="Full Chart" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-slate-800" />
             </div>
           )}
         </div>
@@ -1439,4 +1413,4 @@
     root.render(<App />);
   </script>
 </body>
-</html> 
+</html>
