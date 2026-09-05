@@ -66,11 +66,10 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet,
-      Clock, Award, Settings, Search, DollarSign, Percent, Users, Eye, Target, CheckCircle2
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings
     } from "lucide-react";
 
-    // Firebase SDKs
+    // Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
@@ -94,20 +93,89 @@
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // Prop Firm Directory (Sourced from PropFirmMatch)
-    const POPULAR_PROP_FIRMS = [
-      { name: "FTMO", logo: "🇨🇿", defaultTarget: "10%" },
-      { name: "FundedNext", logo: "🇦🇪", defaultTarget: "8%" },
-      { name: "Funding Pips", logo: "🇦🇪", defaultTarget: "8%" },
-      { name: "Alpha Capital Group", logo: "🇬🇧", defaultTarget: "8%" },
-      { name: "The5ers", logo: "🇮🇱", defaultTarget: "8%" },
-      { name: "E8 Markets", logo: "🇺🇸", defaultTarget: "8%" },
-      { name: "Topstep", logo: "🇺🇸", defaultTarget: "$3,000" },
-      { name: "Apex Trader Funding", logo: "🇺🇸", defaultTarget: "$3,000" },
-      { name: "MyFundedFX", logo: "🇺🇸", defaultTarget: "8%" },
-      { name: "Blue Guardian", logo: "🇬🇧", defaultTarget: "8%" },
-      { name: "Custom / Personal MT5", logo: "⚡", defaultTarget: "N/A" }
-    ];
+    // Multilingual Dictionary
+    const DICT = {
+      en: {
+        journal: "Journal",
+        dashboard: "Dashboard",
+        accounts: "Accounts",
+        notes: "Notes",
+        community: "Community",
+        newTrade: "New Trade",
+        cancel: "Cancel",
+        trades: "Trades",
+        winRate: "Win Rate",
+        winLoss: "Win / Loss",
+        netReturn: "Net Return",
+        thisWeek: "This Week",
+        symbol: "Symbol",
+        date: "Date",
+        accountLabel: "Account",
+        session: "Session",
+        purgeTime: "Purge Time",
+        direction: "Direction",
+        outcome: "Outcome",
+        risk: "Risk %",
+        rrRatio: "R:R",
+        checklistTitle: "Confluence Checklist",
+        chartsTitle: "Execution Charts",
+        notesLabel: "Notes & Execution Rules",
+        saveTrade: "Save Trade",
+        updateTrade: "Update Trade",
+        noTrades: "No trades recorded yet.",
+        noAccounts: "No accounts added yet.",
+        noNotes: "No notes added yet.",
+        allAccounts: "All Accounts",
+        addAccount: "Add Account",
+        addNote: "New Note",
+        signInGoogle: "Continue with Google",
+        chatPlaceholder: "Share market idea...",
+        devBy: "Developed by",
+        calendarTitle: "Trading Calendar",
+        editChecklist: "Edit Checklist",
+        addChecklistItem: "Add Item"
+      },
+      so: {
+        journal: "Diiwaanka",
+        dashboard: "Dashboard",
+        accounts: "Accounts",
+        notes: "Casharrada",
+        community: "Sheekada",
+        newTrade: "Ganacsi Cusub",
+        cancel: "Jooji",
+        trades: "Wadarta",
+        winRate: "Guusha %",
+        winLoss: "Guul / Khasaar",
+        netReturn: "Net R",
+        thisWeek: "Toddobaadkan",
+        symbol: "Symbol",
+        date: "Taariikh",
+        accountLabel: "Account",
+        session: "Session",
+        purgeTime: "Waqtiga Purge",
+        direction: "Jihada",
+        outcome: "Natiijada",
+        risk: "Risk %",
+        rrRatio: "R:R",
+        checklistTitle: "ICT Checklist",
+        chartsTitle: "Sawirrada Chart-ka",
+        notesLabel: "Falanqaynta & Fiiro Gaar ah",
+        saveTrade: "Kaydi Ganacsiga",
+        updateTrade: "Cusboonaysii Trade",
+        noTrades: "Weli wax trade ah lama diiwaangelin.",
+        noAccounts: "Weli ma jiro akoon la galiyay.",
+        noNotes: "Weli ma jiro cashar la qoray.",
+        allAccounts: "Dhammaan Akoonnada",
+        addAccount: "Ku dar Akoon",
+        addNote: "Qor Cashar",
+        signInGoogle: "Ku gal Google",
+        chatPlaceholder: "Qor fikrad ama fariin...",
+        devBy: "Waxaa dhisay",
+        calendarTitle: "Kalandarka Ganacsiga",
+        editChecklist: "Beddel Checklist",
+        addChecklistItem: "Ku dar Qodob"
+      }
+    };
 
     const SESSIONS = [
       { id: "asian", label: "Asian", flag: "🇯🇵", time: "8PM–9PM" },
@@ -139,7 +207,6 @@
       outcome: "win",
       risk: "1",
       rrRatio: "2",
-      pnlDollars: "", // Optional $ PnL
       notes: "",
       images: [],
       checklist: []
@@ -173,8 +240,8 @@
     }
 
     function App() {
-      const [lang, setLang] = useState("en"); // 'en' | 'so'
-      const [viewMode, setViewMode] = useState("percent"); // 'percent' | 'money'
+      const [lang, setLang] = useState("en");
+      const t = DICT[lang];
 
       const [user, setUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
@@ -182,7 +249,6 @@
       const [accounts, setAccounts] = useState([]);
       const [notes, setNotes] = useState([]);
       const [chatMessages, setChatMessages] = useState([]);
-      const [siteUsers, setSiteUsers] = useState([]);
       const [loading, setLoading] = useState(true);
 
       // Customizable Checklist
@@ -190,26 +256,15 @@
       const [showChecklistEditor, setShowChecklistEditor] = useState(false);
       const [newChecklistInput, setNewChecklistInput] = useState("");
 
-      const [tab, setTab] = useState("journal"); // 'journal' | 'dashboard' | 'accounts' | 'notes' | 'community' | 'activity'
+      const [tab, setTab] = useState("journal");
       const [showForm, setShowForm] = useState(false);
       const [editingId, setEditingId] = useState(null);
       const [form, setForm] = useState(EMPTY_FORM);
       const [error, setError] = useState("");
       const [lightbox, setLightbox] = useState(null);
-      const [detailTrade, setDetailTrade] = useState(null); // Click trade to view all details
 
-      // Prop Firm Account Planning Modal State
-      const [newAcc, setNewAcc] = useState({
-        name: "",
-        propFirm: "FTMO",
-        phase: "Phase 1", // 'Phase 1' | 'Phase 2' | 'Funded' | 'Instant'
-        status: "Ongoing", // 'Ongoing' | 'Pending' | 'Planning' | 'Passed' | 'Failed'
-        startingBalance: 100000,
-        mt5Id: "",
-        targetPercent: "10%"
-      });
+      const [newAcc, setNewAcc] = useState({ name: "", type: "Funded", balance: "$100,000", mt5Id: "" });
       const [showAccModal, setShowAccModal] = useState(false);
-      const [propFirmSearch, setPropFirmSearch] = useState("");
 
       const [noteForm, setNoteForm] = useState({ title: "", tag: "ICT Model", content: "" });
       const [showNoteForm, setShowNoteForm] = useState(false);
@@ -222,24 +277,11 @@
       const [viewMonth, setViewMonth] = useState(new Date().getMonth());
       const [viewYear, setViewYear] = useState(new Date().getFullYear());
 
-      // Auth Listener & Log User Activity
+      // Auth Listener
       useEffect(() => {
-        const unsub = onAuthStateChanged(auth, async (u) => {
+        const unsub = onAuthStateChanged(auth, (u) => {
           setUser(u);
           setAuthLoading(false);
-          if (u) {
-            try {
-              await setDoc(doc(db, "app_users", u.uid), {
-                uid: u.uid,
-                displayName: u.displayName || "Trader",
-                email: u.email || "No email",
-                photoURL: u.photoURL || "",
-                lastLogin: new Date().toISOString()
-              }, { merge: true });
-            } catch (err) {
-              console.error("Activity log error:", err);
-            }
-          }
         });
         return () => unsub();
       }, []);
@@ -259,6 +301,18 @@
         return () => unsub();
       }, [user]);
 
+      // Realtime Checklist Settings
+      useEffect(() => {
+        if (!user) return;
+        const docRef = doc(db, "users", user.uid, "settings", "checklist");
+        const unsub = onSnapshot(docRef, (snap) => {
+          if (snap.exists() && snap.data().items) {
+            setChecklistItems(snap.data().items);
+          }
+        });
+        return () => unsub();
+      }, [user]);
+
       // Realtime Accounts
       useEffect(() => {
         if (!user) return;
@@ -267,18 +321,6 @@
           const list = [];
           snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
           setAccounts(list);
-        });
-        return () => unsub();
-      }, [user]);
-
-      // Realtime Custom Checklist
-      useEffect(() => {
-        if (!user) return;
-        const docRef = doc(db, "users", user.uid, "settings", "checklist");
-        const unsub = onSnapshot(docRef, (snap) => {
-          if (snap.exists() && snap.data().items) {
-            setChecklistItems(snap.data().items);
-          }
         });
         return () => unsub();
       }, [user]);
@@ -296,7 +338,7 @@
         return () => unsub();
       }, [user]);
 
-      // Realtime Public Chat
+      // Realtime Chat
       useEffect(() => {
         if (!user) return;
         const q = query(collection(db, "public_chat"), orderBy("timestamp", "asc"), limit(60));
@@ -305,19 +347,6 @@
           snap.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
           setChatMessages(msgs);
           setTimeout(() => chatScrollRef.current?.scrollIntoView({ behavior: "smooth" }), 120);
-        });
-        return () => unsub();
-      }, [user]);
-
-      // Realtime Visitors / Site Users
-      useEffect(() => {
-        if (!user) return;
-        const q = query(collection(db, "app_users"), limit(50));
-        const unsub = onSnapshot(q, (snap) => {
-          const uList = [];
-          snap.forEach((d) => uList.push(d.data()));
-          uList.sort((a, b) => (b.lastLogin || "").localeCompare(a.lastLogin || ""));
-          setSiteUsers(uList);
         });
         return () => unsub();
       }, [user]);
@@ -346,6 +375,7 @@
         }
       };
 
+      // Checklist Management
       const toggleChecklistItem = (item) => {
         const cur = form.checklist || [];
         if (cur.includes(item)) {
@@ -373,7 +403,6 @@
         }
       };
 
-      // Save or Edit Trade (Supports Dollar Amount)
       const saveTrade = async () => {
         if (!form.symbol || !form.date) {
           setError("Symbol and Date required.");
@@ -383,14 +412,6 @@
         const rr = parseFloat(form.rrRatio) || 0;
         const reward = +(risk * rr).toFixed(2);
         const rMultiple = form.outcome === "win" ? reward : form.outcome === "loss" ? -risk : 0;
-        
-        // Dollar PnL calculation or manual input
-        let parsedDollars = parseFloat(form.pnlDollars);
-        if (isNaN(parsedDollars) || form.pnlDollars === "") {
-          // Default estimation based on $100 per 1R if left blank
-          parsedDollars = rMultiple * 100;
-        }
-
         const tradeId = editingId || Date.now().toString();
 
         const tradeData = {
@@ -406,7 +427,6 @@
           rrRatio: rr,
           reward,
           rMultiple,
-          dollarAmount: parsedDollars,
           notes: form.notes || "",
           images: form.images || [],
           checklist: form.checklist || [],
@@ -435,7 +455,6 @@
           outcome: tr.outcome,
           risk: tr.risk?.toString() || "1",
           rrRatio: tr.rrRatio?.toString() || "2",
-          pnlDollars: tr.dollarAmount !== undefined ? tr.dollarAmount.toString() : "",
           notes: tr.notes || "",
           images: tr.images || (tr.image ? [tr.image] : []),
           checklist: tr.checklist || []
@@ -449,7 +468,6 @@
         if (!confirm("Delete this trade?")) return;
         try {
           await deleteDoc(doc(db, "users", user.uid, "trades", id));
-          if (detailTrade?.id === id) setDetailTrade(null);
         } catch (err) {
           setError(err.message);
         }
@@ -460,18 +478,9 @@
         try {
           await addDoc(collection(db, "users", user.uid, "accounts"), {
             ...newAcc,
-            startingBalance: parseFloat(newAcc.startingBalance) || 100000,
             createdAt: new Date().toISOString()
           });
-          setNewAcc({
-            name: "",
-            propFirm: "FTMO",
-            phase: "Phase 1",
-            status: "Ongoing",
-            startingBalance: 100000,
-            mt5Id: "",
-            targetPercent: "10%"
-          });
+          setNewAcc({ name: "", type: "Funded", balance: "$100,000", mt5Id: "" });
           setShowAccModal(false);
         } catch (e) {
           alert(e.message);
@@ -518,30 +527,12 @@
         });
       }, [trades, filterAccount]);
 
-      // Calculate Dynamic Account Balances (Adjusts based on recorded trades)
-      const accountsWithLiveBalance = useMemo(() => {
-        return accounts.map((acc) => {
-          const accTrades = trades.filter((tr) => tr.accountName === acc.name);
-          const totalDollarPnL = accTrades.reduce((sum, tr) => sum + (tr.dollarAmount !== undefined ? tr.dollarAmount : (tr.rMultiple * 100)), 0);
-          const currentBalance = (acc.startingBalance || 100000) + totalDollarPnL;
-          const netR = accTrades.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
-          return {
-            ...acc,
-            totalDollarPnL,
-            currentBalance,
-            netR,
-            tradesCount: accTrades.length
-          };
-        });
-      }, [accounts, trades]);
-
-      // Overall Stats (Both R% and Dollars)
+      // Stats
       const stats = useMemo(() => {
         const total = filteredTrades.length;
         const wins = filteredTrades.filter((tr) => tr.outcome === "win").length;
         const losses = filteredTrades.filter((tr) => tr.outcome === "loss").length;
         const netR = filteredTrades.reduce((acc, tr) => acc + (tr.rMultiple || 0), 0);
-        const netDollars = filteredTrades.reduce((acc, tr) => acc + (tr.dollarAmount !== undefined ? tr.dollarAmount : (tr.rMultiple * 100)), 0);
         const winRate = total ? Math.round((wins / total) * 100) : 0;
 
         const sessionsStats = {};
@@ -549,8 +540,7 @@
           const list = filteredTrades.filter((tr) => tr.session === s);
           const w = list.filter((tr) => tr.outcome === "win").length;
           const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
-          const d = list.reduce((sum, tr) => sum + (tr.dollarAmount !== undefined ? tr.dollarAmount : (tr.rMultiple * 100)), 0);
-          sessionsStats[s] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r, netDollars: d };
+          sessionsStats[s] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
         });
 
         const purgeStats = {};
@@ -558,11 +548,10 @@
           const list = filteredTrades.filter((tr) => tr.purgeTime === pt);
           const w = list.filter((tr) => tr.outcome === "win").length;
           const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
-          const d = list.reduce((sum, tr) => sum + (tr.dollarAmount !== undefined ? tr.dollarAmount : (tr.rMultiple * 100)), 0);
-          purgeStats[pt] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r, netDollars: d };
+          purgeStats[pt] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
         });
 
-        return { total, wins, losses, netR, netDollars, winRate, sessionsStats, purgeStats };
+        return { total, wins, losses, netR, winRate, sessionsStats, purgeStats };
       }, [filteredTrades]);
 
       const weeklyConsistency = useMemo(() => {
@@ -577,18 +566,16 @@
         const count = thisWeekTrades.length;
         const wins = thisWeekTrades.filter((tr) => tr.outcome === "win").length;
         const netR = thisWeekTrades.reduce((acc, tr) => acc + (tr.rMultiple || 0), 0);
-        const netDollars = thisWeekTrades.reduce((acc, tr) => acc + (tr.dollarAmount !== undefined ? tr.dollarAmount : (tr.rMultiple * 100)), 0);
         const winRate = count ? Math.round((wins / count) * 100) : 0;
-        return { count, wins, netR, netDollars, winRate };
+        return { count, wins, netR, winRate };
       }, [trades]);
 
-      // Calendar Data Mapping
+      // Calendar
       const dayMap = useMemo(() => {
         const map = {};
         filteredTrades.forEach((tr) => {
-          if (!map[tr.date]) map[tr.date] = { netR: 0, netDollars: 0, count: 0 };
-          map[tr.date].netR += tr.rMultiple || 0;
-          map[tr.date].netDollars += (tr.dollarAmount !== undefined ? tr.dollarAmount : (tr.rMultiple * 100));
+          if (!map[tr.date]) map[tr.date] = { net: 0, count: 0 };
+          map[tr.date].net += tr.rMultiple || 0;
           map[tr.date].count += 1;
         });
         return map;
@@ -608,7 +595,6 @@
       }, [viewYear, viewMonth, dayMap]);
 
       const fmtR = (n) => (n > 0 ? "+" : "") + n.toFixed(2) + "%";
-      const fmtMoney = (n) => (n >= 0 ? "+$" : "-$") + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       if (authLoading) {
         return (
@@ -639,12 +625,12 @@
                 />
               </div>
 
-              <h1 className="text-xl font-bold tracking-tight text-white mb-4 font-mono">Amiir Journal</h1>
+              <h1 className="text-xl font-bold tracking-tight text-white mb-4">Amiir Journal</h1>
               
-              {/* Cleaned Quote without comma */}
+              {/* Requested White Bold Small-Caps Quote */}
               <div className="mb-8 px-2">
                 <p className="text-white text-sm sm:text-base font-semibold tracking-wider leading-relaxed drop-shadow-[0_2px_10px_rgba(255,255,255,0.15)]">
-                  ᴡᴀɴᴋᴀ ᴡᴇʏɴ ɴɪɴᴋɪɪ ʜᴇʟɪ ᴋᴀʀᴏᴏᴡ ᴡᴀxᴀʀᴋᴀ ʜᴀᴡ ʟᴇᴇxᴀɴ
+                  ᴡᴀɴᴋᴀ ᴡᴇʏɴ ɴɪɴᴋɪɪ ʜᴇʟɪ ᴋᴀʀᴏᴏᴡ, ᴡᴀxᴀʀᴋᴀ ʜᴀᴡ ʟᴇᴇxᴀɴ
                 </p>
               </div>
 
@@ -658,7 +644,7 @@
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
-                Continue with Google
+                {t.signInGoogle}
               </button>
             </div>
 
@@ -679,32 +665,11 @@
                 
                 {/* Left Branding */}
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm tracking-tight text-white font-mono">Amiir Journal</span>
+                  <span className="font-bold text-sm tracking-tight text-white">Amiir Journal</span>
                 </div>
 
                 {/* Right Actions */}
-                <div className="flex items-center gap-2.5">
-                  
-                  {/* Mode Switch: Currency ($) vs Percent (%) */}
-                  <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
-                    <button
-                      onClick={() => setViewMode("percent")}
-                      className={`px-2 py-0.5 rounded text-[11px] font-mono flex items-center gap-1 transition-all ${
-                        viewMode === "percent" ? "bg-sky-500 text-slate-950 font-bold shadow-sm" : "text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      <Percent size={11} /> %
-                    </button>
-                    <button
-                      onClick={() => setViewMode("money")}
-                      className={`px-2 py-0.5 rounded text-[11px] font-mono flex items-center gap-1 transition-all ${
-                        viewMode === "money" ? "bg-emerald-500 text-slate-950 font-bold shadow-sm" : "text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      <DollarSign size={11} /> $
-                    </button>
-                  </div>
-
+                <div className="flex items-center gap-3">
                   {/* Language Toggle */}
                   <button
                     onClick={() => setLang(lang === "en" ? "so" : "en")}
@@ -736,7 +701,7 @@
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20"
                   >
                     {showForm ? <X size={13} /> : <Plus size={13} />}
-                    <span>{showForm ? "Cancel" : "New Trade"}</span>
+                    <span>{showForm ? t.cancel : t.newTrade}</span>
                   </button>
                 </div>
               </div>
@@ -744,20 +709,19 @@
 
             <main className="max-w-5xl mx-auto px-4 py-6">
               
-              {/* Main Navigation Tabs */}
+              {/* Main Tabs */}
               <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-6 overflow-x-auto w-fit">
                 {[
-                  { id: "journal", label: lang === "en" ? "Journal" : "Diiwaanka", icon: ListChecks },
-                  { id: "dashboard", label: "Dashboard", icon: LayoutGrid },
-                  { id: "accounts", label: lang === "en" ? "Prop Firms & Accounts" : "Akoonnada & Prop Firms", icon: Wallet },
-                  { id: "notes", label: lang === "en" ? "Notes" : "Casharrada", icon: BookOpen },
-                  { id: "community", label: lang === "en" ? "Community Chat" : "Sheekada", icon: MessageSquare },
-                  { id: "activity", label: lang === "en" ? "User Activity" : "Dhaqdhaqaaqa", icon: Users }
+                  { id: "journal", label: t.journal, icon: ListChecks },
+                  { id: "dashboard", label: t.dashboard, icon: LayoutGrid },
+                  { id: "accounts", label: t.accounts, icon: Wallet },
+                  { id: "notes", label: t.notes, icon: BookOpen },
+                  { id: "community", label: t.community, icon: MessageSquare }
                 ].map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setTab(item.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                       tab === item.id 
                         ? "bg-sky-500/15 text-sky-300 border border-sky-500/30" 
                         : "text-slate-400 hover:text-slate-200"
@@ -769,21 +733,21 @@
                 ))}
               </div>
 
-              {/* STATS BANNER: ONLY VISIBLE ON JOURNAL TAB */}
+              {/* STATS BANNER: ONLY ON JOURNAL TAB */}
               {tab === "journal" && (
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-6">
                   <div className="glass-card p-3 rounded-xl border border-slate-800">
-                    <div className="text-[10px] text-slate-500 uppercase font-mono">Trades</div>
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.trades}</div>
                     <div className="text-lg font-bold font-mono text-white mt-0.5">{stats.total}</div>
                   </div>
 
                   <div className="glass-card p-3 rounded-xl border border-slate-800">
-                    <div className="text-[10px] text-slate-500 uppercase font-mono">Win Rate</div>
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.winRate}</div>
                     <div className="text-lg font-bold font-mono text-sky-400 mt-0.5">{stats.winRate}%</div>
                   </div>
 
                   <div className="glass-card p-3 rounded-xl border border-slate-800">
-                    <div className="text-[10px] text-slate-500 uppercase font-mono">Win / Loss</div>
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.winLoss}</div>
                     <div className="text-lg font-bold font-mono mt-0.5">
                       <span className="text-emerald-400">{stats.wins}</span>
                       <span className="text-slate-600 mx-1">/</span>
@@ -792,20 +756,18 @@
                   </div>
 
                   <div className="glass-card p-3 rounded-xl border border-slate-800">
-                    <div className="text-[10px] text-slate-500 uppercase font-mono">
-                      {viewMode === "percent" ? "Net Return" : "Net P&L ($)"}
-                    </div>
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.netReturn}</div>
                     <div className={`text-lg font-bold font-mono mt-0.5 ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      {viewMode === "percent" ? fmtR(stats.netR) : fmtMoney(stats.netDollars)}
+                      {fmtR(stats.netR)}
                     </div>
                   </div>
 
                   <div className="glass-card p-3 rounded-xl border border-sky-500/20 col-span-2 sm:col-span-1 bg-sky-950/20">
                     <div className="text-[10px] text-sky-400 uppercase font-mono flex items-center gap-1">
-                      <Award size={11} /> This Week
+                      <Award size={11} /> {t.thisWeek}
                     </div>
                     <div className="text-sm font-bold font-mono text-white mt-1 flex items-center justify-between">
-                      <span>{viewMode === "percent" ? fmtR(weeklyConsistency.netR) : fmtMoney(weeklyConsistency.netDollars)}</span>
+                      <span>{fmtR(weeklyConsistency.netR)}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-sans">
                         {weeklyConsistency.winRate}%
                       </span>
@@ -819,26 +781,26 @@
                 <div className="glass-card p-5 rounded-2xl mb-6 border border-sky-500/30 shadow-xl">
                   <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
                     <h3 className="font-bold text-xs text-white uppercase tracking-wider">
-                      {editingId ? "Update Trade" : "New Trade Entry"}
+                      {editingId ? t.updateTrade : t.newTrade}
                     </h3>
                     <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-slate-500 hover:text-white cursor-pointer"><X size={15} /></button>
                   </div>
 
                   {error && <div className="text-xs text-rose-400 bg-rose-950/40 p-2 rounded mb-3 border border-rose-900/50">{error}</div>}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Symbol</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.symbol}</label>
                       <input
                         value={form.symbol}
                         onChange={(e) => setForm({ ...form, symbol: e.target.value })}
-                        placeholder="NQ, EURUSD, XAUUSD"
+                        placeholder="NQ, EURUSD"
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-sky-400 font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Date</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.date}</label>
                       <input
                         type="date"
                         value={form.date}
@@ -848,7 +810,7 @@
                     </div>
 
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Account</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.accountLabel}</label>
                       <select
                         value={form.accountName}
                         onChange={(e) => setForm({ ...form, accountName: e.target.value })}
@@ -856,28 +818,16 @@
                       >
                         {accounts.length === 0 && <option value="Default Account">Default Account</option>}
                         {accounts.map((a) => (
-                          <option key={a.id} value={a.name}>{a.name} ({a.propFirm || a.type})</option>
+                          <option key={a.id} value={a.name}>{a.name} ({a.type})</option>
                         ))}
                       </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] uppercase font-mono text-emerald-400 block mb-1">Profit/Loss ($) - Optional</label>
-                      <input
-                        type="number"
-                        step="1"
-                        placeholder="+$250 or -100"
-                        value={form.pnlDollars}
-                        onChange={(e) => setForm({ ...form, pnlDollars: e.target.value })}
-                        className="w-full bg-slate-900 border border-emerald-500/40 rounded-lg px-2.5 py-1.5 text-xs text-emerald-300 font-mono focus:border-emerald-400"
-                      />
                     </div>
                   </div>
 
                   {/* Sessions & Purging */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Session</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.session}</label>
                       <div className="grid grid-cols-3 gap-1.5">
                         {SESSIONS.map((s) => (
                           <button
@@ -898,7 +848,7 @@
                     </div>
 
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Purge Time</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.purgeTime}</label>
                       <div className="grid grid-cols-2 gap-1.5">
                         {PURGE_TIMES[form.session].map((pt) => (
                           <button
@@ -921,7 +871,7 @@
                   {/* Direction, Outcome, Risk, R:R */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Direction</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.direction}</label>
                       <div className="flex gap-1.5">
                         <button
                           type="button"
@@ -945,7 +895,7 @@
                     </div>
 
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Outcome</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.outcome}</label>
                       <div className="flex gap-1">
                         {[
                           { id: "win", label: "WIN", bg: "bg-emerald-500/20 border-emerald-400 text-emerald-300" },
@@ -967,7 +917,7 @@
                     </div>
 
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Risk %</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.risk}</label>
                       <input
                         type="number"
                         step="0.1"
@@ -978,7 +928,7 @@
                     </div>
 
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">R:R Ratio</label>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.rrRatio}</label>
                       <input
                         type="number"
                         step="0.1"
@@ -993,24 +943,25 @@
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-[10px] uppercase font-mono text-slate-500 flex items-center gap-1">
-                        <CheckSquare size={12} /> Confluence Checklist:
+                        <CheckSquare size={12} /> {t.checklistTitle}:
                       </label>
                       <button
                         type="button"
                         onClick={() => setShowChecklistEditor((s) => !s)}
                         className="text-[10px] text-sky-400 hover:text-sky-300 flex items-center gap-1 font-mono cursor-pointer"
                       >
-                        <Settings size={10} /> Edit Checklist
+                        <Settings size={10} /> {t.editChecklist}
                       </button>
                     </div>
 
+                    {/* Checklist Editor Box */}
                     {showChecklistEditor && (
                       <div className="p-2.5 mb-2 rounded-lg bg-slate-900/90 border border-sky-500/30">
                         <div className="flex gap-1.5 mb-2">
                           <input
                             value={newChecklistInput}
                             onChange={(e) => setNewChecklistInput(e.target.value)}
-                            placeholder="Add new rule..."
+                            placeholder="New item..."
                             className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white"
                           />
                           <button
@@ -1032,6 +983,7 @@
                       </div>
                     )}
 
+                    {/* Active Checklist Items */}
                     <div className="flex flex-wrap gap-1.5">
                       {checklistItems.map((item) => {
                         const checked = (form.checklist || []).includes(item);
@@ -1055,7 +1007,7 @@
 
                   {/* Multiple Images Upload */}
                   <div className="mb-3">
-                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Execution Charts</label>
+                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.chartsTitle}</label>
                     <input
                       type="file"
                       multiple
@@ -1083,12 +1035,12 @@
 
                   {/* Notes */}
                   <div className="mb-3">
-                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">Trade Notes & Reflections</label>
+                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.notesLabel}</label>
                     <textarea
                       rows={2}
                       value={form.notes}
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                      placeholder="Why did you take this setup? Confluences, HTF narrative..."
+                      placeholder="Analysis notes..."
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:border-sky-400 resize-none"
                     />
                   </div>
@@ -1098,7 +1050,7 @@
                     onClick={saveTrade}
                     className="w-full py-2 rounded-xl text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20"
                   >
-                    {editingId ? "Update Trade" : "Save Trade Entry"}
+                    {editingId ? t.updateTrade : t.saveTrade}
                   </button>
                 </div>
               )}
@@ -1110,25 +1062,23 @@
                     <div className="py-16 text-center text-slate-500 font-mono text-xs">Loading...</div>
                   ) : filteredTrades.length === 0 ? (
                     <div className="glass-card py-12 text-center rounded-2xl border border-slate-800">
-                      <p className="text-xs text-slate-400">No trades logged yet.</p>
+                      <p className="text-xs text-slate-400">{t.noTrades}</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono px-1">
-                        <span>Click any trade to inspect all data & screenshots</span>
-                        <span>{filteredTrades.length} Trades</span>
+                      <div className="text-right text-[11px] text-slate-500 font-mono px-1">
+                        {filteredTrades.length} {t.trades}
                       </div>
 
                       {filteredTrades.map((tr) => {
                         const sessionInfo = SESSIONS.find((s) => s.id === tr.session);
                         const imgs = tr.images || (tr.image ? [tr.image] : []);
-                        const dAmount = tr.dollarAmount !== undefined ? tr.dollarAmount : (tr.rMultiple * 100);
 
                         return (
                           <div
                             key={tr.id}
-                            onClick={() => setDetailTrade(tr)}
-                            className="glass-card rounded-xl border border-slate-800/80 p-3 flex items-center justify-between gap-3 hover:border-sky-500/40 transition-all select-none cursor-pointer"
+                            onDoubleClick={() => { if (imgs.length > 0) setLightbox(imgs[0]); }}
+                            className="glass-card rounded-xl border border-slate-800/80 p-3 flex items-center justify-between gap-3 hover:border-sky-500/30 transition-all select-none cursor-pointer"
                           >
                             <div className="flex items-center gap-2.5">
                               {tr.outcome === "win" ? (
@@ -1167,9 +1117,8 @@
                                 </div>
                               )}
 
-                              {/* Shows either % R or $ USD based on switch */}
                               <div className={`text-xs font-bold font-mono ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                {viewMode === "percent" ? fmtR(tr.rMultiple || 0) : fmtMoney(dAmount)}
+                                {fmtR(tr.rMultiple || 0)}
                               </div>
 
                               <button
@@ -1200,11 +1149,11 @@
               {tab === "dashboard" && (
                 <div className="space-y-6">
                   
-                  {/* 1. CALENDAR AT TOP (RENAMED TO 'CALENDAR') */}
+                  {/* 1. CALENDAR AT THE VERY TOP */}
                   <div className="glass-card p-5 rounded-2xl border border-slate-800">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
-                        Calendar
+                        {t.calendarTitle}
                       </div>
                       <div className="flex items-center gap-2">
                         <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
@@ -1228,26 +1177,24 @@
                     <div className="grid grid-cols-7 gap-1">
                       {calendarCells.map((cell, idx) => {
                         if (!cell) return <div key={idx} className="aspect-square"></div>;
-                        const netRVal = cell.data?.netR || 0;
-                        const netDVal = cell.data?.netDollars || 0;
-                        const hasTrades = !!cell.data;
+                        const net = cell.data?.net || 0;
                         return (
                           <div
                             key={idx}
                             className={`aspect-square rounded-lg p-1 flex flex-col justify-between border text-[10px] ${
-                              !hasTrades
+                              !cell.data
                                 ? "bg-slate-900/30 border-slate-800/40"
-                                : netRVal > 0
+                                : net > 0
                                 ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                                : netRVal < 0
+                                : net < 0
                                 ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
                                 : "bg-slate-800 border-slate-700 text-slate-300"
                             }`}
                           >
                             <span className="text-[9px] font-mono text-slate-500">{cell.day}</span>
-                            {hasTrades && (
+                            {cell.data && (
                               <div className="text-right font-mono text-[9px] font-bold">
-                                {viewMode === "percent" ? fmtR(netRVal) : fmtMoney(netDVal)}
+                                {fmtR(net)}
                               </div>
                             )}
                           </div>
@@ -1256,12 +1203,12 @@
                     </div>
                   </div>
 
-                  {/* 2. PURGE TIMES & SESSIONS PERFORMANCE BENEATH CALENDAR */}
+                  {/* 2. PURGING & SESSIONS PERFORMANCE BENEATH CALENDAR */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Purge Times */}
+                    {/* Purge Matrix */}
                     <div className="glass-card p-4 rounded-xl border border-slate-800">
                       <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
-                        <Clock size={13} className="text-sky-400" /> Purge Times
+                        <Clock size={13} className="text-sky-400" /> Purge Times Matrix
                       </div>
                       <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                         {Object.entries(stats.purgeStats).map(([time, data]) => (
@@ -1270,9 +1217,7 @@
                             <div className={`text-xs font-bold font-mono mt-0.5 ${data.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
                               {data.winRate}%
                             </div>
-                            <div className="text-[9px] text-slate-500 font-mono">
-                              {viewMode === "percent" ? `${data.count}t · ${fmtR(data.netR)}` : fmtMoney(data.netDollars)}
-                            </div>
+                            <div className="text-[9px] text-slate-500 font-mono">{data.count}t</div>
                           </div>
                         ))}
                       </div>
@@ -1281,20 +1226,18 @@
                     {/* Sessions Matrix */}
                     <div className="glass-card p-4 rounded-xl border border-slate-800">
                       <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
-                        <Clock size={13} className="text-sky-400" /> Sessions
+                        <Clock size={13} className="text-sky-400" /> Sessions Performance
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         {SESSIONS.map((s) => {
-                          const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0, netDollars: 0 };
+                          const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0 };
                           return (
                             <div key={s.id} className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
                               <div className="text-xs">{s.flag} <span className="font-semibold text-white">{s.label}</span></div>
                               <div className={`text-xs font-bold font-mono mt-0.5 ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
                                 {st.winRate}%
                               </div>
-                              <div className="text-[9px] text-slate-500 font-mono">
-                                {viewMode === "percent" ? `${st.count}t · ${fmtR(st.netR)}` : fmtMoney(st.netDollars)}
-                              </div>
+                              <div className="text-[9px] text-slate-500 font-mono">{st.count}t · {fmtR(st.netR)}</div>
                             </div>
                           );
                         })}
@@ -1305,19 +1248,20 @@
                 </div>
               )}
 
-              {/* ================= TAB 3: PROP FIRMS & ACCOUNT PLANNING ================= */}
+              {/* ================= TAB 3: ACCOUNTS ================= */}
               {tab === "accounts" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
+                    {/* Account Filter placed inside Accounts tab */}
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500">Filter Account:</span>
+                      <span className="text-xs text-slate-500">{t.accountLabel}:</span>
                       <select
                         value={filterAccount}
                         onChange={(e) => setFilterAccount(e.target.value)}
                         className="bg-slate-900 text-xs px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300 focus:border-sky-500 cursor-pointer"
                       >
-                        <option value="all">All Accounts</option>
-                        {accountsWithLiveBalance.map((a) => <option key={a.id} value={a.name}>{a.name} ({a.propFirm || a.phase})</option>)}
+                        <option value="all">{t.allAccounts}</option>
+                        {accounts.map((a) => <option key={a.id} value={a.name}>{a.name} ({a.type})</option>)}
                       </select>
                     </div>
 
@@ -1325,59 +1269,35 @@
                       onClick={() => setShowAccModal(true)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
                     >
-                      <Plus size={13} /> Add Prop Firm / Account
+                      <Plus size={13} /> {t.addAccount}
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {accountsWithLiveBalance.length === 0 ? (
-                      <div className="col-span-3 py-12 text-center text-slate-500 glass-card rounded-xl text-xs">
-                        No accounts created yet. Click "Add Prop Firm / Account" to start planning!
+                    {accounts.length === 0 ? (
+                      <div className="col-span-3 py-10 text-center text-slate-500 glass-card rounded-xl text-xs">
+                        {t.noAccounts}
                       </div>
                     ) : (
-                      accountsWithLiveBalance.map((acc) => {
-                        const isProfit = acc.totalDollarPnL >= 0;
+                      accounts.map((acc) => {
+                        const accTrades = trades.filter((tr) => tr.accountName === acc.name);
+                        const net = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
                         return (
-                          <div key={acc.id} className="glass-card p-4 rounded-xl border border-slate-800 relative">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/20">
-                                {acc.propFirm || "Prop Firm"} · {acc.phase}
+                          <div key={acc.id} className="glass-card p-4 rounded-xl border border-slate-800">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/20">
+                                {acc.type}
                               </span>
-                              
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded ${
-                                  acc.status === "Ongoing" ? "bg-amber-500/20 text-amber-300" :
-                                  acc.status === "Passed" || acc.status === "Funded" ? "bg-emerald-500/20 text-emerald-300" :
-                                  acc.status === "Planning" ? "bg-blue-500/20 text-blue-300" : "bg-rose-500/20 text-rose-300"
-                                }`}>
-                                  {acc.status}
-                                </span>
-                                <button onClick={() => deleteDoc(doc(db, "users", user.uid, "accounts", acc.id))} className="text-slate-500 hover:text-rose-400">
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
+                              <button onClick={() => deleteDoc(doc(db, "users", user.uid, "accounts", acc.id))} className="text-slate-500 hover:text-rose-400">
+                                <Trash2 size={12} />
+                              </button>
                             </div>
-
                             <h4 className="font-bold text-white text-sm">{acc.name}</h4>
-                            
-                            {/* Live Balance (Adjusted by Trades) */}
-                            <div className="mt-2 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
-                              <div className="flex justify-between items-center text-[10px] text-slate-500 uppercase font-mono">
-                                <span>Current Balance</span>
-                                <span>Initial: ${(acc.startingBalance || 100000).toLocaleString()}</span>
-                              </div>
-                              <div className="text-base font-bold font-mono text-white mt-0.5 flex items-center justify-between">
-                                <span>${acc.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                <span className={`text-xs font-mono font-semibold ${isProfit ? "text-emerald-400" : "text-rose-400"}`}>
-                                  {fmtMoney(acc.totalDollarPnL)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Additional Details */}
-                            <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between font-mono text-[11px] text-slate-400">
-                              <span>Target: {acc.targetPercent || "10%"}</span>
-                              <span>{acc.tradesCount} trades · {fmtR(acc.netR)}</span>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">{acc.balance}</div>
+                            {acc.mt5Id && <div className="text-[10px] text-slate-500 font-mono">MT5: {acc.mt5Id}</div>}
+                            <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between font-mono text-[11px]">
+                              <span className="text-slate-500">{accTrades.length} trades</span>
+                              <span className={`font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtR(net)}</span>
                             </div>
                           </div>
                         );
@@ -1385,92 +1305,44 @@
                     )}
                   </div>
 
-                  {/* Add Prop Firm Account Modal (Searchable PropFirmMatch style) */}
+                  {/* Add Account Modal */}
                   {showAccModal && (
                     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                      <div className="glass-card p-5 rounded-2xl max-w-sm w-full border border-sky-500/30">
-                        <h4 className="text-xs font-bold text-white mb-3">Add Prop Firm Account</h4>
-                        
-                        <div className="space-y-2.5 mb-3">
-                          <div>
-                            <label className="text-[10px] text-slate-500 uppercase block mb-1">Account Label</label>
-                            <input
-                              placeholder="e.g. FTMO 100K Phase 1"
-                              value={newAcc.name}
-                              onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
-                              className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[10px] text-slate-500 uppercase block mb-1">Select Prop Firm</label>
-                            <select
-                              value={newAcc.propFirm}
-                              onChange={(e) => setNewAcc({ ...newAcc, propFirm: e.target.value })}
-                              className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                            >
-                              {POPULAR_PROP_FIRMS.map((pf) => (
-                                <option key={pf.name} value={pf.name}>{pf.logo} {pf.name}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[10px] text-slate-500 uppercase block mb-1">Stage</label>
-                              <select
-                                value={newAcc.phase}
-                                onChange={(e) => setNewAcc({ ...newAcc, phase: e.target.value })}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                              >
-                                <option value="Phase 1">Phase 1</option>
-                                <option value="Phase 2">Phase 2</option>
-                                <option value="Funded">Funded</option>
-                                <option value="Instant">Instant</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-500 uppercase block mb-1">Status</label>
-                              <select
-                                value={newAcc.status}
-                                onChange={(e) => setNewAcc({ ...newAcc, status: e.target.value })}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                              >
-                                <option value="Ongoing">Ongoing</option>
-                                <option value="Planning">Planning</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Passed">Passed</option>
-                                <option value="Failed">Failed</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[10px] text-slate-500 uppercase block mb-1">Initial Balance ($)</label>
-                              <input
-                                type="number"
-                                placeholder="100000"
-                                value={newAcc.startingBalance}
-                                onChange={(e) => setNewAcc({ ...newAcc, startingBalance: e.target.value })}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white font-mono"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-500 uppercase block mb-1">Profit Target</label>
-                              <input
-                                placeholder="10% or $10,000"
-                                value={newAcc.targetPercent}
-                                onChange={(e) => setNewAcc({ ...newAcc, targetPercent: e.target.value })}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                              />
-                            </div>
-                          </div>
+                      <div className="glass-card p-5 rounded-2xl max-w-xs w-full border border-sky-500/30">
+                        <h4 className="text-xs font-bold text-white mb-3">{t.addAccount}</h4>
+                        <div className="space-y-2 mb-3">
+                          <input
+                            placeholder="Account Name (e.g. FTMO 100K #1)"
+                            value={newAcc.name}
+                            onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                          <select
+                            value={newAcc.type}
+                            onChange={(e) => setNewAcc({ ...newAcc, type: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          >
+                            <option value="Funded">Funded</option>
+                            <option value="Challenge">Challenge</option>
+                            <option value="Real">Real</option>
+                            <option value="Demo">Demo</option>
+                          </select>
+                          <input
+                            placeholder="Balance (e.g. $100,000)"
+                            value={newAcc.balance}
+                            onChange={(e) => setNewAcc({ ...newAcc, balance: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                          <input
+                            placeholder="MT5 ID (Optional)"
+                            value={newAcc.mt5Id}
+                            onChange={(e) => setNewAcc({ ...newAcc, mt5Id: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
                         </div>
-
                         <div className="flex gap-2">
-                          <button onClick={() => setShowAccModal(false)} className="flex-1 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Cancel</button>
-                          <button onClick={saveAccount} className="flex-1 py-1.5 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save Plan</button>
+                          <button onClick={() => setShowAccModal(false)} className="flex-1 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">{t.cancel}</button>
+                          <button onClick={saveAccount} className="flex-1 py-1.5 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
                         </div>
                       </div>
                     </div>
@@ -1482,19 +1354,19 @@
               {tab === "notes" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-white">Trading Notes & Lessons</h3>
+                    <h3 className="text-sm font-bold text-white">{t.notes}</h3>
                     <button
                       onClick={() => setShowNoteForm(true)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
                     >
-                      <Plus size={13} /> New Note
+                      <Plus size={13} /> {t.addNote}
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {notes.length === 0 ? (
                       <div className="col-span-2 py-10 text-center text-slate-500 glass-card rounded-xl text-xs">
-                        No notes written yet.
+                        {t.noNotes}
                       </div>
                     ) : (
                       notes.map((n) => (
@@ -1518,16 +1390,16 @@
                   {showNoteForm && (
                     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                       <div className="glass-card p-5 rounded-2xl max-w-sm w-full border border-sky-500/30">
-                        <h4 className="text-xs font-bold text-white mb-3">Add Trading Rule/Note</h4>
+                        <h4 className="text-xs font-bold text-white mb-3">{t.addNote}</h4>
                         <div className="space-y-2.5 mb-3">
                           <input
-                            placeholder="Title (e.g. London Session Setup)"
+                            placeholder="Title (e.g. London Judas Setup)"
                             value={noteForm.title}
                             onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
                           />
                           <input
-                            placeholder="Tag (e.g. ICT, Psychology, Risk)"
+                            placeholder="Tag (e.g. ICT, Psychology)"
                             value={noteForm.tag}
                             onChange={(e) => setNoteForm({ ...noteForm, tag: e.target.value })}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
@@ -1541,7 +1413,7 @@
                           />
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => setShowNoteForm(false)} className="flex-1 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Cancel</button>
+                          <button onClick={() => setShowNoteForm(false)} className="flex-1 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">{t.cancel}</button>
                           <button onClick={saveNote} className="flex-1 py-1.5 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
                         </div>
                       </div>
@@ -1554,8 +1426,8 @@
               {tab === "community" && (
                 <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[500px]">
                   <div className="p-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
-                    <span className="font-bold text-xs text-white font-mono">Community Traders Room</span>
-                    <span className="text-[10px] text-slate-500 font-mono">Live Sync</span>
+                    <span className="font-bold text-xs text-white font-mono">{t.community} Chat</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Live</span>
                   </div>
 
                   <div className="flex-1 p-3 overflow-y-auto space-y-2.5">
@@ -1587,7 +1459,7 @@
                     <input
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Share trade idea..."
+                      placeholder={t.chatPlaceholder}
                       className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400"
                     />
                     <button type="submit" className="p-2 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer">
@@ -1597,132 +1469,12 @@
                 </div>
               )}
 
-              {/* ================= TAB 6: USER ACTIVITY & VISITORS TRACKER ================= */}
-              {tab === "activity" && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-white font-mono">Registered Traders & Visitors</h3>
-                      <p className="text-[11px] text-slate-400">Dadka soo galay webkaaga iyo magacyadooda.</p>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-400 border border-sky-500/30 text-xs font-mono">
-                      {siteUsers.length} Users Active
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {siteUsers.map((u, i) => (
-                      <div key={i} className="glass-card p-3 rounded-xl border border-slate-800 flex items-center gap-3">
-                        <img
-                          src={u.photoURL || "https://api.dicebear.com/7.x/bottts/svg"}
-                          alt={u.displayName}
-                          className="w-9 h-9 rounded-full bg-slate-800 object-cover border border-slate-700"
-                        />
-                        <div className="flex-1 truncate">
-                          <div className="text-xs font-bold text-white truncate">{u.displayName}</div>
-                          <div className="text-[10px] text-slate-400 truncate">{u.email}</div>
-                          <div className="text-[9px] text-slate-500 font-mono mt-0.5">
-                            Last Active: {u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() + " " + new Date(u.lastLogin).toLocaleTimeString() : "Recently"}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
             </main>
           </div>
 
-          {/* ================= TRADE DETAIL INSPECT MODAL ================= */}
-          {detailTrade && (
-            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="glass-card p-6 rounded-2xl max-w-lg w-full border border-sky-500/40 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-base font-mono text-white">{detailTrade.symbol}</span>
-                    <span className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded font-bold border ${
-                      detailTrade.direction === "buy" ? "bg-sky-500/20 text-sky-300 border-sky-400/40" : "bg-rose-500/20 text-rose-300 border-rose-400/40"
-                    }`}>
-                      {detailTrade.direction}
-                    </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
-                      {detailTrade.accountName}
-                    </span>
-                  </div>
-                  <button onClick={() => setDetailTrade(null)} className="text-slate-400 hover:text-white"><X size={16} /></button>
-                </div>
-
-                {/* Key Metrics Grid */}
-                <div className="grid grid-cols-3 gap-2.5 mb-4 text-xs font-mono">
-                  <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                    <div className="text-slate-500 text-[10px] uppercase">Outcome</div>
-                    <div className={`font-bold uppercase mt-0.5 ${detailTrade.outcome === "win" ? "text-emerald-400" : "text-rose-400"}`}>
-                      {detailTrade.outcome} ({fmtR(detailTrade.rMultiple)})
-                    </div>
-                  </div>
-                  <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                    <div className="text-slate-500 text-[10px] uppercase">P&L ($)</div>
-                    <div className={`font-bold mt-0.5 ${detailTrade.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      {fmtMoney(detailTrade.dollarAmount !== undefined ? detailTrade.dollarAmount : (detailTrade.rMultiple * 100))}
-                    </div>
-                  </div>
-                  <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                    <div className="text-slate-500 text-[10px] uppercase">Risk / R:R</div>
-                    <div className="font-bold text-white mt-0.5">{detailTrade.risk}% (1:{detailTrade.rrRatio})</div>
-                  </div>
-                </div>
-
-                <div className="text-xs text-slate-400 font-mono mb-4">
-                  Execution: <strong>{detailTrade.session?.toUpperCase()}</strong> · Purge: <strong>{detailTrade.purgeTime}</strong> · Date: {detailTrade.date}
-                </div>
-
-                {/* Checklist Confluences */}
-                {detailTrade.checklist?.length > 0 && (
-                  <div className="mb-4">
-                    <div className="text-[10px] text-slate-500 uppercase font-mono mb-1.5">Confluences Matched:</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {detailTrade.checklist.map((c) => (
-                        <span key={c} className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                          ✓ {c}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                {detailTrade.notes && (
-                  <div className="mb-4 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                    <div className="text-[10px] text-slate-500 uppercase font-mono mb-1">Notes:</div>
-                    <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">{detailTrade.notes}</p>
-                  </div>
-                )}
-
-                {/* Images */}
-                {(detailTrade.images?.length > 0 || detailTrade.image) && (
-                  <div>
-                    <div className="text-[10px] text-slate-500 uppercase font-mono mb-2">Execution Screenshots (Click to zoom):</div>
-                    <div className="flex gap-2 flex-wrap">
-                      {(detailTrade.images || [detailTrade.image]).map((src, i) => (
-                        <img
-                          key={i}
-                          src={src}
-                          alt="chart"
-                          onClick={() => setLightbox(src)}
-                          className="h-24 rounded-lg border border-slate-700 object-cover cursor-zoom-in hover:border-sky-400 transition-all"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Minimal Footer */}
+          {/* Minimal Footer with TikTok */}
           <footer className="mt-8 py-4 border-t border-slate-800/60 text-center text-[11px] text-slate-500 font-mono">
-            Amiir Journal · Developed by <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
+            Amiir Journal · {t.devBy} <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
           </footer>
 
           {/* LIGHTBOX FOR IMAGES */}
