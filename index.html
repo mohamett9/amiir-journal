@@ -14,7 +14,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -22,7 +22,6 @@
         extend: {
           fontFamily: {
             sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            serif: ['"Playfair Display"', 'serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
           }
         }
@@ -48,7 +47,7 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .glass-card {
-      background: rgba(13, 19, 33, 0.7);
+      background: rgba(13, 19, 33, 0.75);
       backdrop-filter: blur(14px);
       border: 1px solid rgba(56, 189, 248, 0.08);
     }
@@ -67,7 +66,7 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings
     } from "lucide-react";
 
     // Firebase
@@ -129,10 +128,12 @@
         allAccounts: "All Accounts",
         addAccount: "Add Account",
         addNote: "New Note",
-        quoteText: "“Wanka weyn ninkii heli karoow, waxarka haw leexan.”",
         signInGoogle: "Continue with Google",
         chatPlaceholder: "Share market idea...",
-        devBy: "Developed by"
+        devBy: "Developed by",
+        calendarTitle: "Trading Calendar",
+        editChecklist: "Edit Checklist",
+        addChecklistItem: "Add Item"
       },
       so: {
         journal: "Diiwaanka",
@@ -167,10 +168,12 @@
         allAccounts: "Dhammaan Akoonnada",
         addAccount: "Ku dar Akoon",
         addNote: "Qor Cashar",
-        quoteText: "“Wanka weyn ninkii heli karoow, waxarka haw leexan.”",
         signInGoogle: "Ku gal Google",
         chatPlaceholder: "Qor fikrad ama fariin...",
-        devBy: "Waxaa dhisay"
+        devBy: "Waxaa dhisay",
+        calendarTitle: "Kalandarka Ganacsiga",
+        editChecklist: "Beddel Checklist",
+        addChecklistItem: "Ku dar Qodob"
       }
     };
 
@@ -186,7 +189,7 @@
       newyork: ["8am", "9am"],
     };
 
-    const ICT_CHECKLIST = [
+    const DEFAULT_CHECKLIST = [
       "IRL TO ERL",
       "KL (Key Level)",
       "PURGING (Session/Time)",
@@ -237,7 +240,7 @@
     }
 
     function App() {
-      const [lang, setLang] = useState("en"); // 'en' | 'so'
+      const [lang, setLang] = useState("en");
       const t = DICT[lang];
 
       const [user, setUser] = useState(null);
@@ -247,6 +250,11 @@
       const [notes, setNotes] = useState([]);
       const [chatMessages, setChatMessages] = useState([]);
       const [loading, setLoading] = useState(true);
+
+      // Customizable Checklist
+      const [checklistItems, setChecklistItems] = useState(DEFAULT_CHECKLIST);
+      const [showChecklistEditor, setShowChecklistEditor] = useState(false);
+      const [newChecklistInput, setNewChecklistInput] = useState("");
 
       const [tab, setTab] = useState("journal");
       const [showForm, setShowForm] = useState(false);
@@ -290,6 +298,18 @@
           setTrades(list);
           setLoading(false);
         }, (err) => { setError(err.message); setLoading(false); });
+        return () => unsub();
+      }, [user]);
+
+      // Realtime Checklist Settings
+      useEffect(() => {
+        if (!user) return;
+        const docRef = doc(db, "users", user.uid, "settings", "checklist");
+        const unsub = onSnapshot(docRef, (snap) => {
+          if (snap.exists() && snap.data().items) {
+            setChecklistItems(snap.data().items);
+          }
+        });
         return () => unsub();
       }, [user]);
 
@@ -355,12 +375,31 @@
         }
       };
 
+      // Checklist Management
       const toggleChecklistItem = (item) => {
         const cur = form.checklist || [];
         if (cur.includes(item)) {
           setForm({ ...form, checklist: cur.filter((i) => i !== item) });
         } else {
           setForm({ ...form, checklist: [...cur, item] });
+        }
+      };
+
+      const addCustomChecklistItem = async () => {
+        if (!newChecklistInput.trim()) return;
+        const updated = [...checklistItems, newChecklistInput.trim()];
+        setChecklistItems(updated);
+        setNewChecklistInput("");
+        if (user) {
+          await setDoc(doc(db, "users", user.uid, "settings", "checklist"), { items: updated });
+        }
+      };
+
+      const removeCustomChecklistItem = async (itemToRemove) => {
+        const updated = checklistItems.filter(i => i !== itemToRemove);
+        setChecklistItems(updated);
+        if (user) {
+          await setDoc(doc(db, "users", user.uid, "settings", "checklist"), { items: updated });
         }
       };
 
@@ -481,7 +520,6 @@
         await deleteDoc(doc(db, "public_chat", msgId));
       };
 
-      // Filtered Trades
       const filteredTrades = useMemo(() => {
         return trades.filter((tr) => {
           if (filterAccount !== "all" && tr.accountName !== filterAccount) return false;
@@ -589,10 +627,10 @@
 
               <h1 className="text-xl font-bold tracking-tight text-white mb-4">Amiir Journal</h1>
               
-              {/* Editorial Quote */}
+              {/* Requested White Bold Small-Caps Quote */}
               <div className="mb-8 px-2">
-                <p className="text-sm text-sky-400 font-serif italic leading-relaxed">
-                  {t.quoteText}
+                <p className="text-white text-sm sm:text-base font-semibold tracking-wider leading-relaxed drop-shadow-[0_2px_10px_rgba(255,255,255,0.15)]">
+                  ᴡᴀɴᴋᴀ ᴡᴇʏɴ ɴɪɴᴋɪɪ ʜᴇʟɪ ᴋᴀʀᴏᴏᴡ, ᴡᴀxᴀʀᴋᴀ ʜᴀᴡ ʟᴇᴇxᴀɴ
                 </p>
               </div>
 
@@ -621,17 +659,13 @@
       return (
         <div className="min-h-screen bg-[#06090e] text-slate-200 flex flex-col justify-between">
           <div>
-            {/* Minimal Header */}
+            {/* Header */}
             <header className="border-b border-slate-800/60 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-30">
               <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
                 
                 {/* Left Branding */}
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm tracking-tight text-white">Amiir Journal</span>
-                  <span className="text-slate-600 text-xs">·</span>
-                  <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-xs text-sky-400/90 hover:text-sky-300 font-mono">
-                    @amiir_pr
-                  </a>
                 </div>
 
                 {/* Right Actions */}
@@ -905,13 +939,53 @@
                     </div>
                   </div>
 
-                  {/* Checklist */}
+                  {/* Checklist with Edit Button */}
                   <div className="mb-3">
-                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1 flex items-center gap-1">
-                      <CheckSquare size={12} /> {t.checklistTitle}:
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[10px] uppercase font-mono text-slate-500 flex items-center gap-1">
+                        <CheckSquare size={12} /> {t.checklistTitle}:
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowChecklistEditor((s) => !s)}
+                        className="text-[10px] text-sky-400 hover:text-sky-300 flex items-center gap-1 font-mono cursor-pointer"
+                      >
+                        <Settings size={10} /> {t.editChecklist}
+                      </button>
+                    </div>
+
+                    {/* Checklist Editor Box */}
+                    {showChecklistEditor && (
+                      <div className="p-2.5 mb-2 rounded-lg bg-slate-900/90 border border-sky-500/30">
+                        <div className="flex gap-1.5 mb-2">
+                          <input
+                            value={newChecklistInput}
+                            onChange={(e) => setNewChecklistInput(e.target.value)}
+                            placeholder="New item..."
+                            className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={addCustomChecklistItem}
+                            className="px-2.5 py-1 bg-sky-500 text-slate-950 rounded text-xs font-semibold cursor-pointer"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {checklistItems.map((item) => (
+                            <span key={item} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300">
+                              {item}
+                              <button type="button" onClick={() => removeCustomChecklistItem(item)} className="text-rose-400 hover:text-rose-300">×</button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Active Checklist Items */}
                     <div className="flex flex-wrap gap-1.5">
-                      {ICT_CHECKLIST.map((item) => {
+                      {checklistItems.map((item) => {
                         const checked = (form.checklist || []).includes(item);
                         return (
                           <button
@@ -1071,11 +1145,65 @@
                 </div>
               )}
 
-              {/* ================= TAB 2: DASHBOARD (CALENDAR ALWAYS VISIBLE) ================= */}
+              {/* ================= TAB 2: DASHBOARD (CALENDAR ON TOP) ================= */}
               {tab === "dashboard" && (
                 <div className="space-y-6">
                   
-                  {/* Top Compact Cards: Purging & Sessions */}
+                  {/* 1. CALENDAR AT THE VERY TOP */}
+                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                        {t.calendarTitle}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
+                          <ChevronLeft size={16} />
+                        </button>
+                        <div className="font-bold text-xs text-white font-mono min-w-[120px] text-center">
+                          {MONTH_NAMES[viewMonth]} {viewYear}
+                        </div>
+                        <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 mb-1">
+                      {WEEKDAYS.map((d) => (
+                        <div key={d} className="text-[9px] font-mono text-slate-500 text-center uppercase py-0.5">{d}</div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {calendarCells.map((cell, idx) => {
+                        if (!cell) return <div key={idx} className="aspect-square"></div>;
+                        const net = cell.data?.net || 0;
+                        return (
+                          <div
+                            key={idx}
+                            className={`aspect-square rounded-lg p-1 flex flex-col justify-between border text-[10px] ${
+                              !cell.data
+                                ? "bg-slate-900/30 border-slate-800/40"
+                                : net > 0
+                                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
+                                : net < 0
+                                ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
+                                : "bg-slate-800 border-slate-700 text-slate-300"
+                            }`}
+                          >
+                            <span className="text-[9px] font-mono text-slate-500">{cell.day}</span>
+                            {cell.data && (
+                              <div className="text-right font-mono text-[9px] font-bold">
+                                {fmtR(net)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. PURGING & SESSIONS PERFORMANCE BENEATH CALENDAR */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Purge Matrix */}
                     <div className="glass-card p-4 rounded-xl border border-slate-800">
@@ -1117,53 +1245,6 @@
                     </div>
                   </div>
 
-                  {/* Calendar Heatmap (ALWAYS VISIBLE) */}
-                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                    <div className="flex items-center justify-between mb-3">
-                      <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
-                        <ChevronLeft size={16} />
-                      </button>
-                      <div className="font-bold text-xs text-white font-mono">{MONTH_NAMES[viewMonth]} {viewYear}</div>
-                      <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1 mb-1">
-                      {WEEKDAYS.map((d) => (
-                        <div key={d} className="text-[9px] font-mono text-slate-500 text-center uppercase py-0.5">{d}</div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1">
-                      {calendarCells.map((cell, idx) => {
-                        if (!cell) return <div key={idx} className="aspect-square"></div>;
-                        const net = cell.data?.net || 0;
-                        return (
-                          <div
-                            key={idx}
-                            className={`aspect-square rounded-lg p-1 flex flex-col justify-between border text-[10px] ${
-                              !cell.data
-                                ? "bg-slate-900/30 border-slate-800/40"
-                                : net > 0
-                                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                                : net < 0
-                                ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
-                                : "bg-slate-800 border-slate-700 text-slate-300"
-                            }`}
-                          >
-                            <span className="text-[9px] font-mono text-slate-500">{cell.day}</span>
-                            {cell.data && (
-                              <div className="text-right font-mono text-[9px] font-bold">
-                                {fmtR(net)}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                 </div>
               )}
 
@@ -1171,7 +1252,7 @@
               {tab === "accounts" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    {/* Account Filter placed only here */}
+                    {/* Account Filter placed inside Accounts tab */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-500">{t.accountLabel}:</span>
                       <select
@@ -1391,7 +1472,7 @@
             </main>
           </div>
 
-          {/* Minimal Footer */}
+          {/* Minimal Footer with TikTok */}
           <footer className="mt-8 py-4 border-t border-slate-800/60 text-center text-[11px] text-slate-500 font-mono">
             Amiir Journal · {t.devBy} <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
           </footer>
