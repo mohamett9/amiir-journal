@@ -26,7 +26,6 @@
           },
           colors: {
             brand: {
-              50: '#f0f9ff',
               400: '#38bdf8',
               500: '#0ea5e9',
               600: '#0284c7',
@@ -50,14 +49,14 @@
 
   <style>
     body {
-      background-color: #080c14;
+      background-color: #06090e;
       color: #f1f5f9;
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .glass-card {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(56, 189, 248, 0.1);
+      background: rgba(13, 19, 33, 0.8);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.08);
     }
     .glass-card:hover {
       border-color: rgba(56, 189, 248, 0.25);
@@ -69,22 +68,23 @@
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
-    import React, { useState, useEffect, useMemo } from "react";
+    import React, { useState, useEffect, useMemo, useRef } from "react";
     import ReactDOM from "react-dom/client";
     import {
-      Plus, TrendingUp, TrendingDown, Trash2, X, ChevronDown, ChevronUp,
+      Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
       LogOut, User, Layers, Filter, CheckCircle2, AlertCircle, Sparkles,
-      BarChart3, Clock, Wallet, ShieldAlert, Award
+      BarChart3, Clock, Wallet, ShieldAlert, Award, MessageSquare, BookOpen,
+      Send, CheckSquare, Share2, ExternalLink
     } from "lucide-react";
 
-    // Firebase
+    // Firebase SDKs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { 
-      getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot 
+      getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, limit, addDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -114,12 +114,17 @@
       newyork: ["8am", "9am"],
     };
 
-    const ACCOUNT_TYPES = ["Funded", "Challenge", "Real", "Demo"];
+    const ICT_CHECKLIST = [
+      "IRL TO ERL",
+      "KL (Key Level)",
+      "PURGING (Session/Time)",
+      "SMT Divergence",
+      "M1 Execution (MSS/FVG)"
+    ];
 
     const EMPTY_FORM = {
       symbol: "",
       date: new Date().toISOString().slice(0, 10),
-      accountType: "Funded",
       accountName: "FTMO 100K",
       session: "london",
       purgeTime: "2am",
@@ -129,6 +134,7 @@
       rrRatio: "2",
       notes: "",
       images: [],
+      checklist: []
     };
 
     const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -137,7 +143,6 @@
       "July", "August", "September", "October", "November", "December",
     ];
 
-    // Image resize helper
     function resizeImage(dataUrl, maxWidth = 800) {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -163,19 +168,36 @@
       const [user, setUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
       const [trades, setTrades] = useState([]);
+      const [accounts, setAccounts] = useState([]);
+      const [notes, setNotes] = useState([]);
+      const [chatMessages, setChatMessages] = useState([]);
       const [loading, setLoading] = useState(true);
-      
-      const [tab, setTab] = useState("journal"); // 'journal' | 'dashboard' | 'accounts'
+
+      // Main Navigation: 'journal' | 'dashboard' | 'accounts' | 'notes' | 'community'
+      const [tab, setTab] = useState("journal");
+      const [dashView, setDashView] = useState("overview"); // 'overview' | 'sessions' | 'purging' | 'calendar'
+
+      // Form & Editing State
       const [showForm, setShowForm] = useState(false);
+      const [editingId, setEditingId] = useState(null);
       const [form, setForm] = useState(EMPTY_FORM);
-      const [expanded, setExpanded] = useState(null);
       const [error, setError] = useState("");
       const [lightbox, setLightbox] = useState(null);
 
-      // Filters
+      // New Account Modal State
+      const [newAcc, setNewAcc] = useState({ name: "", type: "Funded", balance: "$100,000", mt5Id: "" });
+      const [showAccModal, setShowAccModal] = useState(false);
+
+      // New Note State
+      const [noteForm, setNoteForm] = useState({ title: "", tag: "ICT Model", content: "" });
+      const [showNoteForm, setShowNoteForm] = useState(false);
+
+      // Chat Input State
+      const [chatInput, setChatInput] = useState("");
+      const chatScrollRef = useRef(null);
+
+      // Filter State
       const [filterAccount, setFilterAccount] = useState("all");
-      const [filterSession, setFilterSession] = useState("all");
-      const [filterPurge, setFilterPurge] = useState("all");
 
       const [viewMonth, setViewMonth] = useState(new Date().getMonth());
       const [viewYear, setViewYear] = useState(new Date().getFullYear());
@@ -189,13 +211,9 @@
         return () => unsub();
       }, []);
 
-      // Realtime Database
+      // Realtime Trades
       useEffect(() => {
-        if (!user) {
-          setTrades([]);
-          setLoading(false);
-          return;
-        }
+        if (!user) { setTrades([]); setLoading(false); return; }
         setLoading(true);
         const colRef = collection(db, "users", user.uid, "trades");
         const unsub = onSnapshot(colRef, (snap) => {
@@ -204,18 +222,52 @@
           list.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
           setTrades(list);
           setLoading(false);
-        }, (err) => {
-          setError(err.message);
-          setLoading(false);
+        }, (err) => { setError(err.message); setLoading(false); });
+        return () => unsub();
+      }, [user]);
+
+      // Realtime Accounts
+      useEffect(() => {
+        if (!user) return;
+        const accRef = collection(db, "users", user.uid, "accounts");
+        const unsub = onSnapshot(accRef, (snap) => {
+          const list = [];
+          snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+          setAccounts(list);
         });
         return () => unsub();
       }, [user]);
 
-      // Handle Multiple Images
+      // Realtime Notes
+      useEffect(() => {
+        if (!user) return;
+        const notesRef = collection(db, "users", user.uid, "notes");
+        const unsub = onSnapshot(notesRef, (snap) => {
+          const list = [];
+          snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+          list.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+          setNotes(list);
+        });
+        return () => unsub();
+      }, [user]);
+
+      // Realtime Public Chat
+      useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, "public_chat"), orderBy("timestamp", "asc"), limit(70));
+        const unsub = onSnapshot(q, (snap) => {
+          const msgs = [];
+          snap.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
+          setChatMessages(msgs);
+          setTimeout(() => chatScrollRef.current?.scrollIntoView({ behavior: "smooth" }), 150);
+        });
+        return () => unsub();
+      }, [user]);
+
+      // Multi-image upload
       const handleMultipleImages = async (e) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-        
         try {
           const promises = files.map((file) => {
             return new Promise((resolve) => {
@@ -227,25 +279,27 @@
               reader.readAsDataURL(file);
             });
           });
-
           const newImgs = await Promise.all(promises);
           setForm((prev) => ({
             ...prev,
-            images: [...prev.images, ...newImgs]
+            images: [...(prev.images || []), ...newImgs]
           }));
         } catch (err) {
           setError("Sawirrada lama wada shubi karin, isku day mar kale.");
         }
       };
 
-      const removeImageFromForm = (idx) => {
-        setForm((prev) => ({
-          ...prev,
-          images: prev.images.filter((_, i) => i !== idx)
-        }));
+      const toggleChecklistItem = (item) => {
+        const cur = form.checklist || [];
+        if (cur.includes(item)) {
+          setForm({ ...form, checklist: cur.filter((i) => i !== item) });
+        } else {
+          setForm({ ...form, checklist: [...cur, item] });
+        }
       };
 
-      const addTrade = async () => {
+      // Add / Edit Trade
+      const saveTrade = async () => {
         if (!form.symbol || !form.date) {
           setError("Geli symbol-ka (tusaale: NQ) iyo taariikhda.");
           return;
@@ -254,14 +308,13 @@
         const rr = parseFloat(form.rrRatio) || 0;
         const reward = +(risk * rr).toFixed(2);
         const rMultiple = form.outcome === "win" ? reward : form.outcome === "loss" ? -risk : 0;
-        const id = Date.now().toString();
+        const tradeId = editingId || Date.now().toString();
 
         const tradeData = {
-          id,
+          id: tradeId,
           symbol: form.symbol.toUpperCase(),
           date: form.date,
-          accountType: form.accountType || "Funded",
-          accountName: form.accountName || "Primary MT5",
+          accountName: form.accountName || "Default Account",
           session: form.session,
           purgeTime: form.purgeTime,
           direction: form.direction,
@@ -271,18 +324,40 @@
           reward,
           rMultiple,
           notes: form.notes || "",
-          images: form.images || (form.image ? [form.image] : []),
-          createdAt: new Date().toISOString()
+          images: form.images || [],
+          checklist: form.checklist || [],
+          updatedAt: new Date().toISOString()
         };
 
         try {
-          await setDoc(doc(db, "users", user.uid, "trades", id), tradeData);
+          await setDoc(doc(db, "users", user.uid, "trades", tradeId), tradeData);
           setForm(EMPTY_FORM);
+          setEditingId(null);
           setShowForm(false);
           setError("");
         } catch (err) {
           setError("Lama kaydin karin: " + err.message);
         }
+      };
+
+      const startEditTrade = (t) => {
+        setForm({
+          symbol: t.symbol,
+          date: t.date,
+          accountName: t.accountName || "Default Account",
+          session: t.session,
+          purgeTime: t.purgeTime,
+          direction: t.direction,
+          outcome: t.outcome,
+          risk: t.risk?.toString() || "1",
+          rrRatio: t.rrRatio?.toString() || "2",
+          notes: t.notes || "",
+          images: t.images || (t.image ? [t.image] : []),
+          checklist: t.checklist || []
+        });
+        setEditingId(t.id);
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       };
 
       const removeTrade = async (id) => {
@@ -294,15 +369,63 @@
         }
       };
 
+      // Add New Account
+      const saveAccount = async () => {
+        if (!newAcc.name) return;
+        try {
+          await addDoc(collection(db, "users", user.uid, "accounts"), {
+            ...newAcc,
+            createdAt: new Date().toISOString()
+          });
+          setNewAcc({ name: "", type: "Funded", balance: "$100,000", mt5Id: "" });
+          setShowAccModal(false);
+        } catch (e) {
+          alert(e.message);
+        }
+      };
+
+      // Add Note
+      const saveNote = async () => {
+        if (!noteForm.title) return;
+        try {
+          await addDoc(collection(db, "users", user.uid, "notes"), {
+            ...noteForm,
+            createdAt: new Date().toISOString()
+          });
+          setNoteForm({ title: "", tag: "ICT Model", content: "" });
+          setShowNoteForm(false);
+        } catch (e) {
+          alert(e.message);
+        }
+      };
+
+      // Send Chat Message
+      const sendChatMessage = async (e) => {
+        e.preventDefault();
+        if (!chatInput.trim()) return;
+        const msg = {
+          uid: user.uid,
+          author: user.displayName || "Trader",
+          photo: user.photoURL || "",
+          text: chatInput.trim(),
+          timestamp: new Date().toISOString()
+        };
+        setChatInput("");
+        await addDoc(collection(db, "public_chat"), msg);
+      };
+
+      const deleteChatMessage = async (msgId) => {
+        if (!confirm("Tirtir fariintan?")) return;
+        await deleteDoc(doc(db, "public_chat", msgId));
+      };
+
       // Filtered Trades
       const filteredTrades = useMemo(() => {
         return trades.filter((t) => {
-          if (filterAccount !== "all" && t.accountType !== filterAccount && t.accountName !== filterAccount) return false;
-          if (filterSession !== "all" && t.session !== filterSession) return false;
-          if (filterPurge !== "all" && t.purgeTime !== filterPurge) return false;
+          if (filterAccount !== "all" && t.accountName !== filterAccount) return false;
           return true;
         });
-      }, [trades, filterAccount, filterSession, filterPurge]);
+      }, [trades, filterAccount]);
 
       // Comprehensive Stats
       const stats = useMemo(() => {
@@ -312,28 +435,28 @@
         const netR = filteredTrades.reduce((acc, t) => acc + (t.rMultiple || 0), 0);
         const winRate = total ? Math.round((wins / total) * 100) : 0;
 
-        // Session Performance
+        // Session Stats
         const sessionsStats = {};
         ["asian", "london", "newyork"].forEach((s) => {
-          const list = trades.filter((t) => t.session === s);
+          const list = filteredTrades.filter((t) => t.session === s);
           const w = list.filter((t) => t.outcome === "win").length;
           const r = list.reduce((sum, t) => sum + (t.rMultiple || 0), 0);
           sessionsStats[s] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
         });
 
-        // Purge Performance
+        // Purge Stats
         const purgeStats = {};
         Object.values(PURGE_TIMES).flat().forEach((pt) => {
-          const list = trades.filter((t) => t.purgeTime === pt);
+          const list = filteredTrades.filter((t) => t.purgeTime === pt);
           const w = list.filter((t) => t.outcome === "win").length;
           const r = list.reduce((sum, t) => sum + (t.rMultiple || 0), 0);
           purgeStats[pt] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
         });
 
         return { total, wins, losses, netR, winRate, sessionsStats, purgeStats };
-      }, [filteredTrades, trades]);
+      }, [filteredTrades]);
 
-      // Weekly Consistency Tracker
+      // Consistency Metric
       const weeklyConsistency = useMemo(() => {
         const now = new Date();
         const startOfWeek = new Date(now);
@@ -378,31 +501,45 @@
 
       if (authLoading) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-[#080c14]">
-            <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+          <div className="min-h-screen flex items-center justify-center bg-[#06090e]">
+            <div className="w-9 h-9 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
           </div>
         );
       }
 
-      // Minimalist Modern Login
+      // ================= LOGIN PAGE =================
       if (!user) {
         return (
-          <div className="min-h-screen flex items-center justify-center px-4 bg-[#080c14] relative overflow-hidden">
+          <div className="min-h-screen flex flex-col justify-between items-center px-4 bg-[#06090e] relative overflow-hidden py-10">
             <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            
-            <div className="glass-card max-w-sm w-full p-8 rounded-2xl shadow-2xl relative z-10 border border-slate-800 text-center">
-              <div className="w-12 h-12 bg-sky-500/10 border border-sky-500/30 rounded-xl flex items-center justify-center mx-auto mb-4 text-sky-400 shadow-lg shadow-sky-500/20">
-                <TrendingUp size={24} />
+
+            <div className="my-auto w-full max-w-sm glass-card p-8 rounded-2xl shadow-2xl relative z-10 border border-slate-800 text-center">
+              {/* Profile Picture of Amiir */}
+              <div className="relative w-24 h-24 mx-auto mb-5">
+                <div className="absolute -inset-1 bg-gradient-to-r from-sky-400 to-blue-600 rounded-full blur-sm opacity-70"></div>
+                <img
+                  src="profile.jpg"
+                  alt="Amiir"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200";
+                  }}
+                  className="relative w-24 h-24 rounded-full object-cover border-2 border-sky-400 shadow-xl"
+                />
               </div>
 
-              <h1 className="text-2xl font-bold tracking-tight text-white mb-1">Amiir Journal</h1>
-              <p className="text-xs text-slate-400 mb-8">Professional Ledger & Execution Journal</p>
+              <h1 className="text-2xl font-bold tracking-tight text-white mb-2">Amiir Journal</h1>
+              
+              {/* Quote Requested */}
+              <p className="text-xs text-sky-400 font-medium italic mb-6 px-2 leading-relaxed">
+                “Wanka weyn ninkii heli karoow, waxarka haw leexan.”
+              </p>
 
-              {error && <div className="text-xs text-red-400 mb-4 bg-red-950/40 p-2 rounded border border-red-900/50">{error}</div>}
+              {error && <div className="text-xs text-rose-400 mb-4 bg-rose-950/40 p-2.5 rounded-lg border border-rose-900/50">{error}</div>}
 
               <button
                 onClick={() => signInWithPopup(auth, provider)}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-semibold text-sm bg-white hover:bg-slate-100 text-slate-900 transition-all duration-200 shadow-md cursor-pointer hover:shadow-sky-500/10"
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-semibold text-sm bg-white hover:bg-slate-100 text-slate-950 transition-all duration-200 shadow-lg hover:shadow-sky-500/10 cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -413,653 +550,877 @@
                 Sign in with Google
               </button>
             </div>
+
+            {/* Footer with TikTok */}
+            <footer className="text-center text-xs text-slate-500 z-10">
+              Developed by <span className="text-slate-300 font-semibold">Amiir</span> · TikTok: <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
+            </footer>
           </div>
         );
       }
 
+      // ================= MAIN APP =================
       return (
-        <div className="min-h-screen bg-[#080c14] text-slate-200 pb-20">
-          {/* Top Bar */}
-          <header className="border-b border-slate-800/80 bg-[#0c121e]/80 backdrop-blur-md sticky top-0 z-30">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-400/30 flex items-center justify-center text-sky-400">
-                  <TrendingUp size={18} />
-                </div>
-                <div>
-                  <h1 className="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
-                    Amiir Journal <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">Pro</span>
-                  </h1>
-                </div>
-              </div>
-
-              {/* User Profile */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1.5 rounded-full border border-slate-800">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="user" className="w-5 h-5 rounded-full" />
-                  ) : (
-                    <User size={14} className="text-slate-400" />
-                  )}
-                  <span className="text-xs text-slate-300 font-medium hidden sm:inline">{user.displayName?.split(" ")[0] || "Trader"}</span>
-                  <button 
-                    onClick={() => signOut(auth)} 
-                    title="Ka bax" 
-                    className="text-slate-400 hover:text-red-400 ml-1 cursor-pointer transition-colors"
-                  >
-                    <LogOut size={13} />
-                  </button>
+        <div className="min-h-screen bg-[#06090e] text-slate-200 flex flex-col justify-between">
+          <div>
+            {/* Top Bar */}
+            <header className="border-b border-slate-800/80 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-30">
+              <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="profile.jpg"
+                    alt="Amiir"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                    className="w-8 h-8 rounded-full object-cover border border-sky-400"
+                  />
+                  <div>
+                    <h1 className="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
+                      Amiir Journal <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">ICT Pro</span>
+                    </h1>
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => setShowForm((s) => !s)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all duration-200 shadow-md shadow-sky-500/20 cursor-pointer"
-                >
-                  {showForm ? <X size={14} /> : <Plus size={14} />}
-                  <span>{showForm ? "Jooji" : "New Trade"}</span>
-                </button>
-              </div>
-            </div>
-          </header>
+                {/* Top Action & Profile */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1.5 rounded-full border border-slate-800">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="user" className="w-5 h-5 rounded-full" />
+                    ) : (
+                      <User size={14} className="text-slate-400" />
+                    )}
+                    <span className="text-xs text-slate-300 font-medium hidden sm:inline">{user.displayName?.split(" ")[0] || "Trader"}</span>
+                    <button onClick={() => signOut(auth)} title="Ka bax" className="text-slate-400 hover:text-rose-400 ml-1 cursor-pointer">
+                      <LogOut size={13} />
+                    </button>
+                  </div>
 
-          <main className="max-w-6xl mx-auto px-4 py-6">
-            
-            {/* Navigation Tabs */}
-            <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-              <div className="flex gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800/80">
-                {[
-                  { id: "journal", label: "Journal", icon: ListChecks },
-                  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-                  { id: "accounts", label: "Accounts & Sessions", icon: Wallet }
-                ].map((item) => (
                   <button
-                    key={item.id}
-                    onClick={() => setTab(item.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
-                      tab === item.id 
-                        ? "bg-sky-500/15 text-sky-300 border border-sky-500/30 shadow-sm" 
-                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
-                    }`}
+                    onClick={() => {
+                      if (showForm) {
+                        setShowForm(false);
+                        setEditingId(null);
+                        setForm(EMPTY_FORM);
+                      } else {
+                        setShowForm(true);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all duration-200 shadow-md shadow-sky-500/20 cursor-pointer"
                   >
-                    <item.icon size={14} />
-                    {item.label}
+                    {showForm ? <X size={14} /> : <Plus size={14} />}
+                    <span>{showForm ? "Jooji" : "New Trade"}</span>
                   </button>
-                ))}
+                </div>
               </div>
+            </header>
 
-              {/* Quick Filter Bar */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <select
-                  value={filterAccount}
-                  onChange={(e) => setFilterAccount(e.target.value)}
-                  className="bg-slate-900 text-xs px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300 focus:outline-none focus:border-sky-500/50 cursor-pointer"
-                >
-                  <option value="all">Accounts: All</option>
-                  {ACCOUNT_TYPES.map((a) => <option key={a} value={a}>{a}</option>)}
-                </select>
+            <main className="max-w-6xl mx-auto px-4 py-6">
+              
+              {/* Navigation Bar */}
+              <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+                <div className="flex gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800/80 overflow-x-auto">
+                  {[
+                    { id: "journal", label: "Diiwaanka", icon: ListChecks },
+                    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+                    { id: "accounts", label: "Accounts", icon: Wallet },
+                    { id: "notes", label: "Casharrada (Notes)", icon: BookOpen },
+                    { id: "community", label: "Community Chat", icon: MessageSquare }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setTab(item.id)}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                        tab === item.id 
+                          ? "bg-sky-500/15 text-sky-300 border border-sky-500/30 shadow-sm" 
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                      }`}
+                    >
+                      <item.icon size={14} />
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
 
-                <select
-                  value={filterSession}
-                  onChange={(e) => setFilterSession(e.target.value)}
-                  className="bg-slate-900 text-xs px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300 focus:outline-none focus:border-sky-500/50 cursor-pointer"
-                >
-                  <option value="all">Sessions: All</option>
-                  {SESSIONS.map((s) => <option key={s.id} value={s.id}>{s.flag} {s.label}</option>)}
-                </select>
-
-                <select
-                  value={filterPurge}
-                  onChange={(e) => setFilterPurge(e.target.value)}
-                  className="bg-slate-900 text-xs px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300 focus:outline-none focus:border-sky-500/50 cursor-pointer"
-                >
-                  <option value="all">Purge Time: All</option>
-                  {Object.values(PURGE_TIMES).flat().map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {/* Top Stats Banner */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-              <div className="glass-card p-4 rounded-xl border border-slate-800">
-                <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Trades</div>
-                <div className="text-xl font-bold font-mono text-white">{stats.total}</div>
-              </div>
-
-              <div className="glass-card p-4 rounded-xl border border-slate-800">
-                <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Win Rate</div>
-                <div className="text-xl font-bold font-mono text-sky-400">{stats.winRate}%</div>
-              </div>
-
-              <div className="glass-card p-4 rounded-xl border border-slate-800">
-                <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Win / Loss</div>
-                <div className="text-xl font-bold font-mono">
-                  <span className="text-emerald-400">{stats.wins}</span>
-                  <span className="text-slate-600 mx-1">/</span>
-                  <span className="text-rose-400">{stats.losses}</span>
+                {/* Filter by MT5 Account */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">Account:</span>
+                  <select
+                    value={filterAccount}
+                    onChange={(e) => setFilterAccount(e.target.value)}
+                    className="bg-slate-900 text-xs px-3 py-1.5 rounded-lg border border-slate-800 text-slate-300 focus:outline-none focus:border-sky-500/50 cursor-pointer"
+                  >
+                    <option value="all">Dhammaan (All Accounts)</option>
+                    {accounts.map((a) => <option key={a.id} value={a.name}>{a.name} ({a.type})</option>)}
+                  </select>
                 </div>
               </div>
 
-              <div className="glass-card p-4 rounded-xl border border-slate-800">
-                <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Net Gain (R)</div>
-                <div className={`text-xl font-bold font-mono ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                  {fmtR(stats.netR)}
+              {/* Stats Overview */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+                <div className="glass-card p-4 rounded-xl border border-slate-800">
+                  <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Trades</div>
+                  <div className="text-xl font-bold font-mono text-white">{stats.total}</div>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl border border-slate-800">
+                  <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Win Rate</div>
+                  <div className="text-xl font-bold font-mono text-sky-400">{stats.winRate}%</div>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl border border-slate-800">
+                  <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Win / Loss</div>
+                  <div className="text-xl font-bold font-mono">
+                    <span className="text-emerald-400">{stats.wins}</span>
+                    <span className="text-slate-600 mx-1">/</span>
+                    <span className="text-rose-400">{stats.losses}</span>
+                  </div>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl border border-slate-800">
+                  <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mb-1">Net R Multiple</div>
+                  <div className={`text-xl font-bold font-mono ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {fmtR(stats.netR)}
+                  </div>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl border border-sky-500/20 col-span-2 sm:col-span-1 bg-gradient-to-br from-slate-900 to-sky-950/30">
+                  <div className="text-[11px] text-sky-400 font-medium uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <Award size={12} /> This Week
+                  </div>
+                  <div className="text-base font-bold font-mono text-white flex items-center justify-between">
+                    <span>{fmtR(weeklyConsistency.netR)}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-sans">
+                      {weeklyConsistency.winRate}% WR
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Consistency Metric */}
-              <div className="glass-card p-4 rounded-xl border border-sky-500/20 col-span-2 sm:col-span-1 bg-gradient-to-br from-slate-900 to-sky-950/30">
-                <div className="text-[11px] text-sky-400 font-medium uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <Award size={12} /> This Week
-                </div>
-                <div className="text-base font-bold font-mono text-white flex items-center justify-between">
-                  <span>{fmtR(weeklyConsistency.netR)}</span>
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-sans font-medium">
-                    {weeklyConsistency.winRate}% WR
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* FORM MODAL / COLLAPSIBLE */}
-            {showForm && (
-              <div className="glass-card p-6 rounded-2xl mb-8 border border-sky-500/30 shadow-2xl relative">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
-                  <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                    <Plus size={16} className="text-sky-400" /> Diiwaangeli Ganacsi Cusub
-                  </h3>
-                  <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-white cursor-pointer"><X size={16} /></button>
-                </div>
-
-                {error && <div className="text-xs text-red-400 bg-red-950/40 p-2.5 rounded-lg mb-4 border border-red-900/50">{error}</div>}
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Symbol / Pair</label>
-                    <input
-                      value={form.symbol}
-                      onChange={(e) => setForm({ ...form, symbol: e.target.value })}
-                      placeholder="e.g. NQ, EURUSD, XAUUSD"
-                      className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-400 font-mono"
-                    />
+              {/* ================= TRADE FORM (ADD / EDIT) ================= */}
+              {showForm && (
+                <div className="glass-card p-6 rounded-2xl mb-8 border border-sky-500/30 shadow-2xl relative">
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                    <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                      {editingId ? <Edit3 size={16} className="text-sky-400" /> : <Plus size={16} className="text-sky-400" />}
+                      {editingId ? "Wax Ka Beddel Trade-kan (Edit Trade)" : "Diiwaangeli Ganacsi Cusub"}
+                    </h3>
+                    <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-slate-400 hover:text-white cursor-pointer"><X size={16} /></button>
                   </div>
 
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Taariikhda</label>
-                    <input
-                      type="date"
-                      value={form.date}
-                      onChange={(e) => setForm({ ...form, date: e.target.value })}
-                      className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-400 font-mono"
-                    />
-                  </div>
+                  {error && <div className="text-xs text-rose-400 bg-rose-950/40 p-2.5 rounded-lg mb-4 border border-rose-900/50">{error}</div>}
 
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Account Type & Name</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={form.accountType}
-                        onChange={(e) => setForm({ ...form, accountType: e.target.value })}
-                        className="bg-slate-900/80 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-sky-400 cursor-pointer"
-                      >
-                        {ACCOUNT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Symbol / Pair</label>
                       <input
-                        value={form.accountName}
-                        onChange={(e) => setForm({ ...form, accountName: e.target.value })}
-                        placeholder="MT5 / FTMO Account"
-                        className="flex-1 bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400"
+                        value={form.symbol}
+                        onChange={(e) => setForm({ ...form, symbol: e.target.value })}
+                        placeholder="NQ, EURUSD, XAUUSD"
+                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-400 font-mono"
                       />
                     </div>
-                  </div>
-                </div>
 
-                {/* Session & Purge Time Selectors */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Trading Session</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {SESSIONS.map((s) => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => setForm({ ...form, session: s.id, purgeTime: PURGE_TIMES[s.id][0] })}
-                          className={`py-2 px-2 rounded-lg text-xs font-medium border flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
-                            form.session === s.id
-                              ? "bg-sky-500/20 border-sky-400 text-sky-300 shadow-sm"
-                              : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
-                          }`}
-                        >
-                          <span>{s.flag} {s.label}</span>
-                          <span className="text-[10px] text-slate-500 font-mono">{s.time}</span>
-                        </button>
-                      ))}
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Taariikhda</label>
+                      <input
+                        type="date"
+                        value={form.date}
+                        onChange={(e) => setForm({ ...form, date: e.target.value })}
+                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-400 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Account-ka Aad Ku Qadatay</label>
+                      <select
+                        value={form.accountName}
+                        onChange={(e) => setForm({ ...form, accountName: e.target.value })}
+                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-400 cursor-pointer"
+                      >
+                        {accounts.length === 0 && <option value="Default Account">Default Account</option>}
+                        {accounts.map((a) => (
+                          <option key={a.id} value={a.name}>{a.name} ({a.type})</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Purging Time (Entry Execution)</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {PURGE_TIMES[form.session].map((pt) => (
-                        <button
-                          key={pt}
-                          type="button"
-                          onClick={() => setForm({ ...form, purgeTime: pt })}
-                          className={`py-2.5 rounded-lg text-xs font-mono font-medium border transition-all cursor-pointer ${
-                            form.purgeTime === pt
-                              ? "bg-sky-500/20 border-sky-400 text-sky-300"
-                              : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
-                          }`}
-                        >
-                          {pt}
-                        </button>
-                      ))}
+                  {/* Sessions & Purge Times */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Trading Session</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {SESSIONS.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setForm({ ...form, session: s.id, purgeTime: PURGE_TIMES[s.id][0] })}
+                            className={`py-2 px-2 rounded-lg text-xs font-medium border flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
+                              form.session === s.id
+                                ? "bg-sky-500/20 border-sky-400 text-sky-300 shadow-sm"
+                                : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                            }`}
+                          >
+                            <span>{s.flag} {s.label}</span>
+                            <span className="text-[10px] text-slate-500 font-mono">{s.time}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Purging Time (Entry Time)</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {PURGE_TIMES[form.session].map((pt) => (
+                          <button
+                            key={pt}
+                            type="button"
+                            onClick={() => setForm({ ...form, purgeTime: pt })}
+                            className={`py-2.5 rounded-lg text-xs font-mono font-medium border transition-all cursor-pointer ${
+                              form.purgeTime === pt
+                                ? "bg-sky-500/20 border-sky-400 text-sky-300"
+                                : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                            }`}
+                          >
+                            {pt}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Direction, Outcome, Risk, R:R */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Direction</label>
-                    <div className="flex gap-1.5">
-                      {["buy", "sell"].map((d) => (
+                  {/* Direction, Outcome, Risk, R:R */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                    {/* Buy vs Sell (Distinct Colors: Blue for Buy, Rose for Sell) */}
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Direction</label>
+                      <div className="flex gap-2">
                         <button
-                          key={d}
                           type="button"
-                          onClick={() => setForm({ ...form, direction: d })}
-                          className={`flex-1 py-2 rounded-lg text-xs uppercase font-mono font-semibold border transition-all cursor-pointer ${
-                            form.direction === d
-                              ? "bg-sky-500/20 border-sky-400 text-sky-300"
+                          onClick={() => setForm({ ...form, direction: "buy" })}
+                          className={`flex-1 py-2 rounded-lg text-xs uppercase font-mono font-bold border transition-all cursor-pointer ${
+                            form.direction === "buy"
+                              ? "bg-sky-500/25 border-sky-400 text-sky-300 shadow-lg shadow-sky-500/20"
                               : "border-slate-800 bg-slate-900/60 text-slate-400"
                           }`}
                         >
-                          {d}
+                          BUY
                         </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Outcome</label>
-                    <div className="flex gap-1.5">
-                      {[
-                        { id: "win", label: "WIN", bg: "bg-emerald-500/20 border-emerald-400 text-emerald-300" },
-                        { id: "loss", label: "LOSS", bg: "bg-rose-500/20 border-rose-400 text-rose-300" },
-                        { id: "be", label: "BE", bg: "bg-slate-700 border-slate-500 text-slate-300" },
-                      ].map((o) => (
                         <button
-                          key={o.id}
                           type="button"
-                          onClick={() => setForm({ ...form, outcome: o.id })}
-                          className={`flex-1 py-2 rounded-lg text-xs uppercase font-mono font-semibold border transition-all cursor-pointer ${
-                            form.outcome === o.id ? o.bg : "border-slate-800 bg-slate-900/60 text-slate-400"
+                          onClick={() => setForm({ ...form, direction: "sell" })}
+                          className={`flex-1 py-2 rounded-lg text-xs uppercase font-mono font-bold border transition-all cursor-pointer ${
+                            form.direction === "sell"
+                              ? "bg-rose-500/25 border-rose-400 text-rose-300 shadow-lg shadow-rose-500/20"
+                              : "border-slate-800 bg-slate-900/60 text-slate-400"
                           }`}
                         >
-                          {o.label}
+                          SELL
                         </button>
-                      ))}
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Risk %</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={form.risk}
-                      onChange={(e) => setForm({ ...form, risk: e.target.value })}
-                      className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-sky-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">R:R Ratio (1 : x)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={form.rrRatio}
-                      onChange={(e) => setForm({ ...form, rrRatio: e.target.value })}
-                      className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-sky-400"
-                    />
-                  </div>
-                </div>
-
-                {/* Multi-Image Upload */}
-                <div className="mb-4">
-                  <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">
-                    Sawirrada Chart-ka (HTF & LTF Execution - Waad wada shubi kartaa kuwo badan)
-                  </label>
-                  <div className="border border-dashed border-slate-700 rounded-xl p-4 bg-slate-900/50 hover:border-sky-500/50 transition-colors">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleMultipleImages}
-                      className="block w-full text-xs text-slate-400 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-sky-500/20 file:text-sky-300 file:font-semibold hover:file:bg-sky-500/30"
-                    />
-
-                    {form.images?.length > 0 && (
-                      <div className="flex gap-2 mt-3 flex-wrap">
-                        {form.images.map((img, i) => (
-                          <div key={i} className="relative group w-20 h-16 rounded-lg overflow-hidden border border-slate-700">
-                            <img src={img} alt="chart" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => removeImageFromForm(i)}
-                              className="absolute top-1 right-1 bg-black/80 text-rose-400 p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Outcome</label>
+                      <div className="flex gap-1.5">
+                        {[
+                          { id: "win", label: "WIN", bg: "bg-emerald-500/20 border-emerald-400 text-emerald-300" },
+                          { id: "loss", label: "LOSS", bg: "bg-rose-500/20 border-rose-400 text-rose-300" },
+                          { id: "be", label: "BE", bg: "bg-slate-700 border-slate-500 text-slate-300" },
+                        ].map((o) => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => setForm({ ...form, outcome: o.id })}
+                            className={`flex-1 py-2 rounded-lg text-xs uppercase font-mono font-semibold border transition-all cursor-pointer ${
+                              form.outcome === o.id ? o.bg : "border-slate-800 bg-slate-900/60 text-slate-400"
+                            }`}
+                          >
+                            {o.label}
+                          </button>
                         ))}
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Notes */}
-                <div className="mb-4">
-                  <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Falanqaynta & Fiiro Gaar ah</label>
-                  <textarea
-                    rows={2}
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    placeholder="Waa maxay sababta aad u gashay? HTF liquidity purge, FVG, MSS, iwm..."
-                    className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-sky-400 resize-none"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={addTrade}
-                  className="w-full py-2.5 rounded-xl font-semibold text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all duration-200 shadow-lg shadow-sky-500/20 cursor-pointer"
-                >
-                  Kaydi Ganacsiga
-                </button>
-              </div>
-            )}
-
-            {/* TAB 1: JOURNAL (DIIWAANKA) */}
-            {tab === "journal" && (
-              <div>
-                {loading ? (
-                  <div className="py-20 text-center text-slate-500 font-mono text-sm">Soo raraya ganacsiyada...</div>
-                ) : filteredTrades.length === 0 ? (
-                  <div className="glass-card py-16 text-center rounded-2xl border border-slate-800/80">
-                    <p className="text-sm text-slate-400">Weli wax trade ah lama helin shaandhadaada.</p>
-                    <p className="text-xs text-slate-500 mt-1">Guji "New Trade" si aad u bilowdo.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="text-xs text-slate-500 px-1 font-mono flex items-center justify-between">
-                      <span>Tip: <strong>Labo jeer ku dhufo (Double Click)</strong> trade kasta si aad toos sawirkiisa u furto!</span>
-                      <span>{filteredTrades.length} Trades</span>
                     </div>
 
-                    {filteredTrades.map((t) => {
-                      const isOpen = expanded === t.id;
-                      const sessionInfo = SESSIONS.find((s) => s.id === t.session);
-                      const imgs = t.images || (t.image ? [t.image] : []);
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Risk %</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={form.risk}
+                        onChange={(e) => setForm({ ...form, risk: e.target.value })}
+                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-sky-400"
+                      />
+                    </div>
 
-                      return (
-                        <div
-                          key={t.id}
-                          onDoubleClick={() => {
-                            if (imgs.length > 0) setLightbox(imgs[0]);
-                          }}
-                          className="glass-card rounded-xl border border-slate-800/90 overflow-hidden hover:border-sky-500/40 transition-all duration-150 select-none cursor-pointer"
-                        >
-                          {/* Row Summary */}
-                          <div 
-                            onClick={() => setExpanded(isOpen ? null : t.id)}
-                            className="p-4 flex items-center justify-between flex-wrap gap-3"
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">R:R Ratio (1 : x)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={form.rrRatio}
+                        onChange={(e) => setForm({ ...form, rrRatio: e.target.value })}
+                        className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-sky-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ICT Confluence Checklist */}
+                  <div className="mb-4">
+                    <label className="text-[11px] uppercase tracking-wider text-sky-400 block mb-1.5 flex items-center gap-1">
+                      <CheckSquare size={13} /> ICT Confluence Checklist:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {ICT_CHECKLIST.map((item) => {
+                        const checked = (form.checklist || []).includes(item);
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => toggleChecklistItem(item)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all border cursor-pointer ${
+                              checked
+                                ? "bg-sky-500/20 border-sky-400 text-sky-300"
+                                : "bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700"
+                            }`}
                           >
-                            <div className="flex items-center gap-3 flex-wrap">
-                              {t.outcome === "win" ? (
-                                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-                                  <TrendingUp size={16} />
-                                </div>
-                              ) : (
-                                <div className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
-                                  <TrendingDown size={16} />
-                                </div>
-                              )}
+                            {checked ? "✓ " : ""}{item}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-sm font-mono text-white">{t.symbol}</span>
-                                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                                    {t.direction}
-                                  </span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">
-                                    {t.accountName || t.accountType}
-                                  </span>
-                                </div>
-                                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                                  {t.date} · {sessionInfo?.flag} {sessionInfo?.label} · {t.purgeTime}
-                                </div>
-                              </div>
+                  {/* Multi-Image Upload */}
+                  <div className="mb-4">
+                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Sawirrada Chart-ka (HTF & LTF Execution)
+                    </label>
+                    <div className="border border-dashed border-slate-700 rounded-xl p-4 bg-slate-900/50 hover:border-sky-500/50 transition-colors">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleMultipleImages}
+                        className="block w-full text-xs text-slate-400 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-sky-500/20 file:text-sky-300 file:font-semibold hover:file:bg-sky-500/30"
+                      />
+                      {form.images?.length > 0 && (
+                        <div className="flex gap-2 mt-3 flex-wrap">
+                          {form.images.map((img, i) => (
+                            <div key={i} className="relative group w-20 h-16 rounded-lg overflow-hidden border border-slate-700">
+                              <img src={img} alt="chart" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => setForm((p) => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }))}
+                                className="absolute top-1 right-1 bg-black/80 text-rose-400 p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X size={12} />
+                              </button>
                             </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                            <div className="flex items-center gap-4">
-                              {imgs.length > 0 && (
-                                <div className="flex items-center gap-1 text-slate-400 text-xs bg-slate-800/60 px-2 py-1 rounded-md border border-slate-700">
-                                  <ImageIcon size={13} className="text-sky-400" />
-                                  <span>{imgs.length}</span>
+                  {/* Notes */}
+                  <div className="mb-4">
+                    <label className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1.5">Falanqaynta & Fiiro Gaar ah</label>
+                    <textarea
+                      rows={2}
+                      value={form.notes}
+                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                      placeholder="Sababta entry-ga, dareenkaaga, iyo wixii cashar ah..."
+                      className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-sky-400 resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={saveTrade}
+                    className="w-full py-2.5 rounded-xl font-semibold text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all duration-200 shadow-lg shadow-sky-500/20 cursor-pointer"
+                  >
+                    {editingId ? "Cusboonaysii Trade-kan (Save Changes)" : "Kaydi Ganacsiga"}
+                  </button>
+                </div>
+              )}
+
+              {/* ================= TAB 1: JOURNAL ================= */}
+              {tab === "journal" && (
+                <div>
+                  {loading ? (
+                    <div className="py-20 text-center text-slate-500 font-mono text-sm">Soo raraya ganacsiyada...</div>
+                  ) : filteredTrades.length === 0 ? (
+                    <div className="glass-card py-16 text-center rounded-2xl border border-slate-800/80">
+                      <p className="text-sm text-slate-400">Weli wax trade ah lama helin.</p>
+                      <p className="text-xs text-slate-500 mt-1">Guji "New Trade" si aad u bilowdo.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="text-xs text-slate-500 px-1 font-mono flex items-center justify-between">
+                        <span>Tip: <strong>Labo jeer ku dhufo (Double Click)</strong> trade kasta si aad sawirkiisa u furto!</span>
+                        <span>{filteredTrades.length} Trades</span>
+                      </div>
+
+                      {filteredTrades.map((t) => {
+                        const sessionInfo = SESSIONS.find((s) => s.id === t.session);
+                        const imgs = t.images || (t.image ? [t.image] : []);
+
+                        return (
+                          <div
+                            key={t.id}
+                            onDoubleClick={() => {
+                              if (imgs.length > 0) setLightbox(imgs[0]);
+                            }}
+                            className="glass-card rounded-xl border border-slate-800/90 overflow-hidden hover:border-sky-500/40 transition-all duration-150 select-none cursor-pointer"
+                          >
+                            <div className="p-4 flex items-center justify-between flex-wrap gap-3">
+                              <div className="flex items-center gap-3 flex-wrap">
+                                {t.outcome === "win" ? (
+                                  <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                                    <TrendingUp size={16} />
+                                  </div>
+                                ) : (
+                                  <div className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                                    <TrendingDown size={16} />
+                                  </div>
+                                )}
+
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-sm font-mono text-white">{t.symbol}</span>
+                                    <span className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded font-bold border ${
+                                      t.direction === "buy"
+                                        ? "bg-sky-500/20 text-sky-300 border-sky-400/40"
+                                        : "bg-rose-500/20 text-rose-300 border-rose-400/40"
+                                    }`}>
+                                      {t.direction}
+                                    </span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                                      {t.accountName}
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                    {t.date} · {sessionInfo?.flag} {sessionInfo?.label} · {t.purgeTime}
+                                  </div>
                                 </div>
-                              )}
-
-                              <div className={`text-sm font-bold font-mono ${t.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                {fmtR(t.rMultiple || 0)}
                               </div>
 
-                              {isOpen ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
-                            </div>
-                          </div>
-
-                          {/* Expanded Details */}
-                          {isOpen && (
-                            <div className="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-950/40">
-                              <div className="grid grid-cols-3 gap-3 mb-3 text-xs">
-                                <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
-                                  <div className="text-slate-500 text-[10px] uppercase">Risk</div>
-                                  <div className="font-mono font-semibold text-white mt-0.5">{t.risk}%</div>
-                                </div>
-                                <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
-                                  <div className="text-slate-500 text-[10px] uppercase">Reward</div>
-                                  <div className="font-mono font-semibold text-white mt-0.5">{t.reward}%</div>
-                                </div>
-                                <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
-                                  <div className="text-slate-500 text-[10px] uppercase">R:R</div>
-                                  <div className="font-mono font-semibold text-white mt-0.5">1:{t.rrRatio}</div>
-                                </div>
-                              </div>
-
-                              {/* Images Gallery */}
-                              {imgs.length > 0 && (
-                                <div className="mb-3">
-                                  <div className="text-[11px] text-slate-400 mb-2 flex items-center gap-1.5">
-                                    <ImageIcon size={13} /> Charts (Guji si aad u weynayso):
+                              <div className="flex items-center gap-3">
+                                {imgs.length > 0 && (
+                                  <div className="flex items-center gap-1 text-slate-400 text-xs bg-slate-800/60 px-2 py-1 rounded-md border border-slate-700">
+                                    <ImageIcon size={13} className="text-sky-400" />
+                                    <span>{imgs.length}</span>
                                   </div>
-                                  <div className="flex gap-2 flex-wrap">
-                                    {imgs.map((src, idx) => (
-                                      <img
-                                        key={idx}
-                                        src={src}
-                                        alt="screenshot"
-                                        onClick={() => setLightbox(src)}
-                                        className="h-28 rounded-lg border border-slate-700 object-cover cursor-zoom-in hover:border-sky-400 transition-all"
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
+                                )}
 
-                              {t.notes && (
-                                <div className="text-xs text-slate-300 bg-slate-900/40 p-3 rounded-lg border border-slate-800/60 mb-3 leading-relaxed">
-                                  {t.notes}
+                                <div className={`text-sm font-bold font-mono ${t.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                  {fmtR(t.rMultiple || 0)}
                                 </div>
-                              )}
 
-                              <div className="flex justify-end">
                                 <button
                                   type="button"
-                                  onClick={() => removeTrade(t.id)}
-                                  className="flex items-center gap-1.5 text-xs text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+                                  onClick={(e) => { e.stopPropagation(); startEditTrade(t); }}
+                                  title="Edit Trade"
+                                  className="p-1 text-slate-400 hover:text-sky-400 transition-colors"
                                 >
-                                  <Trash2 size={13} /> Tirtir Trade-kan
+                                  <Edit3 size={15} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); removeTrade(t.id); }}
+                                  title="Tirtir Trade"
+                                  className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
+                                >
+                                  <Trash2 size={15} />
                                 </button>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* TAB 2: DASHBOARD & ANALYTICS */}
-            {tab === "dashboard" && (
-              <div className="space-y-6">
-                {/* Purge Time Performance Matrix */}
-                <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                  <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                    <Clock size={16} className="text-sky-400" /> Purge Times Performance (Win Rate & Return)
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
-                    {Object.entries(stats.purgeStats).map(([time, data]) => (
-                      <div key={time} className="bg-slate-900/70 p-3 rounded-xl border border-slate-800 text-center">
-                        <div className="text-xs font-mono font-semibold text-slate-300 uppercase">{time}</div>
-                        <div className={`text-base font-bold font-mono mt-1 ${data.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
-                          {data.winRate}%
+                            {/* Checklist & Notes Preview */}
+                            {(t.checklist?.length > 0 || t.notes) && (
+                              <div className="px-4 pb-3 pt-1 border-t border-slate-800/50 bg-slate-950/20 text-xs flex flex-wrap gap-2 items-center justify-between">
+                                {t.checklist?.length > 0 && (
+                                  <div className="flex gap-1.5 flex-wrap">
+                                    {t.checklist.map((c) => (
+                                      <span key={c} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                        ✓ {c}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {t.notes && <span className="text-slate-400 italic truncate max-w-md">{t.notes}</span>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ================= TAB 2: DASHBOARD (SELECTIVE VIEWS) ================= */}
+              {tab === "dashboard" && (
+                <div className="space-y-6">
+                  {/* Dashboard Sub-navigation Tabs */}
+                  <div className="flex gap-2 border-b border-slate-800 pb-3">
+                    {[
+                      { id: "overview", label: "Purging & Performance" },
+                      { id: "sessions", label: "Sessions Breakdown" },
+                      { id: "calendar", label: "Calendar Heatmap" }
+                    ].map((btn) => (
+                      <button
+                        key={btn.id}
+                        onClick={() => setDashView(btn.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          dashView === btn.id
+                            ? "bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20"
+                            : "bg-slate-900 text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* SUBVIEW 1: PURGING PERFORMANCE */}
+                  {dashView === "overview" && (
+                    <div className="glass-card p-6 rounded-2xl border border-slate-800">
+                      <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                        <Clock size={16} className="text-sky-400" /> Purging Times Performance Matrix (8am, 9am, 2am, 3am)
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+                        {Object.entries(stats.purgeStats).map(([time, data]) => (
+                          <div key={time} className="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800 text-center">
+                            <div className="text-xs font-mono font-bold text-sky-400 uppercase">{time}</div>
+                            <div className={`text-lg font-bold font-mono mt-1 ${data.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                              {data.winRate}%
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                              {data.count} trades ({fmtR(data.netR)})
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SUBVIEW 2: SESSIONS BREAKDOWN */}
+                  {dashView === "sessions" && (
+                    <div className="glass-card p-6 rounded-2xl border border-slate-800">
+                      <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                        <Clock size={16} className="text-sky-400" /> Sessions Breakdown
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {SESSIONS.map((s) => {
+                          const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0 };
+                          return (
+                            <div key={s.id} className="bg-slate-900/70 p-4 rounded-xl border border-slate-800">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-2xl">{s.flag}</span>
+                                <span className="text-xs text-slate-500 font-mono">{s.time}</span>
+                              </div>
+                              <div className="font-bold text-white text-base">{s.label}</div>
+                              <div className={`text-xl font-bold font-mono mt-1 ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                                {st.winRate}% WR
+                              </div>
+                              <div className="text-xs text-slate-400 font-mono mt-1">
+                                {st.count} trades · {fmtR(st.netR)}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SUBVIEW 3: CALENDAR */}
+                  {dashView === "calendar" && (
+                    <div className="glass-card p-6 rounded-2xl border border-slate-800">
+                      <div className="flex items-center justify-between mb-4">
+                        <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800">
+                          <ChevronLeft size={18} />
+                        </button>
+                        <div className="font-bold text-sm text-white">{MONTH_NAMES[viewMonth]} {viewYear}</div>
+                        <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800">
+                          <ChevronRight size={18} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+                        {WEEKDAYS.map((d) => (
+                          <div key={d} className="text-[10px] font-mono text-slate-500 text-center uppercase py-1">{d}</div>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1.5">
+                        {calendarCells.map((cell, idx) => {
+                          if (!cell) return <div key={idx} className="aspect-square"></div>;
+                          const net = cell.data?.net || 0;
+                          return (
+                            <div
+                              key={idx}
+                              className={`aspect-square rounded-xl p-1.5 flex flex-col justify-between border text-xs ${
+                                !cell.data
+                                  ? "bg-slate-900/40 border-slate-800/60"
+                                  : net > 0
+                                  ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
+                                  : net < 0
+                                  ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
+                                  : "bg-slate-800 border-slate-700 text-slate-300"
+                              }`}
+                            >
+                              <span className="text-[10px] font-mono text-slate-400">{cell.day}</span>
+                              {cell.data && (
+                                <div className="text-right font-mono text-[10px] font-bold">
+                                  {fmtR(net)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ================= TAB 3: ACCOUNTS MANAGEMENT ================= */}
+              {tab === "accounts" && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-bold text-white">Accounts Management</h3>
+                      <p className="text-xs text-slate-400">Geli akoonnadaada Funded, Challenge, Real ama Demo ee MT5.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowAccModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
+                    >
+                      <Plus size={14} /> Add Account
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {accounts.length === 0 ? (
+                      <div className="col-span-3 py-12 text-center text-slate-500 glass-card rounded-xl">
+                        Weli ma jiro akoon la galiyay. Riix "Add Account".
+                      </div>
+                    ) : (
+                      accounts.map((acc) => {
+                        const accTrades = trades.filter((t) => t.accountName === acc.name);
+                        const net = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
+                        return (
+                          <div key={acc.id} className="glass-card p-5 rounded-xl border border-slate-800 relative">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                                {acc.type}
+                              </span>
+                              <button onClick={() => deleteDoc(doc(db, "users", user.uid, "accounts", acc.id))} className="text-slate-500 hover:text-rose-400">
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                            <h4 className="font-bold text-white text-base">{acc.name}</h4>
+                            <div className="text-xs text-slate-400 font-mono mt-1">Starting: {acc.balance}</div>
+                            {acc.mt5Id && <div className="text-xs text-slate-500 font-mono">MT5 ID: {acc.mt5Id}</div>}
+                            <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between font-mono text-xs">
+                              <span className="text-slate-400">{accTrades.length} trades</span>
+                              <span className={`font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtR(net)}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Add Account Modal */}
+                  {showAccModal && (
+                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                      <div className="glass-card p-6 rounded-2xl max-w-sm w-full border border-sky-500/30">
+                        <h4 className="text-sm font-bold text-white mb-3">Add Trading Account</h4>
+                        <div className="space-y-3 mb-4">
+                          <input
+                            placeholder="Account Name (e.g. FTMO 100K #1)"
+                            value={newAcc.name}
+                            onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                          <select
+                            value={newAcc.type}
+                            onChange={(e) => setNewAcc({ ...newAcc, type: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          >
+                            <option value="Funded">Funded</option>
+                            <option value="Challenge">Challenge</option>
+                            <option value="Real">Real</option>
+                            <option value="Demo">Demo</option>
+                          </select>
+                          <input
+                            placeholder="Initial Balance (e.g. $100,000)"
+                            value={newAcc.balance}
+                            onChange={(e) => setNewAcc({ ...newAcc, balance: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                          <input
+                            placeholder="MT5 Account Number (Optional)"
+                            value={newAcc.mt5Id}
+                            onChange={(e) => setNewAcc({ ...newAcc, mt5Id: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
                         </div>
-                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                          {data.count} trades ({fmtR(data.netR)})
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowAccModal(false)} className="flex-1 py-2 rounded-lg bg-slate-800 text-xs text-slate-300">Jooji</button>
+                          <button onClick={saveAccount} className="flex-1 py-2 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Calendar View */}
-                <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between mb-4">
-                    <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 cursor-pointer">
-                      <ChevronLeft size={18} />
-                    </button>
-                    <div className="text-center font-bold text-sm text-white">
-                      {MONTH_NAMES[viewMonth]} {viewYear}
                     </div>
-                    <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 cursor-pointer">
-                      <ChevronRight size={18} />
+                  )}
+                </div>
+              )}
+
+              {/* ================= TAB 4: NOTES & LESSONS ================= */}
+              {tab === "notes" && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-bold text-white">Casharrada & Qoraallada (Trading Notes)</h3>
+                      <p className="text-xs text-slate-400">Ku qoro casharrada ICT, xeerarkaaga gaarka ah iyo khaladaadka aad baratay.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowNoteForm(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
+                    >
+                      <Plus size={14} /> Qor Qoraal Cusub
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1.5 mb-1.5">
-                    {WEEKDAYS.map((d) => (
-                      <div key={d} className="text-[10px] font-mono text-slate-500 text-center uppercase py-1">{d}</div>
-                    ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {notes.length === 0 ? (
+                      <div className="col-span-2 py-12 text-center text-slate-500 glass-card rounded-xl">
+                        Weli qoraal ma jiro. Riix "Qor Qoraal Cusub".
+                      </div>
+                    ) : (
+                      notes.map((n) => (
+                        <div key={n.id} className="glass-card p-5 rounded-xl border border-slate-800 relative group">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">
+                              {n.tag}
+                            </span>
+                            <button onClick={() => deleteDoc(doc(db, "users", user.uid, "notes", n.id))} className="text-slate-500 hover:text-rose-400">
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                          <h4 className="text-sm font-bold text-white mb-2">{n.title}</h4>
+                          <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{n.content}</p>
+                        </div>
+                      ))
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1.5">
-                    {calendarCells.map((cell, idx) => {
-                      if (!cell) return <div key={idx} className="aspect-square"></div>;
-                      const hasData = !!cell.data;
-                      const net = cell.data?.net || 0;
+                  {/* Add Note Modal */}
+                  {showNoteForm && (
+                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                      <div className="glass-card p-6 rounded-2xl max-w-md w-full border border-sky-500/30">
+                        <h4 className="text-sm font-bold text-white mb-3">Qor Cashar Cusub</h4>
+                        <div className="space-y-3 mb-4">
+                          <input
+                            placeholder="Cinwaanka (e.g. London Judas Swing Strategy)"
+                            value={noteForm.title}
+                            onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white"
+                          />
+                          <input
+                            placeholder="Tag (e.g. ICT, Psychology, Risk Rule)"
+                            value={noteForm.tag}
+                            onChange={(e) => setNoteForm({ ...noteForm, tag: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white"
+                          />
+                          <textarea
+                            rows={5}
+                            placeholder="Qor casharka ama faahfaahinta..."
+                            value={noteForm.content}
+                            onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white resize-none"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowNoteForm(false)} className="flex-1 py-2 rounded-lg bg-slate-800 text-xs text-slate-300">Jooji</button>
+                          <button onClick={saveNote} className="flex-1 py-2 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ================= TAB 5: PUBLIC COMMUNITY CHAT ================= */}
+              {tab === "community" && (
+                <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[550px]">
+                  <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare size={16} className="text-sky-400" />
+                      <span className="font-bold text-sm text-white">Traders Public Room</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono">Live Discussion</span>
+                  </div>
+
+                  {/* Messages Feed */}
+                  <div className="flex-1 p-4 overflow-y-auto space-y-3">
+                    {chatMessages.map((m) => {
+                      const isMe = m.uid === user.uid;
                       return (
-                        <div
-                          key={idx}
-                          className={`aspect-square rounded-xl p-1.5 flex flex-col justify-between border transition-all text-xs ${
-                            !hasData
-                              ? "bg-slate-900/40 border-slate-800/60"
-                              : net > 0
-                              ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                              : net < 0
-                              ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
-                              : "bg-slate-800 border-slate-700 text-slate-300"
-                          }`}
-                        >
-                          <span className="text-[10px] font-mono text-slate-400">{cell.day}</span>
-                          {hasData && (
-                            <div className="text-right font-mono text-[10px] font-bold leading-tight">
-                              {fmtR(net)}
-                            </div>
+                        <div key={m.id} className={`flex gap-2.5 ${isMe ? "justify-end" : "justify-start"}`}>
+                          {!isMe && (
+                            <img src={m.photo || "https://api.dicebear.com/7.x/bottts/svg"} className="w-7 h-7 rounded-full bg-slate-800 flex-shrink-0" />
                           )}
+                          <div className={`max-w-xs sm:max-w-md p-3 rounded-xl text-xs relative group ${
+                            isMe ? "bg-sky-500/20 text-slate-100 border border-sky-500/30" : "bg-slate-900 text-slate-200 border border-slate-800"
+                          }`}>
+                            <div className="flex items-center justify-between gap-4 mb-1">
+                              <span className="font-bold text-[10px] text-sky-400">{m.author}</span>
+                              {/* Admin / Owner delete button */}
+                              <button onClick={() => deleteChatMessage(m.id)} className="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                            <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>
+                          </div>
                         </div>
                       );
                     })}
+                    <div ref={chatScrollRef}></div>
                   </div>
+
+                  {/* Chat Input */}
+                  <form onSubmit={sendChatMessage} className="p-3 border-t border-slate-800 bg-slate-950/60 flex gap-2">
+                    <input
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Qor fariintaada ama trade idea..."
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400"
+                    />
+                    <button type="submit" className="p-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer">
+                      <Send size={15} />
+                    </button>
+                  </form>
                 </div>
+              )}
+
+            </main>
+          </div>
+
+          {/* ================= FOOTER ================= */}
+          <footer className="mt-12 py-6 border-t border-slate-800/80 bg-[#090e17]/80 text-center text-xs text-slate-500">
+            <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div>
+                © {new Date().getFullYear()} <strong>Amiir Journal</strong> · Professional Execution Ledger
               </div>
-            )}
-
-            {/* TAB 3: ACCOUNTS & SESSIONS */}
-            {tab === "accounts" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Sessions Breakdown */}
-                <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                  <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                    <Clock size={16} className="text-sky-400" /> Sessions Breakdown
-                  </h3>
-                  <div className="space-y-3">
-                    {SESSIONS.map((s) => {
-                      const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0 };
-                      return (
-                        <div key={s.id} className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-xl">{s.flag}</span>
-                            <div>
-                              <div className="text-sm font-semibold text-white">{s.label}</div>
-                              <div className="text-[10px] text-slate-500 font-mono">{s.time}</div>
-                            </div>
-                          </div>
-                          <div className="text-right font-mono">
-                            <div className={`text-sm font-bold ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
-                              {st.winRate}% WR
-                            </div>
-                            <div className="text-[11px] text-slate-400">{st.count} trades ({fmtR(st.netR)})</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Account Types Breakdown */}
-                <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                  <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                    <Wallet size={16} className="text-sky-400" /> Accounts Overview
-                  </h3>
-                  <div className="space-y-3">
-                    {ACCOUNT_TYPES.map((type) => {
-                      const accTrades = trades.filter((t) => t.accountType === type);
-                      const wins = accTrades.filter((t) => t.outcome === "win").length;
-                      const wr = accTrades.length ? Math.round((wins / accTrades.length) * 100) : 0;
-                      const net = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
-
-                      return (
-                        <div key={type} className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                          <div>
-                            <div className="text-sm font-semibold text-white flex items-center gap-2">
-                              {type}
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">{accTrades.length} trades</span>
-                            </div>
-                            <div className="text-[11px] text-slate-500 font-mono mt-0.5">Win Rate: {wr}%</div>
-                          </div>
-                          <div className={`font-mono text-sm font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                            {fmtR(net)}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+              <div>
+                Developed by <span className="text-white font-semibold">Amiir</span> · TikTok: <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
               </div>
-            )}
-
-          </main>
+            </div>
+          </footer>
 
           {/* LIGHTBOX FOR IMAGES */}
           {lightbox && (
@@ -1067,7 +1428,7 @@
               onClick={() => setLightbox(null)}
               className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out"
             >
-              <img src={lightbox} alt="Full Chart" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-slate-800" />
+              <img src={lightbox} alt="Chart" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-slate-800" />
             </div>
           )}
         </div>
@@ -1078,4 +1439,4 @@
     root.render(<App />);
   </script>
 </body>
-</html>
+</html> 
