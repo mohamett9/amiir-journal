@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Amiir Journal - Pro Trading Ledger</title>
   
   <!-- Tailwind CSS -->
@@ -41,6 +41,7 @@
   </script>
 
   <style>
+    * { -webkit-tap-highlight-color: transparent; }
     body {
       background-color: #06090e;
       color: #f1f5f9;
@@ -54,6 +55,8 @@
     .glass-card:hover {
       border-color: rgba(56, 189, 248, 0.2);
     }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
   </style>
 </head>
@@ -133,7 +136,9 @@
         devBy: "Developed by",
         calendarTitle: "Trading Calendar",
         editChecklist: "Edit Checklist",
-        addChecklistItem: "Add Item"
+        addChecklistItem: "Add Item",
+        swipeAccounts: "Swipe accounts ➔",
+        chooseFiles: "Files"
       },
       so: {
         journal: "Diiwaanka",
@@ -173,7 +178,9 @@
         devBy: "Waxaa dhisay",
         calendarTitle: "Kalandarka Ganacsiga",
         editChecklist: "Beddel Checklist",
-        addChecklistItem: "Ku dar Qodob"
+        addChecklistItem: "Ku dar Qodob",
+        swipeAccounts: "Jiid akoonnada ➔",
+        chooseFiles: "Sawirro"
       }
     };
 
@@ -259,6 +266,7 @@
       const [tab, setTab] = useState("journal");
       const [showForm, setShowForm] = useState(false);
       const [editingId, setEditingId] = useState(null);
+      const [expandedTradeId, setExpandedTradeId] = useState(null); // UPDATE 2: TAP TO EXPAND
       const [form, setForm] = useState(EMPTY_FORM);
       const [error, setError] = useState("");
       const [lightbox, setLightbox] = useState(null);
@@ -269,7 +277,10 @@
       const [noteForm, setNoteForm] = useState({ title: "", tag: "ICT Model", content: "" });
       const [showNoteForm, setShowNoteForm] = useState(false);
 
+      // Community State (UPDATE 3: MULTI-IMAGE UPLOAD)
       const [chatInput, setChatInput] = useState("");
+      const [chatImages, setChatImages] = useState([]);
+      const [chatUploading, setChatUploading] = useState(false);
       const chatScrollRef = useRef(null);
 
       const [filterAccount, setFilterAccount] = useState("all");
@@ -375,6 +386,36 @@
         }
       };
 
+      // UPDATE 3: Community Choose Files Multi-Image Handler
+      const handleCommunityFiles = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        setChatUploading(true);
+        try {
+          const promises = files.map((file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = async () => {
+                const resized = await resizeImage(reader.result, 800);
+                resolve(resized);
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+          const newImgs = await Promise.all(promises);
+          setChatImages((prev) => [...prev, ...newImgs]);
+        } catch (err) {
+          alert("Sawirrada lama shubi karin.");
+        } finally {
+          setChatUploading(false);
+          e.target.value = "";
+        }
+      };
+
+      const removeChatImage = (index) => {
+        setChatImages((prev) => prev.filter((_, i) => i !== index));
+      };
+
       // Checklist Management
       const toggleChecklistItem = (item) => {
         const cur = form.checklist || [];
@@ -468,6 +509,7 @@
         if (!confirm("Delete this trade?")) return;
         try {
           await deleteDoc(doc(db, "users", user.uid, "trades", id));
+          if (expandedTradeId === id) setExpandedTradeId(null);
         } catch (err) {
           setError(err.message);
         }
@@ -503,15 +545,17 @@
 
       const sendChatMessage = async (e) => {
         e.preventDefault();
-        if (!chatInput.trim()) return;
+        if (!chatInput.trim() && chatImages.length === 0) return;
         const msg = {
           uid: user.uid,
           author: user.displayName || "Trader",
           photo: user.photoURL || "",
           text: chatInput.trim(),
+          images: chatImages,
           timestamp: new Date().toISOString()
         };
         setChatInput("");
+        setChatImages([]);
         await addDoc(collection(db, "public_chat"), msg);
       };
 
@@ -1055,7 +1099,7 @@
                 </div>
               )}
 
-              {/* ================= TAB 1: JOURNAL ================= */}
+              {/* ================= TAB 1: JOURNAL (UPDATE 2: TAP TO EXPAND/COLLAPSE) ================= */}
               {tab === "journal" && (
                 <div>
                   {loading ? (
@@ -1071,72 +1115,155 @@
                       </div>
 
                       {filteredTrades.map((tr) => {
+                        const isExpanded = expandedTradeId === tr.id;
                         const sessionInfo = SESSIONS.find((s) => s.id === tr.session);
                         const imgs = tr.images || (tr.image ? [tr.image] : []);
 
                         return (
                           <div
                             key={tr.id}
-                            onDoubleClick={() => { if (imgs.length > 0) setLightbox(imgs[0]); }}
-                            className="glass-card rounded-xl border border-slate-800/80 p-3 flex items-center justify-between gap-3 hover:border-sky-500/30 transition-all select-none cursor-pointer"
+                            className={`glass-card rounded-xl border transition-all duration-150 overflow-hidden ${
+                              isExpanded ? "border-sky-500/60 shadow-lg shadow-sky-500/5" : "border-slate-800/80"
+                            }`}
                           >
-                            <div className="flex items-center gap-2.5">
-                              {tr.outcome === "win" ? (
-                                <div className="w-6 h-6 rounded-md bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-                                  <TrendingUp size={14} />
-                                </div>
-                              ) : (
-                                <div className="w-6 h-6 rounded-md bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
-                                  <TrendingDown size={14} />
-                                </div>
-                              )}
+                            {/* Clickable Header Row */}
+                            <div
+                              onClick={() => setExpandedTradeId(isExpanded ? null : tr.id)}
+                              className="p-3 flex items-center justify-between gap-3 hover:border-sky-500/30 transition-all select-none cursor-pointer active:bg-slate-800/40"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                {tr.outcome === "win" ? (
+                                  <div className="w-6 h-6 rounded-md bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                                    <TrendingUp size={14} />
+                                  </div>
+                                ) : (
+                                  <div className="w-6 h-6 rounded-md bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                                    <TrendingDown size={14} />
+                                  </div>
+                                )}
 
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-xs font-mono text-white">{tr.symbol}</span>
-                                  <span className={`text-[9px] uppercase font-mono px-1 rounded font-bold border ${
-                                    tr.direction === "buy" ? "bg-sky-500/20 text-sky-300 border-sky-400/30" : "bg-rose-500/20 text-rose-300 border-rose-400/30"
-                                  }`}>
-                                    {tr.direction}
-                                  </span>
-                                  <span className="text-[10px] text-slate-400 font-mono">
-                                    {tr.accountName}
-                                  </span>
+                                <div>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-xs font-mono text-white">{tr.symbol}</span>
+                                    <span className={`text-[9px] uppercase font-mono px-1 rounded font-bold border ${
+                                      tr.direction === "buy" ? "bg-sky-500/20 text-sky-300 border-sky-400/30" : "bg-rose-500/20 text-rose-300 border-rose-400/30"
+                                    }`}>
+                                      {tr.direction}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                      {tr.accountName}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 font-mono">
+                                    {tr.date} · {sessionInfo?.flag} {sessionInfo?.label} · {tr.purgeTime}
+                                  </div>
                                 </div>
-                                <div className="text-[10px] text-slate-500 font-mono">
-                                  {tr.date} · {sessionInfo?.flag} {sessionInfo?.label} · {tr.purgeTime}
+                              </div>
+
+                              <div className="flex items-center gap-2.5">
+                                {imgs.length > 0 && (
+                                  <div className="flex items-center gap-1 text-slate-400 text-[10px] bg-slate-800/60 px-1.5 py-0.5 rounded border border-slate-700">
+                                    <ImageIcon size={11} className="text-sky-400" />
+                                    <span>{imgs.length}</span>
+                                  </div>
+                                )}
+
+                                <div className={`text-xs font-bold font-mono ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                  {fmtR(tr.rMultiple || 0)}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); startEditTrade(tr); }}
+                                  className="text-slate-500 hover:text-sky-400 p-1"
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); removeTrade(tr.id); }}
+                                  className="text-slate-500 hover:text-rose-400 p-1"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+
+                                <div className="text-slate-500 p-0.5">
+                                  {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              {imgs.length > 0 && (
-                                <div className="flex items-center gap-1 text-slate-400 text-[10px] bg-slate-800/60 px-1.5 py-0.5 rounded border border-slate-700">
-                                  <ImageIcon size={11} className="text-sky-400" />
-                                  <span>{imgs.length}</span>
+                            {/* Expanded Full Details */}
+                            {isExpanded && (
+                              <div className="px-3.5 pb-3.5 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2.5">
+                                {/* Checklist Confluences */}
+                                {tr.checklist && tr.checklist.length > 0 && (
+                                  <div>
+                                    <div className="text-[10px] uppercase font-mono text-slate-500 mb-1 flex items-center gap-1">
+                                      <CheckSquare size={11} /> {t.checklistTitle}:
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {tr.checklist.map((item, i) => (
+                                        <span key={i} className="px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/25 text-sky-300 font-mono text-[10px]">
+                                          ✓ {item}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-4 gap-1.5 text-center font-mono">
+                                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
+                                    <div className="text-[9px] text-slate-500 uppercase">{t.risk}</div>
+                                    <div className="text-xs text-white font-semibold">{tr.risk}%</div>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
+                                    <div className="text-[9px] text-slate-500 uppercase">Reward</div>
+                                    <div className="text-xs text-white font-semibold">{tr.reward}%</div>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
+                                    <div className="text-[9px] text-slate-500 uppercase">{t.rrRatio}</div>
+                                    <div className="text-xs text-white font-semibold">1:{tr.rrRatio}</div>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
+                                    <div className="text-[9px] text-slate-500 uppercase">Return</div>
+                                    <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                      {fmtR(tr.rMultiple || 0)}
+                                    </div>
+                                  </div>
                                 </div>
-                              )}
 
-                              <div className={`text-xs font-bold font-mono ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                {fmtR(tr.rMultiple || 0)}
+                                {/* Chart Screenshots Gallery */}
+                                {imgs.length > 0 && (
+                                  <div>
+                                    <div className="text-[10px] uppercase font-mono text-slate-500 mb-1">
+                                      {t.chartsTitle}:
+                                    </div>
+                                    <div className="flex gap-2 overflow-x-auto pb-1">
+                                      {imgs.map((imgSrc, idx) => (
+                                        <img
+                                          key={idx}
+                                          src={imgSrc}
+                                          alt="chart"
+                                          onClick={() => setLightbox(imgSrc)}
+                                          className="h-24 rounded-lg border border-slate-700 object-cover cursor-zoom-in hover:border-sky-400"
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Notes */}
+                                {tr.notes && (
+                                  <div className="p-2.5 rounded bg-slate-900/80 border border-slate-800 text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">
+                                    <div className="text-[10px] font-mono uppercase text-slate-500 mb-0.5">{t.notesLabel}:</div>
+                                    {tr.notes}
+                                  </div>
+                                )}
                               </div>
-
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); startEditTrade(tr); }}
-                                className="text-slate-500 hover:text-sky-400 p-1"
-                              >
-                                <Edit3 size={13} />
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); removeTrade(tr.id); }}
-                                className="text-slate-500 hover:text-rose-400 p-1"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
+                            )}
                           </div>
                         );
                       })}
@@ -1145,11 +1272,57 @@
                 </div>
               )}
 
-              {/* ================= TAB 2: DASHBOARD (CALENDAR ON TOP) ================= */}
+              {/* ================= TAB 2: DASHBOARD (UPDATE 1: SWIPEABLE CAROUSEL ON TOP) ================= */}
               {tab === "dashboard" && (
                 <div className="space-y-6">
                   
-                  {/* 1. CALENDAR AT THE VERY TOP */}
+                  {/* UPDATE 1: SWIPEABLE ACCOUNTS CAROUSEL */}
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-2 px-1">
+                      <span className="flex items-center gap-1.5 text-sky-400 font-semibold">
+                        <Wallet size={13} /> {t.accounts}
+                      </span>
+                      <span className="text-[10px] text-slate-500">{t.swipeAccounts}</span>
+                    </div>
+
+                    <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
+                      {accounts.length === 0 ? (
+                        <div className="glass-card p-3 rounded-xl text-xs text-slate-500 font-mono w-full text-center">
+                          {t.noAccounts}
+                        </div>
+                      ) : (
+                        accounts.map((acc) => {
+                          const accTrades = trades.filter((tr) => tr.accountName === acc.name);
+                          const accWins = accTrades.filter((tr) => tr.outcome === "win").length;
+                          const accWr = accTrades.length ? Math.round((accWins / accTrades.length) * 100) : 0;
+                          const accNet = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
+
+                          return (
+                            <div
+                              key={acc.id}
+                              className="glass-card min-w-[200px] p-3 rounded-xl snap-start border border-slate-800 hover:border-sky-500/40 transition-all flex flex-col justify-between"
+                            >
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-bold text-white truncate max-w-[130px]">{acc.name}</span>
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/20">
+                                  {acc.type}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-400 font-mono mb-2">{acc.balance}</div>
+                              <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/80 text-[10px] font-mono">
+                                <span className="text-slate-500">{accTrades.length}t · {accWr}%</span>
+                                <span className={`font-bold ${accNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                  {fmtR(accNet)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* CALENDAR */}
                   <div className="glass-card p-5 rounded-2xl border border-slate-800">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
@@ -1203,7 +1376,7 @@
                     </div>
                   </div>
 
-                  {/* 2. PURGING & SESSIONS PERFORMANCE BENEATH CALENDAR */}
+                  {/* PURGING & SESSIONS PERFORMANCE */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Purge Matrix */}
                     <div className="glass-card p-4 rounded-xl border border-slate-800">
@@ -1252,7 +1425,6 @@
               {tab === "accounts" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    {/* Account Filter placed inside Accounts tab */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-500">{t.accountLabel}:</span>
                       <select
@@ -1422,9 +1594,9 @@
                 </div>
               )}
 
-              {/* ================= TAB 5: COMMUNITY CHAT ================= */}
+              {/* ================= TAB 5: COMMUNITY (UPDATE 3: MULTI-IMAGE POSTS) ================= */}
               {tab === "community" && (
-                <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[500px]">
+                <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[520px]">
                   <div className="p-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
                     <span className="font-bold text-xs text-white font-mono">{t.community} Chat</span>
                     <span className="text-[10px] text-slate-500 font-mono">Live</span>
@@ -1447,7 +1619,23 @@
                                 <Trash2 size={10} />
                               </button>
                             </div>
-                            <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>
+                            
+                            {m.text && <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>}
+
+                            {/* Display Attached Images in Chat */}
+                            {m.images && m.images.length > 0 && (
+                              <div className="flex gap-1.5 flex-wrap mt-2">
+                                {m.images.map((imgUrl, i) => (
+                                  <img
+                                    key={i}
+                                    src={imgUrl}
+                                    alt="chat attachment"
+                                    onClick={() => setLightbox(imgUrl)}
+                                    className="h-20 w-auto rounded border border-slate-700 object-cover cursor-zoom-in hover:border-sky-400"
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -1455,14 +1643,58 @@
                     <div ref={chatScrollRef}></div>
                   </div>
 
-                  <form onSubmit={sendChatMessage} className="p-2.5 border-t border-slate-800 bg-slate-950/60 flex gap-2">
+                  {/* Previews of selected images before sending */}
+                  {chatImages.length > 0 && (
+                    <div className="p-2 border-t border-slate-800 bg-slate-950/80 flex gap-2 overflow-x-auto">
+                      {chatImages.map((img, idx) => (
+                        <div key={idx} className="relative w-12 h-10 rounded overflow-hidden border border-slate-700 flex-shrink-0">
+                          <img src={img} alt="preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeChatImage(idx)}
+                            className="absolute top-0 right-0 bg-black/80 text-rose-400 p-0.5 rounded-full"
+                          >
+                            <X size={9} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* UPDATE 3: Community Input Form with Choose Files Button */}
+                  <form onSubmit={sendChatMessage} className="p-2.5 border-t border-slate-800 bg-slate-950/60 flex items-center gap-2">
+                    {/* Hidden Multi-file input */}
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      id="communityFileInput"
+                      onChange={handleCommunityFiles}
+                      className="hidden"
+                    />
+
+                    {/* Choose Files Button */}
+                    <label
+                      htmlFor="communityFileInput"
+                      title="Choose Files"
+                      className="p-2 bg-slate-900 border border-slate-700 hover:border-sky-400 text-slate-300 hover:text-sky-300 rounded-xl cursor-pointer flex items-center gap-1 text-[11px] font-mono transition-colors"
+                    >
+                      <ImageIcon size={14} className="text-sky-400" />
+                      <span className="hidden sm:inline">{t.chooseFiles}</span>
+                    </label>
+
                     <input
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      placeholder={t.chatPlaceholder}
+                      placeholder={chatUploading ? "Uploading..." : t.chatPlaceholder}
                       className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400"
                     />
-                    <button type="submit" className="p-2 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer">
+
+                    <button 
+                      type="submit" 
+                      disabled={chatUploading}
+                      className="p-2 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer transition-all active:scale-95"
+                    >
                       <Send size={13} />
                     </button>
                   </form>
