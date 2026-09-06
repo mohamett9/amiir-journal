@@ -14,7 +14,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -48,12 +48,12 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .glass-card {
-      background: rgba(13, 19, 33, 0.75);
+      background: rgba(13, 19, 33, 0.85);
       backdrop-filter: blur(14px);
       border: 1px solid rgba(56, 189, 248, 0.08);
     }
     .glass-card:hover {
-      border-color: rgba(56, 189, 248, 0.2);
+      border-color: rgba(56, 189, 248, 0.25);
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -69,7 +69,7 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, DollarSign
     } from "lucide-react";
 
     // Firebase
@@ -96,7 +96,6 @@
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // Multilingual Dictionary
     const DICT = {
       en: {
         journal: "Journal",
@@ -120,9 +119,10 @@
         outcome: "Outcome",
         risk: "Risk %",
         rrRatio: "R:R",
+        pnlLabel: "P&L Amount ($)",
         checklistTitle: "Confluence Checklist",
         chartsTitle: "Execution Charts",
-        notesLabel: "Notes & Execution Rules",
+        notesLabel: "Notes & Rules",
         saveTrade: "Save Trade",
         updateTrade: "Update Trade",
         noTrades: "No trades recorded yet.",
@@ -132,13 +132,12 @@
         addAccount: "Add Account",
         addNote: "New Note",
         signInGoogle: "Continue with Google",
-        chatPlaceholder: "Share market idea...",
+        chatPlaceholder: "Share market idea or chart...",
         devBy: "Developed by",
-        calendarTitle: "Trading Calendar",
+        calendarTitle: "Calendar",
         editChecklist: "Edit Checklist",
-        addChecklistItem: "Add Item",
-        swipeAccounts: "Swipe accounts ➔",
-        chooseFiles: "Files"
+        seeMore: "See More",
+        showLess: "Show Less"
       },
       so: {
         journal: "Diiwaanka",
@@ -162,6 +161,7 @@
         outcome: "Natiijada",
         risk: "Risk %",
         rrRatio: "R:R",
+        pnlLabel: "Lacagta P&L ($)",
         checklistTitle: "ICT Checklist",
         chartsTitle: "Sawirrada Chart-ka",
         notesLabel: "Falanqaynta & Fiiro Gaar ah",
@@ -174,13 +174,12 @@
         addAccount: "Ku dar Akoon",
         addNote: "Qor Cashar",
         signInGoogle: "Ku gal Google",
-        chatPlaceholder: "Qor fikrad ama fariin...",
+        chatPlaceholder: "Qor fikrad ama la wadaag chart...",
         devBy: "Waxaa dhisay",
-        calendarTitle: "Kalandarka Ganacsiga",
+        calendarTitle: "Calendar",
         editChecklist: "Beddel Checklist",
-        addChecklistItem: "Ku dar Qodob",
-        swipeAccounts: "Jiid akoonnada ➔",
-        chooseFiles: "Sawirro"
+        seeMore: "Tus kuwo kale",
+        showLess: "Yaree"
       }
     };
 
@@ -214,6 +213,7 @@
       outcome: "win",
       risk: "1",
       rrRatio: "2",
+      pnlDollar: "",
       notes: "",
       images: [],
       checklist: []
@@ -258,7 +258,6 @@
       const [chatMessages, setChatMessages] = useState([]);
       const [loading, setLoading] = useState(true);
 
-      // Customizable Checklist
       const [checklistItems, setChecklistItems] = useState(DEFAULT_CHECKLIST);
       const [showChecklistEditor, setShowChecklistEditor] = useState(false);
       const [newChecklistInput, setNewChecklistInput] = useState("");
@@ -266,10 +265,13 @@
       const [tab, setTab] = useState("journal");
       const [showForm, setShowForm] = useState(false);
       const [editingId, setEditingId] = useState(null);
-      const [expandedTradeId, setExpandedTradeId] = useState(null); // UPDATE 2: TAP TO EXPAND
+      const [expandedTradeId, setExpandedTradeId] = useState(null);
       const [form, setForm] = useState(EMPTY_FORM);
       const [error, setError] = useState("");
       const [lightbox, setLightbox] = useState(null);
+
+      // Pagination for Journal
+      const [visibleCount, setVisibleCount] = useState(5);
 
       const [newAcc, setNewAcc] = useState({ name: "", type: "Funded", balance: "$100,000", mt5Id: "" });
       const [showAccModal, setShowAccModal] = useState(false);
@@ -277,18 +279,16 @@
       const [noteForm, setNoteForm] = useState({ title: "", tag: "ICT Model", content: "" });
       const [showNoteForm, setShowNoteForm] = useState(false);
 
-      // Community State (UPDATE 3: MULTI-IMAGE UPLOAD)
+      // Community State
       const [chatInput, setChatInput] = useState("");
       const [chatImages, setChatImages] = useState([]);
       const [chatUploading, setChatUploading] = useState(false);
       const chatScrollRef = useRef(null);
 
       const [filterAccount, setFilterAccount] = useState("all");
-
       const [viewMonth, setViewMonth] = useState(new Date().getMonth());
       const [viewYear, setViewYear] = useState(new Date().getFullYear());
 
-      // Auth Listener
       useEffect(() => {
         const unsub = onAuthStateChanged(auth, (u) => {
           setUser(u);
@@ -297,7 +297,6 @@
         return () => unsub();
       }, []);
 
-      // Realtime Trades
       useEffect(() => {
         if (!user) { setTrades([]); setLoading(false); return; }
         setLoading(true);
@@ -312,7 +311,6 @@
         return () => unsub();
       }, [user]);
 
-      // Realtime Checklist Settings
       useEffect(() => {
         if (!user) return;
         const docRef = doc(db, "users", user.uid, "settings", "checklist");
@@ -324,7 +322,6 @@
         return () => unsub();
       }, [user]);
 
-      // Realtime Accounts
       useEffect(() => {
         if (!user) return;
         const accRef = collection(db, "users", user.uid, "accounts");
@@ -336,7 +333,6 @@
         return () => unsub();
       }, [user]);
 
-      // Realtime Notes
       useEffect(() => {
         if (!user) return;
         const notesRef = collection(db, "users", user.uid, "notes");
@@ -349,7 +345,6 @@
         return () => unsub();
       }, [user]);
 
-      // Realtime Chat
       useEffect(() => {
         if (!user) return;
         const q = query(collection(db, "public_chat"), orderBy("timestamp", "asc"), limit(60));
@@ -386,7 +381,6 @@
         }
       };
 
-      // UPDATE 3: Community Choose Files Multi-Image Handler
       const handleCommunityFiles = async (e) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
@@ -412,11 +406,6 @@
         }
       };
 
-      const removeChatImage = (index) => {
-        setChatImages((prev) => prev.filter((_, i) => i !== index));
-      };
-
-      // Checklist Management
       const toggleChecklistItem = (item) => {
         const cur = form.checklist || [];
         if (cur.includes(item)) {
@@ -453,6 +442,7 @@
         const rr = parseFloat(form.rrRatio) || 0;
         const reward = +(risk * rr).toFixed(2);
         const rMultiple = form.outcome === "win" ? reward : form.outcome === "loss" ? -risk : 0;
+        const pnlNum = parseFloat(form.pnlDollar) || 0;
         const tradeId = editingId || Date.now().toString();
 
         const tradeData = {
@@ -468,6 +458,7 @@
           rrRatio: rr,
           reward,
           rMultiple,
+          pnlDollar: pnlNum,
           notes: form.notes || "",
           images: form.images || [],
           checklist: form.checklist || [],
@@ -496,6 +487,7 @@
           outcome: tr.outcome,
           risk: tr.risk?.toString() || "1",
           rrRatio: tr.rrRatio?.toString() || "2",
+          pnlDollar: tr.pnlDollar?.toString() || "",
           notes: tr.notes || "",
           images: tr.images || (tr.image ? [tr.image] : []),
           checklist: tr.checklist || []
@@ -571,12 +563,13 @@
         });
       }, [trades, filterAccount]);
 
-      // Stats
+      // Overall Stats
       const stats = useMemo(() => {
         const total = filteredTrades.length;
         const wins = filteredTrades.filter((tr) => tr.outcome === "win").length;
         const losses = filteredTrades.filter((tr) => tr.outcome === "loss").length;
         const netR = filteredTrades.reduce((acc, tr) => acc + (tr.rMultiple || 0), 0);
+        const totalDollar = filteredTrades.reduce((acc, tr) => acc + (tr.pnlDollar || 0), 0);
         const winRate = total ? Math.round((wins / total) * 100) : 0;
 
         const sessionsStats = {};
@@ -584,20 +577,14 @@
           const list = filteredTrades.filter((tr) => tr.session === s);
           const w = list.filter((tr) => tr.outcome === "win").length;
           const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
-          sessionsStats[s] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
+          const d = list.reduce((sum, tr) => sum + (tr.pnlDollar || 0), 0);
+          sessionsStats[s] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r, netDollar: d };
         });
 
-        const purgeStats = {};
-        Object.values(PURGE_TIMES).flat().forEach((pt) => {
-          const list = filteredTrades.filter((tr) => tr.purgeTime === pt);
-          const w = list.filter((tr) => tr.outcome === "win").length;
-          const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
-          purgeStats[pt] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
-        });
-
-        return { total, wins, losses, netR, winRate, sessionsStats, purgeStats };
+        return { total, wins, losses, netR, totalDollar, winRate, sessionsStats };
       }, [filteredTrades]);
 
+      // Weekly Consistency (Moved to Dashboard bottom)
       const weeklyConsistency = useMemo(() => {
         const now = new Date();
         const startOfWeek = new Date(now);
@@ -610,16 +597,18 @@
         const count = thisWeekTrades.length;
         const wins = thisWeekTrades.filter((tr) => tr.outcome === "win").length;
         const netR = thisWeekTrades.reduce((acc, tr) => acc + (tr.rMultiple || 0), 0);
+        const netDollar = thisWeekTrades.reduce((acc, tr) => acc + (tr.pnlDollar || 0), 0);
         const winRate = count ? Math.round((wins / count) * 100) : 0;
-        return { count, wins, netR, winRate };
+        return { count, wins, netR, netDollar, winRate };
       }, [trades]);
 
-      // Calendar
+      // Calendar Calculations
       const dayMap = useMemo(() => {
         const map = {};
         filteredTrades.forEach((tr) => {
-          if (!map[tr.date]) map[tr.date] = { net: 0, count: 0 };
-          map[tr.date].net += tr.rMultiple || 0;
+          if (!map[tr.date]) map[tr.date] = { netR: 0, netDollar: 0, count: 0 };
+          map[tr.date].netR += tr.rMultiple || 0;
+          map[tr.date].netDollar += tr.pnlDollar || 0;
           map[tr.date].count += 1;
         });
         return map;
@@ -638,7 +627,8 @@
         return cells;
       }, [viewYear, viewMonth, dayMap]);
 
-      const fmtR = (n) => (n > 0 ? "+" : "") + n.toFixed(2) + "%";
+      const fmtR = (n) => (n > 0 ? "+" : "") + Number(n).toFixed(2) + "%";
+      const fmtDollar = (n) => (n >= 0 ? "+$" : "-$") + Math.abs(Number(n)).toLocaleString();
 
       if (authLoading) {
         return (
@@ -655,7 +645,6 @@
             <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="my-auto w-full max-w-sm glass-card p-8 rounded-3xl shadow-2xl relative z-10 border border-slate-800 text-center">
-              {/* Photo */}
               <div className="relative w-24 h-24 mx-auto mb-6">
                 <div className="absolute -inset-1 bg-sky-400/20 rounded-full blur-sm"></div>
                 <img
@@ -671,7 +660,6 @@
 
               <h1 className="text-xl font-bold tracking-tight text-white mb-4">Amiir Journal</h1>
               
-              {/* Requested White Bold Small-Caps Quote */}
               <div className="mb-8 px-2">
                 <p className="text-white text-sm sm:text-base font-semibold tracking-wider leading-relaxed drop-shadow-[0_2px_10px_rgba(255,255,255,0.15)]">
                   ᴡᴀɴᴋᴀ ᴡᴇʏɴ ɴɪɴᴋɪɪ ʜᴇʟɪ ᴋᴀʀᴏᴏᴡ, ᴡᴀxᴀʀᴋᴀ ʜᴀᴡ ʟᴇᴇxᴀɴ
@@ -707,14 +695,11 @@
             <header className="border-b border-slate-800/60 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-30">
               <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
                 
-                {/* Left Branding */}
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm tracking-tight text-white">Amiir Journal</span>
                 </div>
 
-                {/* Right Actions */}
                 <div className="flex items-center gap-3">
-                  {/* Language Toggle */}
                   <button
                     onClick={() => setLang(lang === "en" ? "so" : "en")}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 hover:border-sky-500/40 cursor-pointer"
@@ -723,7 +708,6 @@
                     <span>{lang.toUpperCase()}</span>
                   </button>
 
-                  {/* User Chip */}
                   <div className="flex items-center gap-2 bg-slate-900/90 px-2 py-1 rounded-full border border-slate-800">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="user" className="w-5 h-5 rounded-full" />
@@ -736,7 +720,6 @@
                     </button>
                   </div>
 
-                  {/* New Trade Button */}
                   <button
                     onClick={() => {
                       if (showForm) { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); }
@@ -751,10 +734,10 @@
               </div>
             </header>
 
-            <main className="max-w-5xl mx-auto px-4 py-6">
+            <main className="max-w-5xl mx-auto px-4 py-5">
               
-              {/* Main Tabs */}
-              <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-6 overflow-x-auto w-fit">
+              {/* 1. TOP HORIZONTAL SWIPEABLE NAV TABS */}
+              <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-5 overflow-x-auto no-scrollbar w-full snap-x">
                 {[
                   { id: "journal", label: t.journal, icon: ListChecks },
                   { id: "dashboard", label: t.dashboard, icon: LayoutGrid },
@@ -765,7 +748,7 @@
                   <button
                     key={item.id}
                     onClick={() => setTab(item.id)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap snap-start flex-shrink-0 ${
                       tab === item.id 
                         ? "bg-sky-500/15 text-sky-300 border border-sky-500/30" 
                         : "text-slate-400 hover:text-slate-200"
@@ -777,9 +760,9 @@
                 ))}
               </div>
 
-              {/* STATS BANNER: ONLY ON JOURNAL TAB */}
+              {/* STATS BANNER IN JOURNAL (Clean 4 Cards with % & $) */}
               {tab === "journal" && (
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
                   <div className="glass-card p-3 rounded-xl border border-slate-800">
                     <div className="text-[10px] text-slate-500 uppercase font-mono">{t.trades}</div>
                     <div className="text-lg font-bold font-mono text-white mt-0.5">{stats.total}</div>
@@ -801,28 +784,25 @@
 
                   <div className="glass-card p-3 rounded-xl border border-slate-800">
                     <div className="text-[10px] text-slate-500 uppercase font-mono">{t.netReturn}</div>
-                    <div className={`text-lg font-bold font-mono mt-0.5 ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      {fmtR(stats.netR)}
-                    </div>
-                  </div>
-
-                  <div className="glass-card p-3 rounded-xl border border-sky-500/20 col-span-2 sm:col-span-1 bg-sky-950/20">
-                    <div className="text-[10px] text-sky-400 uppercase font-mono flex items-center gap-1">
-                      <Award size={11} /> {t.thisWeek}
-                    </div>
-                    <div className="text-sm font-bold font-mono text-white mt-1 flex items-center justify-between">
-                      <span>{fmtR(weeklyConsistency.netR)}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-sans">
-                        {weeklyConsistency.winRate}%
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-lg font-bold font-mono ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        {fmtR(stats.netR)}
                       </span>
+                      {stats.totalDollar !== 0 && (
+                        <span className={`text-xs font-mono font-semibold px-1.5 py-0.5 rounded ${
+                          stats.totalDollar >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"
+                        }`}>
+                          {fmtDollar(stats.totalDollar)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* ================= TRADE FORM ================= */}
+              {/* ================= TRADE FORM (WITH $ PNL INPUT) ================= */}
               {showForm && (
-                <div className="glass-card p-5 rounded-2xl mb-6 border border-sky-500/30 shadow-xl">
+                <div className="glass-card p-4 sm:p-5 rounded-2xl mb-6 border border-sky-500/30 shadow-xl">
                   <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
                     <h3 className="font-bold text-xs text-white uppercase tracking-wider">
                       {editingId ? t.updateTrade : t.newTrade}
@@ -912,15 +892,15 @@
                     </div>
                   </div>
 
-                  {/* Direction, Outcome, Risk, R:R */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                  {/* Direction, Outcome, Risk, R:R, and $ Amount */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-3">
                     <div>
                       <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.direction}</label>
                       <div className="flex gap-1.5">
                         <button
                           type="button"
                           onClick={() => setForm({ ...form, direction: "buy" })}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border cursor-pointer ${
                             form.direction === "buy" ? "bg-sky-500/20 border-sky-400 text-sky-300" : "border-slate-800 bg-slate-900 text-slate-400"
                           }`}
                         >
@@ -929,7 +909,7 @@
                         <button
                           type="button"
                           onClick={() => setForm({ ...form, direction: "sell" })}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border cursor-pointer ${
                             form.direction === "sell" ? "bg-rose-500/20 border-rose-400 text-rose-300" : "border-slate-800 bg-slate-900 text-slate-400"
                           }`}
                         >
@@ -981,9 +961,21 @@
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400"
                       />
                     </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.pnlLabel}</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={form.pnlDollar}
+                        onChange={(e) => setForm({ ...form, pnlDollar: e.target.value })}
+                        placeholder="e.g. 250 or -150"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400"
+                      />
+                    </div>
                   </div>
 
-                  {/* Checklist with Edit Button */}
+                  {/* Checklist */}
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-[10px] uppercase font-mono text-slate-500 flex items-center gap-1">
@@ -998,7 +990,6 @@
                       </button>
                     </div>
 
-                    {/* Checklist Editor Box */}
                     {showChecklistEditor && (
                       <div className="p-2.5 mb-2 rounded-lg bg-slate-900/90 border border-sky-500/30">
                         <div className="flex gap-1.5 mb-2">
@@ -1027,7 +1018,6 @@
                       </div>
                     )}
 
-                    {/* Active Checklist Items */}
                     <div className="flex flex-wrap gap-1.5">
                       {checklistItems.map((item) => {
                         const checked = (form.checklist || []).includes(item);
@@ -1099,7 +1089,7 @@
                 </div>
               )}
 
-              {/* ================= TAB 1: JOURNAL (UPDATE 2: TAP TO EXPAND/COLLAPSE) ================= */}
+              {/* ================= TAB 1: JOURNAL (COMPACT PRO + SEE MORE) ================= */}
               {tab === "journal" && (
                 <div>
                   {loading ? (
@@ -1109,12 +1099,12 @@
                       <p className="text-xs text-slate-400">{t.noTrades}</p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="text-right text-[11px] text-slate-500 font-mono px-1">
-                        {filteredTrades.length} {t.trades}
+                    <div className="space-y-1.5">
+                      <div className="text-right text-[10px] text-slate-500 font-mono px-1 mb-1">
+                        Showing {Math.min(visibleCount, filteredTrades.length)} of {filteredTrades.length} {t.trades}
                       </div>
 
-                      {filteredTrades.map((tr) => {
+                      {filteredTrades.slice(0, visibleCount).map((tr) => {
                         const isExpanded = expandedTradeId === tr.id;
                         const sessionInfo = SESSIONS.find((s) => s.id === tr.session);
                         const imgs = tr.images || (tr.image ? [tr.image] : []);
@@ -1123,89 +1113,98 @@
                           <div
                             key={tr.id}
                             className={`glass-card rounded-xl border transition-all duration-150 overflow-hidden ${
-                              isExpanded ? "border-sky-500/60 shadow-lg shadow-sky-500/5" : "border-slate-800/80"
+                              isExpanded ? "border-sky-500/60 shadow-lg shadow-sky-500/10" : "border-slate-800/80"
                             }`}
                           >
-                            {/* Clickable Header Row */}
+                            {/* COMPACT PRO ROW */}
                             <div
                               onClick={() => setExpandedTradeId(isExpanded ? null : tr.id)}
-                              className="p-3 flex items-center justify-between gap-3 hover:border-sky-500/30 transition-all select-none cursor-pointer active:bg-slate-800/40"
+                              className="px-3 py-2 flex items-center justify-between gap-2.5 select-none cursor-pointer active:bg-slate-800/40"
                             >
-                              <div className="flex items-center gap-2.5">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 {tr.outcome === "win" ? (
-                                  <div className="w-6 h-6 rounded-md bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-                                    <TrendingUp size={14} />
+                                  <div className="w-5 h-5 rounded bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                                    <TrendingUp size={13} />
                                   </div>
                                 ) : (
-                                  <div className="w-6 h-6 rounded-md bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
-                                    <TrendingDown size={14} />
+                                  <div className="w-5 h-5 rounded bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                                    <TrendingDown size={13} />
                                   </div>
                                 )}
 
                                 <div>
-                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                  <div className="flex items-center gap-1.5">
                                     <span className="font-bold text-xs font-mono text-white">{tr.symbol}</span>
-                                    <span className={`text-[9px] uppercase font-mono px-1 rounded font-bold border ${
+                                    <span className={`text-[8px] uppercase font-mono px-1 rounded font-bold border ${
                                       tr.direction === "buy" ? "bg-sky-500/20 text-sky-300 border-sky-400/30" : "bg-rose-500/20 text-rose-300 border-rose-400/30"
                                     }`}>
                                       {tr.direction}
                                     </span>
-                                    <span className="text-[10px] text-slate-400 font-mono">
+                                    <span className="text-[9px] text-slate-400 font-mono">
                                       {tr.accountName}
                                     </span>
                                   </div>
-                                  <div className="text-[10px] text-slate-500 font-mono">
+                                  <div className="text-[9px] text-slate-500 font-mono">
                                     {tr.date} · {sessionInfo?.flag} {sessionInfo?.label} · {tr.purgeTime}
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-2.5">
+                              <div className="flex items-center gap-2 font-mono">
                                 {imgs.length > 0 && (
-                                  <div className="flex items-center gap-1 text-slate-400 text-[10px] bg-slate-800/60 px-1.5 py-0.5 rounded border border-slate-700">
-                                    <ImageIcon size={11} className="text-sky-400" />
+                                  <div className="flex items-center gap-1 text-slate-400 text-[9px] bg-slate-800/60 px-1 py-0.5 rounded border border-slate-700">
+                                    <ImageIcon size={10} className="text-sky-400" />
                                     <span>{imgs.length}</span>
                                   </div>
                                 )}
 
-                                <div className={`text-xs font-bold font-mono ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                {/* % Return */}
+                                <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                                   {fmtR(tr.rMultiple || 0)}
                                 </div>
+
+                                {/* $ Amount */}
+                                {tr.pnlDollar !== undefined && tr.pnlDollar !== 0 && (
+                                  <div className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                    tr.pnlDollar >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"
+                                  }`}>
+                                    {fmtDollar(tr.pnlDollar)}
+                                  </div>
+                                )}
 
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); startEditTrade(tr); }}
-                                  className="text-slate-500 hover:text-sky-400 p-1"
+                                  className="text-slate-500 hover:text-sky-400 p-0.5"
                                 >
-                                  <Edit3 size={13} />
+                                  <Edit3 size={12} />
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); removeTrade(tr.id); }}
-                                  className="text-slate-500 hover:text-rose-400 p-1"
+                                  className="text-slate-500 hover:text-rose-400 p-0.5"
                                 >
-                                  <Trash2 size={13} />
+                                  <Trash2 size={12} />
                                 </button>
 
-                                <div className="text-slate-500 p-0.5">
+                                <div className="text-slate-500">
                                   {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </div>
                               </div>
                             </div>
 
-                            {/* Expanded Full Details */}
+                            {/* EXPANDED DETAILS */}
                             {isExpanded && (
-                              <div className="px-3.5 pb-3.5 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2.5">
-                                {/* Checklist Confluences */}
+                              <div className="px-3 pb-3 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2">
                                 {tr.checklist && tr.checklist.length > 0 && (
                                   <div>
-                                    <div className="text-[10px] uppercase font-mono text-slate-500 mb-1 flex items-center gap-1">
-                                      <CheckSquare size={11} /> {t.checklistTitle}:
+                                    <div className="text-[9px] uppercase font-mono text-slate-500 mb-1 flex items-center gap-1">
+                                      <CheckSquare size={10} /> {t.checklistTitle}:
                                     </div>
                                     <div className="flex flex-wrap gap-1">
                                       {tr.checklist.map((item, i) => (
-                                        <span key={i} className="px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/25 text-sky-300 font-mono text-[10px]">
+                                        <span key={i} className="px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/25 text-sky-300 font-mono text-[9px]">
                                           ✓ {item}
                                         </span>
                                       ))}
@@ -1213,32 +1212,30 @@
                                   </div>
                                 )}
 
-                                {/* Stats Grid */}
                                 <div className="grid grid-cols-4 gap-1.5 text-center font-mono">
-                                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
-                                    <div className="text-[9px] text-slate-500 uppercase">{t.risk}</div>
+                                  <div className="p-1 rounded bg-slate-900 border border-slate-800">
+                                    <div className="text-[8px] text-slate-500 uppercase">{t.risk}</div>
                                     <div className="text-xs text-white font-semibold">{tr.risk}%</div>
                                   </div>
-                                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
-                                    <div className="text-[9px] text-slate-500 uppercase">Reward</div>
+                                  <div className="p-1 rounded bg-slate-900 border border-slate-800">
+                                    <div className="text-[8px] text-slate-500 uppercase">Reward</div>
                                     <div className="text-xs text-white font-semibold">{tr.reward}%</div>
                                   </div>
-                                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
-                                    <div className="text-[9px] text-slate-500 uppercase">{t.rrRatio}</div>
+                                  <div className="p-1 rounded bg-slate-900 border border-slate-800">
+                                    <div className="text-[8px] text-slate-500 uppercase">{t.rrRatio}</div>
                                     <div className="text-xs text-white font-semibold">1:{tr.rrRatio}</div>
                                   </div>
-                                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
-                                    <div className="text-[9px] text-slate-500 uppercase">Return</div>
+                                  <div className="p-1 rounded bg-slate-900 border border-slate-800">
+                                    <div className="text-[8px] text-slate-500 uppercase">Profit/Loss</div>
                                     <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                      {fmtR(tr.rMultiple || 0)}
+                                      {tr.pnlDollar ? fmtDollar(tr.pnlDollar) : fmtR(tr.rMultiple || 0)}
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Chart Screenshots Gallery */}
                                 {imgs.length > 0 && (
                                   <div>
-                                    <div className="text-[10px] uppercase font-mono text-slate-500 mb-1">
+                                    <div className="text-[9px] uppercase font-mono text-slate-500 mb-1">
                                       {t.chartsTitle}:
                                     </div>
                                     <div className="flex gap-2 overflow-x-auto pb-1">
@@ -1248,17 +1245,16 @@
                                           src={imgSrc}
                                           alt="chart"
                                           onClick={() => setLightbox(imgSrc)}
-                                          className="h-24 rounded-lg border border-slate-700 object-cover cursor-zoom-in hover:border-sky-400"
+                                          className="h-20 rounded-lg border border-slate-700 object-cover cursor-zoom-in hover:border-sky-400"
                                         />
                                       ))}
                                     </div>
                                   </div>
                                 )}
 
-                                {/* Notes */}
                                 {tr.notes && (
-                                  <div className="p-2.5 rounded bg-slate-900/80 border border-slate-800 text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">
-                                    <div className="text-[10px] font-mono uppercase text-slate-500 mb-0.5">{t.notesLabel}:</div>
+                                  <div className="p-2 rounded bg-slate-900/80 border border-slate-800 text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">
+                                    <div className="text-[9px] font-mono uppercase text-slate-500 mb-0.5">{t.notesLabel}:</div>
                                     {tr.notes}
                                   </div>
                                 )}
@@ -1267,107 +1263,100 @@
                           </div>
                         );
                       })}
+
+                      {/* SEE MORE BUTTON */}
+                      {filteredTrades.length > visibleCount && (
+                        <div className="text-center pt-3 pb-1">
+                          <button
+                            type="button"
+                            onClick={() => setVisibleCount(prev => prev + 5)}
+                            className="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/40 text-xs font-mono text-sky-400 transition-all cursor-pointer shadow-sm active:scale-95"
+                          >
+                            {t.seeMore} (+{filteredTrades.length - visibleCount})
+                          </button>
+                        </div>
+                      )}
+
+                      {visibleCount > 5 && filteredTrades.length > 5 && (
+                        <div className="text-center">
+                          <button
+                            type="button"
+                            onClick={() => setVisibleCount(5)}
+                            className="text-[10px] text-slate-500 hover:text-slate-300 font-mono underline cursor-pointer"
+                          >
+                            {t.showLess}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* ================= TAB 2: DASHBOARD (UPDATE 1: SWIPEABLE CAROUSEL ON TOP) ================= */}
+              {/* ================= TAB 2: DASHBOARD (PRO BIG CALENDAR + THIS WEEK AT BOTTOM) ================= */}
               {tab === "dashboard" && (
                 <div className="space-y-6">
                   
-                  {/* UPDATE 1: SWIPEABLE ACCOUNTS CAROUSEL */}
-                  <div>
-                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-2 px-1">
-                      <span className="flex items-center gap-1.5 text-sky-400 font-semibold">
-                        <Wallet size={13} /> {t.accounts}
-                      </span>
-                      <span className="text-[10px] text-slate-500">{t.swipeAccounts}</span>
-                    </div>
-
-                    <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
-                      {accounts.length === 0 ? (
-                        <div className="glass-card p-3 rounded-xl text-xs text-slate-500 font-mono w-full text-center">
-                          {t.noAccounts}
-                        </div>
-                      ) : (
-                        accounts.map((acc) => {
-                          const accTrades = trades.filter((tr) => tr.accountName === acc.name);
-                          const accWins = accTrades.filter((tr) => tr.outcome === "win").length;
-                          const accWr = accTrades.length ? Math.round((accWins / accTrades.length) * 100) : 0;
-                          const accNet = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
-
-                          return (
-                            <div
-                              key={acc.id}
-                              className="glass-card min-w-[200px] p-3 rounded-xl snap-start border border-slate-800 hover:border-sky-500/40 transition-all flex flex-col justify-between"
-                            >
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-xs font-bold text-white truncate max-w-[130px]">{acc.name}</span>
-                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/20">
-                                  {acc.type}
-                                </span>
-                              </div>
-                              <div className="text-[11px] text-slate-400 font-mono mb-2">{acc.balance}</div>
-                              <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/80 text-[10px] font-mono">
-                                <span className="text-slate-500">{accTrades.length}t · {accWr}%</span>
-                                <span className={`font-bold ${accNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                  {fmtR(accNet)}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-
-                  {/* CALENDAR */}
-                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                  {/* BIG PRO CALENDAR (NAME IS JUST "CALENDAR") */}
+                  <div className="glass-card p-5 rounded-2xl border border-slate-800 shadow-2xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="text-sm font-bold text-white font-mono tracking-wider flex items-center gap-2">
+                        <LayoutGrid size={15} className="text-sky-400" />
                         {t.calendarTitle}
                       </div>
+
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
-                          <ChevronLeft size={16} />
+                        <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 cursor-pointer">
+                          <ChevronLeft size={18} />
                         </button>
-                        <div className="font-bold text-xs text-white font-mono min-w-[120px] text-center">
+                        <div className="font-bold text-xs text-white font-mono min-w-[130px] text-center">
                           {MONTH_NAMES[viewMonth]} {viewYear}
                         </div>
-                        <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
-                          <ChevronRight size={16} />
+                        <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 cursor-pointer">
+                          <ChevronRight size={18} />
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-1 mb-1">
+                    <div className="grid grid-cols-7 gap-1.5 mb-1.5">
                       {WEEKDAYS.map((d) => (
-                        <div key={d} className="text-[9px] font-mono text-slate-500 text-center uppercase py-0.5">{d}</div>
+                        <div key={d} className="text-[10px] font-mono font-bold text-slate-500 text-center uppercase py-1">{d}</div>
                       ))}
                     </div>
 
-                    <div className="grid grid-cols-7 gap-1">
+                    {/* VIBRANT PRO CELLS (LARGE & HIGH-CONTRAST) */}
+                    <div className="grid grid-cols-7 gap-1.5">
                       {calendarCells.map((cell, idx) => {
-                        if (!cell) return <div key={idx} className="aspect-square"></div>;
-                        const net = cell.data?.net || 0;
+                        if (!cell) return <div key={idx} className="min-h-[58px] sm:min-h-[70px]"></div>;
+                        const netR = cell.data?.netR || 0;
+                        const netDollar = cell.data?.netDollar || 0;
+                        const hasTrades = !!cell.data;
+
                         return (
                           <div
                             key={idx}
-                            className={`aspect-square rounded-lg p-1 flex flex-col justify-between border text-[10px] ${
-                              !cell.data
-                                ? "bg-slate-900/30 border-slate-800/40"
-                                : net > 0
-                                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                                : net < 0
-                                ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
-                                : "bg-slate-800 border-slate-700 text-slate-300"
+                            className={`min-h-[58px] sm:min-h-[70px] rounded-xl p-1.5 sm:p-2 flex flex-col justify-between border transition-all ${
+                              !hasTrades
+                                ? "bg-[#09101e]/80 border-slate-800/60 hover:border-slate-700"
+                                : netR > 0
+                                ? "bg-gradient-to-br from-emerald-950/70 to-emerald-900/40 border-emerald-500/70 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                                : netR < 0
+                                ? "bg-gradient-to-br from-rose-950/70 to-rose-900/40 border-rose-500/70 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.2)]"
+                                : "bg-slate-800/80 border-slate-700 text-slate-300"
                             }`}
                           >
-                            <span className="text-[9px] font-mono text-slate-500">{cell.day}</span>
-                            {cell.data && (
-                              <div className="text-right font-mono text-[9px] font-bold">
-                                {fmtR(net)}
+                            <span className="text-[10px] font-mono font-bold text-slate-400">{cell.day}</span>
+
+                            {hasTrades && (
+                              <div className="text-right font-mono leading-tight mt-1">
+                                <div className="text-[10px] sm:text-[11px] font-bold">
+                                  {fmtR(netR)}
+                                </div>
+                                {netDollar !== 0 && (
+                                  <div className="text-[9px] font-semibold opacity-90 truncate">
+                                    {fmtDollar(netDollar)}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1376,44 +1365,53 @@
                     </div>
                   </div>
 
-                  {/* PURGING & SESSIONS PERFORMANCE */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Purge Matrix */}
-                    <div className="glass-card p-4 rounded-xl border border-slate-800">
-                      <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
-                        <Clock size={13} className="text-sky-400" /> Purge Times Matrix
-                      </div>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                        {Object.entries(stats.purgeStats).map(([time, data]) => (
-                          <div key={time} className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
-                            <div className="text-[10px] font-mono text-sky-400 uppercase font-bold">{time}</div>
-                            <div className={`text-xs font-bold font-mono mt-0.5 ${data.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
-                              {data.winRate}%
-                            </div>
-                            <div className="text-[9px] text-slate-500 font-mono">{data.count}t</div>
-                          </div>
-                        ))}
-                      </div>
+                  {/* SESSIONS PERFORMANCE */}
+                  <div className="glass-card p-4 rounded-xl border border-slate-800">
+                    <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
+                      <Clock size={13} className="text-sky-400" /> Sessions Performance
                     </div>
-
-                    {/* Sessions Matrix */}
-                    <div className="glass-card p-4 rounded-xl border border-slate-800">
-                      <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
-                        <Clock size={13} className="text-sky-400" /> Sessions Performance
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {SESSIONS.map((s) => {
-                          const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0 };
-                          return (
-                            <div key={s.id} className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
-                              <div className="text-xs">{s.flag} <span className="font-semibold text-white">{s.label}</span></div>
-                              <div className={`text-xs font-bold font-mono mt-0.5 ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
-                                {st.winRate}%
-                              </div>
-                              <div className="text-[9px] text-slate-500 font-mono">{st.count}t · {fmtR(st.netR)}</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {SESSIONS.map((s) => {
+                        const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0, netDollar: 0 };
+                        return (
+                          <div key={s.id} className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-center">
+                            <div className="text-xs">{s.flag} <span className="font-semibold text-white">{s.label}</span></div>
+                            <div className={`text-xs font-bold font-mono mt-0.5 ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                              {st.winRate}% WR
                             </div>
-                          );
-                        })}
+                            <div className="text-[9px] text-slate-500 font-mono mt-0.5">
+                              {st.count}t · {fmtR(st.netR)}
+                              {st.netDollar !== 0 && <span> · {fmtDollar(st.netDollar)}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* THIS WEEK (PLACED AT THE VERY BOTTOM OF DASHBOARD) */}
+                  <div className="glass-card p-4 rounded-2xl border border-sky-500/25 bg-gradient-to-r from-slate-900/90 to-sky-950/40 shadow-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-400 uppercase">
+                        <Award size={15} /> {t.thisWeek}
+                      </div>
+                      <span className="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono font-bold">
+                        {weeklyConsistency.winRate}% WR ({weeklyConsistency.count} trades)
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm font-mono pt-2 border-t border-slate-800">
+                      <span className="text-slate-400">Total Return:</span>
+                      <div className="flex items-center gap-2.5 font-bold">
+                        <span className={weeklyConsistency.netR >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                          {fmtR(weeklyConsistency.netR)}
+                        </span>
+                        {weeklyConsistency.netDollar !== 0 && (
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            weeklyConsistency.netDollar >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"
+                          }`}>
+                            {fmtDollar(weeklyConsistency.netDollar)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1453,7 +1451,8 @@
                     ) : (
                       accounts.map((acc) => {
                         const accTrades = trades.filter((tr) => tr.accountName === acc.name);
-                        const net = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
+                        const netR = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
+                        const netD = accTrades.reduce((a, b) => a + (b.pnlDollar || 0), 0);
                         return (
                           <div key={acc.id} className="glass-card p-4 rounded-xl border border-slate-800">
                             <div className="flex items-center justify-between mb-1.5">
@@ -1469,7 +1468,10 @@
                             {acc.mt5Id && <div className="text-[10px] text-slate-500 font-mono">MT5: {acc.mt5Id}</div>}
                             <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between font-mono text-[11px]">
                               <span className="text-slate-500">{accTrades.length} trades</span>
-                              <span className={`font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtR(net)}</span>
+                              <div className="flex items-center gap-1.5 font-bold">
+                                <span className={netR >= 0 ? "text-emerald-400" : "text-rose-400"}>{fmtR(netR)}</span>
+                                {netD !== 0 && <span className="text-[10px] opacity-80">{fmtDollar(netD)}</span>}
+                              </div>
                             </div>
                           </div>
                         );
@@ -1477,7 +1479,6 @@
                     )}
                   </div>
 
-                  {/* Add Account Modal */}
                   {showAccModal && (
                     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                       <div className="glass-card p-5 rounded-2xl max-w-xs w-full border border-sky-500/30">
@@ -1558,7 +1559,6 @@
                     )}
                   </div>
 
-                  {/* Add Note Modal */}
                   {showNoteForm && (
                     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                       <div className="glass-card p-5 rounded-2xl max-w-sm w-full border border-sky-500/30">
@@ -1594,7 +1594,7 @@
                 </div>
               )}
 
-              {/* ================= TAB 5: COMMUNITY (UPDATE 3: MULTI-IMAGE POSTS) ================= */}
+              {/* ================= TAB 5: COMMUNITY CHAT ================= */}
               {tab === "community" && (
                 <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[520px]">
                   <div className="p-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
@@ -1622,7 +1622,6 @@
                             
                             {m.text && <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>}
 
-                            {/* Display Attached Images in Chat */}
                             {m.images && m.images.length > 0 && (
                               <div className="flex gap-1.5 flex-wrap mt-2">
                                 {m.images.map((imgUrl, i) => (
@@ -1643,7 +1642,6 @@
                     <div ref={chatScrollRef}></div>
                   </div>
 
-                  {/* Previews of selected images before sending */}
                   {chatImages.length > 0 && (
                     <div className="p-2 border-t border-slate-800 bg-slate-950/80 flex gap-2 overflow-x-auto">
                       {chatImages.map((img, idx) => (
@@ -1651,7 +1649,7 @@
                           <img src={img} alt="preview" className="w-full h-full object-cover" />
                           <button
                             type="button"
-                            onClick={() => removeChatImage(idx)}
+                            onClick={() => setChatImages((prev) => prev.filter((_, i) => i !== idx))}
                             className="absolute top-0 right-0 bg-black/80 text-rose-400 p-0.5 rounded-full"
                           >
                             <X size={9} />
@@ -1661,9 +1659,7 @@
                     </div>
                   )}
 
-                  {/* UPDATE 3: Community Input Form with Choose Files Button */}
                   <form onSubmit={sendChatMessage} className="p-2.5 border-t border-slate-800 bg-slate-950/60 flex items-center gap-2">
-                    {/* Hidden Multi-file input */}
                     <input
                       type="file"
                       multiple
@@ -1673,14 +1669,13 @@
                       className="hidden"
                     />
 
-                    {/* Choose Files Button */}
                     <label
                       htmlFor="communityFileInput"
                       title="Choose Files"
                       className="p-2 bg-slate-900 border border-slate-700 hover:border-sky-400 text-slate-300 hover:text-sky-300 rounded-xl cursor-pointer flex items-center gap-1 text-[11px] font-mono transition-colors"
                     >
                       <ImageIcon size={14} className="text-sky-400" />
-                      <span className="hidden sm:inline">{t.chooseFiles}</span>
+                      <span className="hidden sm:inline">Files</span>
                     </label>
 
                     <input
@@ -1704,12 +1699,10 @@
             </main>
           </div>
 
-          {/* Minimal Footer with TikTok */}
           <footer className="mt-8 py-4 border-t border-slate-800/60 text-center text-[11px] text-slate-500 font-mono">
             Amiir Journal · {t.devBy} <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
           </footer>
 
-          {/* LIGHTBOX FOR IMAGES */}
           {lightbox && (
             <div
               onClick={() => setLightbox(null)}
