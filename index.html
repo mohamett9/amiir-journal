@@ -69,7 +69,7 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, DollarSign, Percent, Star
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star
     } from "lucide-react";
 
     // Firebase
@@ -137,8 +137,6 @@
         calendarTitle: "Calendar",
         thisMonth: "This month",
         editChecklist: "Edit Checklist",
-        seeMore: "sᴇᴇ ᴍᴏʀᴇ..",
-        showLess: "sʜᴏᴡ ʟᴇss",
       },
       so: {
         journal: "Diiwaanka",
@@ -180,8 +178,6 @@
         calendarTitle: "Calendar",
         thisMonth: "Bishan",
         editChecklist: "Beddel Checklist",
-        seeMore: "sᴇᴇ ᴍᴏʀᴇ..",
-        showLess: "sʜᴏᴡ ʟᴇss",
       }
     };
 
@@ -272,7 +268,7 @@
       const [error, setError] = useState("");
       const [lightbox, setLightbox] = useState(null);
 
-      // Pagination for Journal
+      // Pagination for Journal (See more)
       const [visibleCount, setVisibleCount] = useState(5);
 
       // Calendar Toggle: '$' or '%'
@@ -407,7 +403,7 @@
           const newImgs = await Promise.all(promises);
           setChatImages((prev) => [...prev, ...newImgs]);
         } catch (err) {
-          alert("Sawirrada lama shubi karin.");
+          alert("Image upload failed.");
         } finally {
           setChatUploading(false);
           e.target.value = "";
@@ -592,7 +588,6 @@
           const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
           const d = list.reduce((sum, tr) => sum + (tr.pnlDollar || 0), 0);
           
-          // Purges under this session
           const purges = {};
           (PURGE_TIMES[s] || []).forEach((pt) => {
             const ptList = list.filter((tr) => tr.purgeTime === pt);
@@ -647,7 +642,6 @@
         return map;
       }, [filteredTrades]);
 
-      // Calendar Grid partitioned by weeks with right summary column (TradeZella Style)
       const calendarWeeks = useMemo(() => {
         const first = new Date(viewYear, viewMonth, 1);
         const offset = first.getDay(); // 0 = Sun
@@ -689,7 +683,6 @@
         return weeks;
       }, [viewYear, viewMonth, dayMap]);
 
-      // Month stats
       const monthStats = useMemo(() => {
         let totalR = 0;
         let totalDollar = 0;
@@ -702,10 +695,10 @@
         return { totalR, totalDollar, days };
       }, [calendarWeeks]);
 
-      // TradeZella Formatter
+      // Formatter: TradeZella Style
       const fmtTradeZella = (netDollar, netR, mode) => {
         if (mode === "%") {
-          return (netR >= 0 ? "+" : "") + Number(netR).toFixed(1) + "R";
+          return (netR >= 0 ? "+" : "") + Number(netR).toFixed(1) + "%";
         }
         const sign = netDollar >= 0 ? "+" : "-";
         const abs = Math.abs(netDollar);
@@ -715,7 +708,7 @@
         return sign + "$" + Math.round(abs).toLocaleString();
       };
 
-      const fmtR = (n) => (n > 0 ? "+" : "") + Number(n).toFixed(2) + "%";
+      const fmtR = (n) => (n > 0 ? "+" : "") + Number(n).toFixed(1) + "%";
       const fmtDollar = (n) => (n >= 0 ? "+$" : "-$") + Math.abs(Number(n)).toLocaleString();
 
       if (authLoading) {
@@ -726,7 +719,7 @@
         );
       }
 
-      // ================= LOGIN PAGE (WANKA WEYN REMOVED) =================
+      // ================= LOGIN PAGE (WANKA WEYN DELETED) =================
       if (!user) {
         return (
           <div className="min-h-screen flex flex-col justify-between items-center px-4 bg-[#06090e] relative py-12">
@@ -751,7 +744,7 @@
 
               <button
                 onClick={() => signInWithPopup(auth, provider)}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium text-xs bg-white hover:bg-slate-100 text-slate-950 transition-all shadow-md cursor-pointer"
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium text-xs bg-white hover:bg-slate-100 text-slate-950 transition-all shadow-md cursor-pointer active:scale-98"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -808,7 +801,7 @@
                       if (showForm) { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); }
                       else { setShowForm(true); }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20 active:scale-95"
                   >
                     {showForm ? <X size={13} /> : <Plus size={13} />}
                     <span>{showForm ? t.cancel : t.newTrade}</span>
@@ -817,9 +810,9 @@
               </div>
             </header>
 
-            <main className="max-w-5xl mx-auto px-4 py-5">
+            <main className="max-w-5xl mx-auto px-4 py-4">
               
-              {/* Top Swipeable Tabs Bar */}
+              {/* Top Swipeable Nav Tabs */}
               <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-5 overflow-x-auto no-scrollbar w-full snap-x">
                 {[
                   { id: "journal", label: t.journal, icon: ListChecks },
@@ -1127,7 +1120,7 @@
                 </div>
               )}
 
-              {/* ================= TAB 1: JOURNAL (COMPACT + SEE MORE ON LEFT) ================= */}
+              {/* ================= TAB 1: JOURNAL (COMPACT + sᴇᴇ ᴍᴏʀᴇ ON LEFT) ================= */}
               {tab === "journal" && (
                 <div>
                   {loading ? (
@@ -1138,7 +1131,7 @@
                     </div>
                   ) : (
                     <div className="space-y-1.5">
-                      {/* Shortened count (e.g. 5/9) */}
+                      {/* Shortened count: 5/9 */}
                       <div className="text-right text-[11px] text-slate-500 font-mono px-1 mb-1">
                         {Math.min(visibleCount, filteredTrades.length)}/{filteredTrades.length}
                       </div>
@@ -1165,7 +1158,7 @@
                                     <TrendingUp size={13} />
                                   </div>
                                 ) : (
-                                  <div className="w-5 h-5 rounded bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                                  <div className="w-5 h-5 rounded bg-rose-500/15 text-[#E598A0] flex items-center justify-center border border-[#C73A4B]/40">
                                     <TrendingDown size={13} />
                                   </div>
                                 )}
@@ -1196,13 +1189,13 @@
                                   </div>
                                 )}
 
-                                <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>
                                   {fmtR(tr.rMultiple || 0)}
                                 </div>
 
                                 {tr.pnlDollar !== undefined && tr.pnlDollar !== 0 && (
                                   <div className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                                    tr.pnlDollar >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"
+                                    tr.pnlDollar >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-[#240a10] text-[#E598A0] border border-[#C73A4B]/30"
                                   }`}>
                                     {fmtDollar(tr.pnlDollar)}
                                   </div>
@@ -1263,7 +1256,7 @@
                                   </div>
                                   <div className="p-1 rounded bg-slate-900 border border-slate-800">
                                     <div className="text-[8px] text-slate-500 uppercase">Profit/Loss</div>
-                                    <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                    <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>
                                       {tr.pnlDollar ? fmtDollar(tr.pnlDollar) : fmtR(tr.rMultiple || 0)}
                                     </div>
                                   </div>
@@ -1300,25 +1293,16 @@
                         );
                       })}
 
-                      {/* SEE MORE ON THE LEFT SIDE */}
-                      {filteredTrades.length > visibleCount && (
-                        <div className="flex items-center gap-3 pt-2 pb-1">
+                      {/* UNIFIED sᴇᴇ ᴍᴏʀᴇ / sᴇᴇ ʟᴇss BUTTON ON THE LEFT */}
+                      {filteredTrades.length > 5 && (
+                        <div className="flex items-center pt-2 pb-1">
                           <button
                             type="button"
-                            onClick={() => setVisibleCount(prev => prev + 5)}
-                            className="px-3 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/40 text-[10px] tracking-wider text-sky-400 transition-all cursor-pointer font-bold active:scale-95"
+                            onClick={() => setVisibleCount(prev => prev >= filteredTrades.length ? 5 : prev + 5)}
+                            className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/40 text-[10px] tracking-wider text-sky-400 transition-all cursor-pointer font-bold active:scale-95"
                           >
-                            {t.seeMore}
+                            {visibleCount >= filteredTrades.length ? "sᴇᴇ ʟᴇss" : "sᴇᴇ ᴍᴏʀᴇ"}
                           </button>
-                          {visibleCount > 5 && (
-                            <button
-                              type="button"
-                              onClick={() => setVisibleCount(5)}
-                              className="text-[10px] text-slate-500 hover:text-slate-300 font-mono underline cursor-pointer"
-                            >
-                              {t.showLess}
-                            </button>
-                          )}
                         </div>
                       )}
                     </div>
@@ -1326,20 +1310,20 @@
                 </div>
               )}
 
-              {/* ================= TAB 2: DASHBOARD (TRADEZELLA CALENDAR + STATS + THIS WEEK) ================= */}
+              {/* ================= TAB 2: DASHBOARD (TRADEZELLA CALENDAR + SESSIONS + STATS) ================= */}
               {tab === "dashboard" && (
                 <div className="space-y-6">
                   
-                  {/* TRADEZELLA STYLE CALENDAR WITH $ / % TOGGLE */}
-                  <div className="glass-card p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-2xl">
+                  {/* TRADEZELLA STYLE CALENDAR WITH BLUSH RED & FOREST GREEN */}
+                  <div className="glass-card p-3 sm:p-5 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-4 pb-3 border-b border-slate-800/80">
                       
                       {/* Left: Navigation & This Month */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
                         <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800 cursor-pointer">
                           <ChevronLeft size={16} />
                         </button>
-                        <div className="font-bold text-xs sm:text-sm text-white font-mono min-w-[120px] text-center">
+                        <div className="font-bold text-xs sm:text-sm text-white font-mono min-w-[100px] sm:min-w-[120px] text-center">
                           {MONTH_NAMES[viewMonth]} {viewYear}
                         </div>
                         <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800 cursor-pointer">
@@ -1348,18 +1332,22 @@
                         
                         <button
                           onClick={() => { setViewMonth(new Date().getMonth()); setViewYear(new Date().getFullYear()); }}
-                          className="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-300 hover:border-slate-700 cursor-pointer"
+                          className="px-2 py-0.5 sm:py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-300 hover:border-slate-700 cursor-pointer"
                         >
                           {t.thisMonth}
                         </button>
                       </div>
 
                       {/* Right: Monthly Stats & $ / % Switcher Button */}
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         <div className="text-xs font-mono hidden sm:flex items-center gap-2">
                           <span className="text-slate-500">Monthly stats:</span>
-                          <span className={`px-2 py-0.5 rounded font-bold ${monthStats.totalDollar >= 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-rose-500/15 text-rose-400"}`}>
-                            {calMode === "$" ? fmtTradeZella(monthStats.totalDollar, monthStats.totalR, "$") : fmtTradeZella(monthStats.totalDollar, monthStats.totalR, "%")}
+                          <span className={`px-2 py-0.5 rounded font-bold ${
+                            monthStats.totalDollar >= 0 
+                              ? "bg-emerald-500/15 text-emerald-400" 
+                              : "bg-[#240a10] text-[#E598A0] border border-[#C73A4B]/30"
+                          }`}>
+                            {fmtTradeZella(monthStats.totalDollar, monthStats.totalR, calMode)}
                           </span>
                           <span className="text-slate-400">{monthStats.days} days</span>
                         </div>
@@ -1388,24 +1376,29 @@
                       </div>
                     </div>
 
-                    {/* CALENDAR DAYS HEADER + WEEK SUMMARY COLUMN */}
-                    <div className="grid grid-cols-8 gap-1.5 mb-1.5">
+                    {/* CALENDAR DAYS HEADER + WEEK (W) COLUMN */}
+                    <div className="grid grid-cols-8 gap-1 sm:gap-1.5 mb-1.5 text-center">
                       {WEEKDAYS.map((d) => (
-                        <div key={d} className="text-[10px] font-mono font-bold text-slate-500 text-center uppercase py-0.5">{d}</div>
+                        <div key={d} className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-500 uppercase py-0.5">{d}</div>
                       ))}
-                      <div className="text-[10px] font-mono font-bold text-sky-400 text-center uppercase py-0.5">Week</div>
+                      <div className="text-[9px] sm:text-[10px] font-mono font-bold text-sky-400 uppercase py-0.5">
+                        <span className="sm:hidden">W</span>
+                        <span className="hidden sm:inline">Week</span>
+                      </div>
                     </div>
 
-                    {/* WEEKS ROWS (TRADEZELLA STYLE) */}
-                    <div className="space-y-1.5">
+                    {/* WEEKS ROWS WITH BLUSH RED LUXURY PALETTE */}
+                    <div className="space-y-1 sm:space-y-1.5">
                       {calendarWeeks.map((week, wIdx) => {
                         const hasWeekData = week.summary.tradingDays > 0;
+                        const isWeekWin = (week.summary.netDollar >= 0 && week.summary.netR >= 0);
+
                         return (
-                          <div key={wIdx} className="grid grid-cols-8 gap-1.5">
+                          <div key={wIdx} className="grid grid-cols-8 gap-1 sm:gap-1.5">
                             {/* 7 Days of the Week */}
                             {week.days.map((cell, dIdx) => {
                               if (!cell) {
-                                return <div key={dIdx} className="min-h-[58px] sm:min-h-[72px] rounded-lg bg-[#0b101c]/40 border border-slate-900/50"></div>;
+                                return <div key={dIdx} className="min-h-[54px] sm:min-h-[72px] rounded-lg bg-[#0b101c]/30 border border-slate-900/40"></div>;
                               }
                               const hasData = !!cell.data;
                               const netR = cell.data?.netR || 0;
@@ -1416,24 +1409,24 @@
                               return (
                                 <div
                                   key={dIdx}
-                                  className={`min-h-[58px] sm:min-h-[72px] rounded-xl p-1.5 flex flex-col justify-between border transition-all ${
+                                  className={`min-h-[54px] sm:min-h-[72px] rounded-lg sm:rounded-xl p-1 sm:p-1.5 flex flex-col justify-between border transition-all overflow-hidden ${
                                     !hasData
-                                      ? "bg-[#0b1120] border-slate-800/50"
+                                      ? "bg-[#0b1120]/90 border-slate-800/40"
                                       : isWinDay
-                                      ? "bg-[#082a1d] border-[#10b981]/50 text-[#34d399] shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                                      ? "bg-[#06251b] border-[#10b981]/40 text-[#6ee7b7] shadow-[0_0_12px_rgba(16,185,129,0.12)]"
                                       : isLossDay
-                                      ? "bg-[#331116] border-[#f43f5e]/50 text-[#fb7185] shadow-[0_0_12px_rgba(244,63,94,0.15)]"
+                                      ? "bg-[#240a10] border-[#c73a4b]/45 text-[#e598a0] shadow-[0_0_12px_rgba(199,58,75,0.15)]"
                                       : "bg-slate-800/80 border-slate-700 text-slate-300"
                                   }`}
                                 >
-                                  <div className="text-right text-[10px] font-mono font-bold opacity-60">{cell.day}</div>
+                                  <div className="text-right text-[9px] font-mono font-bold opacity-60">{cell.day}</div>
                                   
                                   {hasData ? (
                                     <div className="text-center font-mono my-auto">
-                                      <div className="text-[10px] sm:text-xs font-bold leading-tight">
+                                      <div className="text-[9px] sm:text-[11px] font-bold leading-tight truncate">
                                         {fmtTradeZella(netD, netR, calMode)}
                                       </div>
-                                      <div className="text-[8px] opacity-70 mt-0.5">
+                                      <div className="text-[7px] sm:text-[8px] opacity-70 mt-0.5 truncate">
                                         {cell.data.count} {cell.data.count === 1 ? "trade" : "trades"}
                                       </div>
                                     </div>
@@ -1444,24 +1437,31 @@
                               );
                             })}
 
-                            {/* Right Weekly Summary Box */}
-                            <div className={`min-h-[58px] sm:min-h-[72px] rounded-xl p-1.5 flex flex-col justify-between border font-mono ${
+                            {/* Right Weekly Summary Box (Adaptive W / Week - No text overflow) */}
+                            <div className={`min-h-[54px] sm:min-h-[72px] rounded-lg sm:rounded-xl p-1 sm:p-1.5 flex flex-col justify-between border font-mono overflow-hidden ${
                               hasWeekData
-                                ? (week.summary.netDollar >= 0 && week.summary.netR >= 0)
-                                  ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-400"
-                                  : "bg-rose-950/20 border-rose-500/30 text-rose-400"
+                                ? isWeekWin
+                                  ? "bg-[#06251b]/70 border-[#10b981]/40 text-[#6ee7b7]"
+                                  : "bg-[#240a10]/70 border-[#c73a4b]/40 text-[#e598a0]"
                                 : "bg-slate-900/40 border-slate-800/50 text-slate-500"
                             }`}>
-                              <div className="text-[9px] text-slate-500 font-bold uppercase">Wk {week.summary.weekNumber}</div>
+                              <div className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase truncate">
+                                <span className="sm:hidden">W</span>
+                                <span className="hidden sm:inline">Wk </span>
+                                {week.summary.weekNumber}
+                              </div>
+
                               {hasWeekData ? (
-                                <div className="text-center">
-                                  <div className="text-[10px] sm:text-[11px] font-bold">
+                                <div className="text-center truncate">
+                                  <div className="text-[8px] sm:text-[10px] font-bold leading-tight truncate">
                                     {fmtTradeZella(week.summary.netDollar, week.summary.netR, calMode)}
                                   </div>
-                                  <div className="text-[8px] opacity-70 mt-0.5">{week.summary.tradingDays} days</div>
+                                  <div className="text-[7px] sm:text-[8px] opacity-70 mt-0.5 truncate">
+                                    {week.summary.tradingDays}d
+                                  </div>
                                 </div>
                               ) : (
-                                <div className="text-center text-[9px] opacity-40">-</div>
+                                <div className="text-center text-[9px] opacity-30">-</div>
                               )}
                             </div>
                           </div>
@@ -1470,11 +1470,10 @@
                     </div>
                   </div>
 
-                  {/* SESSIONS PERFORMANCE (INTERACTIVE CLICK TO EXPAND PURGE TIMES) */}
+                  {/* SESSIONS (CLEAN TITLE, INTERACTIVE EXPAND PURGES) */}
                   <div className="glass-card p-4 rounded-xl border border-slate-800">
                     <div className="text-xs font-bold text-white mb-2 flex items-center justify-between font-mono">
-                      <span className="flex items-center gap-1.5"><Clock size={13} className="text-sky-400" /> Sessions Performance</span>
-                      <span className="text-[10px] text-slate-500 font-normal">Guji si aad u aragto purges-ka</span>
+                      <span className="flex items-center gap-1.5"><Clock size={13} className="text-sky-400" /> Sessions</span>
                     </div>
 
                     <div className="space-y-2">
@@ -1487,16 +1486,16 @@
                             <div
                               key={s.id}
                               onClick={() => setExpandedSession(isExp ? null : s.id)}
-                              className={`p-2.5 rounded-xl border transition-all cursor-pointer text-center select-none ${
+                              className={`p-2 rounded-xl border transition-all cursor-pointer text-center select-none ${
                                 isExp ? "bg-sky-500/10 border-sky-400 shadow-md" : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
                               }`}
                             >
                               <div className="text-xs">{s.flag} <span className="font-semibold text-white">{s.label}</span></div>
-                              <div className={`text-xs font-bold font-mono mt-0.5 ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                              <div className={`text-xs font-bold font-mono mt-0.5 ${st.winRate >= 50 ? "text-emerald-400" : "text-[#E598A0]"}`}>
                                 {st.winRate}% WR
                               </div>
-                              <div className="text-[9px] text-slate-500 font-mono mt-0.5">
-                                {st.count}t · {fmtR(st.netR)}
+                              <div className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">
+                                {st.count}T · {st.netR >= 0 ? "+" : ""}{Number(st.netR).toFixed(1)}%
                               </div>
                             </div>
                           );
@@ -1505,15 +1504,14 @@
 
                       {/* EXPANDED PURGE TIMES BREAKDOWN FOR SELECTED SESSION */}
                       {expandedSession && (
-                        <div className="p-3 rounded-xl bg-slate-950/80 border border-sky-500/30">
-                          <div className="text-[10px] font-mono text-sky-400 uppercase font-bold mb-2 flex items-center gap-1">
-                            <Star size={11} /> {expandedSession.toUpperCase()} Purge Times Breakdown:
+                        <div className="p-2.5 rounded-xl bg-slate-950/80 border border-sky-500/30">
+                          <div className="text-[9px] font-mono text-sky-400 uppercase font-bold mb-1.5">
+                            Purge Times
                           </div>
                           
                           {(() => {
                             const purges = stats.sessionsStats[expandedSession]?.purges || {};
                             const pKeys = Object.keys(purges);
-                            // Determine which purge has the highest winrate
                             const bestPurge = pKeys.reduce((best, cur) => {
                               if (!best) return cur;
                               return (purges[cur]?.winRate > purges[best]?.winRate) ? cur : best;
@@ -1529,18 +1527,18 @@
                                     <div
                                       key={pt}
                                       className={`p-2 rounded-lg border text-center font-mono ${
-                                        isBest ? "bg-emerald-950/30 border-emerald-500/50" : "bg-slate-900 border-slate-800"
+                                        isBest ? "bg-emerald-950/30 border-emerald-500/40" : "bg-slate-900 border-slate-800"
                                       }`}
                                     >
-                                      <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-white uppercase">
+                                      <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-white uppercase">
                                         <span>{pt}</span>
-                                        {isBest && <span className="text-[9px] text-emerald-400 font-normal">★ Highest</span>}
+                                        {isBest && <span className="text-emerald-400 text-xs">★</span>}
                                       </div>
-                                      <div className={`text-xs font-bold mt-0.5 ${pData.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                                      <div className={`text-xs font-bold mt-0.5 ${pData.winRate >= 50 ? "text-emerald-400" : "text-[#E598A0]"}`}>
                                         {pData.winRate}% WR
                                       </div>
                                       <div className="text-[9px] text-slate-500 mt-0.5">
-                                        {pData.count} trades · {fmtR(pData.netR)}
+                                        {pData.count}T · {pData.netR >= 0 ? "+" : ""}{Number(pData.netR).toFixed(1)}%
                                       </div>
                                     </div>
                                   );
@@ -1566,12 +1564,14 @@
                     <div className="flex items-center justify-between text-sm font-mono pt-2 border-t border-slate-800">
                       <span className="text-slate-400">Total Return:</span>
                       <div className="flex items-center gap-2.5 font-bold">
-                        <span className={weeklyConsistency.netR >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                        <span className={weeklyConsistency.netR >= 0 ? "text-emerald-400" : "text-[#E598A0]"}>
                           {fmtR(weeklyConsistency.netR)}
                         </span>
                         {weeklyConsistency.netDollar !== 0 && (
                           <span className={`text-xs px-2 py-0.5 rounded ${
-                            weeklyConsistency.netDollar >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"
+                            weeklyConsistency.netDollar >= 0 
+                              ? "bg-emerald-500/15 text-emerald-300" 
+                              : "bg-[#240a10] text-[#E598A0] border border-[#C73A4B]/30"
                           }`}>
                             {fmtDollar(weeklyConsistency.netDollar)}
                           </span>
@@ -1580,7 +1580,7 @@
                     </div>
                   </div>
 
-                  {/* 4 STATS CARDS MOVED TO DASHBOARD (BELOW SESSIONS & THIS WEEK) */}
+                  {/* 4 STATS CARDS IN DASHBOARD (BELOW THIS WEEK) */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div className="glass-card p-3 rounded-xl border border-slate-800">
                       <div className="text-[10px] text-slate-500 uppercase font-mono">{t.trades}</div>
@@ -1597,19 +1597,21 @@
                       <div className="text-lg font-bold font-mono mt-0.5">
                         <span className="text-emerald-400">{stats.wins}</span>
                         <span className="text-slate-600 mx-1">/</span>
-                        <span className="text-rose-400">{stats.losses}</span>
+                        <span className="text-[#E598A0]">{stats.losses}</span>
                       </div>
                     </div>
 
                     <div className="glass-card p-3 rounded-xl border border-slate-800">
                       <div className="text-[10px] text-slate-500 uppercase font-mono">{t.netReturn}</div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-lg font-bold font-mono ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        <span className={`text-lg font-bold font-mono ${stats.netR >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>
                           {fmtR(stats.netR)}
                         </span>
                         {stats.totalDollar !== 0 && (
                           <span className={`text-xs font-mono font-semibold px-1.5 py-0.5 rounded ${
-                            stats.totalDollar >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"
+                            stats.totalDollar >= 0 
+                              ? "bg-emerald-500/15 text-emerald-300" 
+                              : "bg-[#240a10] text-[#E598A0] border border-[#C73A4B]/30"
                           }`}>
                             {fmtDollar(stats.totalDollar)}
                           </span>
@@ -1671,7 +1673,7 @@
                             <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between font-mono text-[11px]">
                               <span className="text-slate-500">{accTrades.length} trades</span>
                               <div className="flex items-center gap-1.5 font-bold">
-                                <span className={netR >= 0 ? "text-emerald-400" : "text-rose-400"}>{fmtR(netR)}</span>
+                                <span className={netR >= 0 ? "text-emerald-400" : "text-[#E598A0]"}>{fmtR(netR)}</span>
                                 {netD !== 0 && <span className="text-[10px] opacity-80">{fmtDollar(netD)}</span>}
                               </div>
                             </div>
@@ -1905,7 +1907,6 @@
             Amiir Journal · {t.devBy} <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
           </footer>
 
-          {/* LIGHTBOX FOR IMAGES */}
           {lightbox && (
             <div
               onClick={() => setLightbox(null)}
