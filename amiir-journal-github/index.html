@@ -1,13 +1,1497 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amiir Journal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amiir Journal - Pro Trading Ledger</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React & Lucide Icons -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0"
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #06090e;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .glass-card {
+      background: rgba(13, 19, 33, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.08);
+    }
+    .glass-card:hover {
+      border-color: rgba(56, 189, 248, 0.2);
+    }
+    input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useMemo, useRef } from "react";
+    import ReactDOM from "react-dom/client";
+    import {
+      Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
+      ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings
+    } from "lucide-react";
+
+    // Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, limit, addDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZyu_d3ru9-x61AywpQv_pl706UBE_OTQ",
+      authDomain: "amiir-journal.firebaseapp.com",
+      projectId: "amiir-journal",
+      storageBucket: "amiir-journal.firebasestorage.app",
+      messagingSenderId: "533778928448",
+      appId: "1:533778928448:web:138073019799354cb020a5",
+      measurementId: "G-QYJ75J88K5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // Multilingual Dictionary
+    const DICT = {
+      en: {
+        journal: "Journal",
+        dashboard: "Dashboard",
+        accounts: "Accounts",
+        notes: "Notes",
+        community: "Community",
+        newTrade: "New Trade",
+        cancel: "Cancel",
+        trades: "Trades",
+        winRate: "Win Rate",
+        winLoss: "Win / Loss",
+        netReturn: "Net Return",
+        thisWeek: "This Week",
+        symbol: "Symbol",
+        date: "Date",
+        accountLabel: "Account",
+        session: "Session",
+        purgeTime: "Purge Time",
+        direction: "Direction",
+        outcome: "Outcome",
+        risk: "Risk %",
+        rrRatio: "R:R",
+        checklistTitle: "Confluence Checklist",
+        chartsTitle: "Execution Charts",
+        notesLabel: "Notes & Execution Rules",
+        saveTrade: "Save Trade",
+        updateTrade: "Update Trade",
+        noTrades: "No trades recorded yet.",
+        noAccounts: "No accounts added yet.",
+        noNotes: "No notes added yet.",
+        allAccounts: "All Accounts",
+        addAccount: "Add Account",
+        addNote: "New Note",
+        signInGoogle: "Continue with Google",
+        chatPlaceholder: "Share market idea...",
+        devBy: "Developed by",
+        calendarTitle: "Trading Calendar",
+        editChecklist: "Edit Checklist",
+        addChecklistItem: "Add Item"
+      },
+      so: {
+        journal: "Diiwaanka",
+        dashboard: "Dashboard",
+        accounts: "Accounts",
+        notes: "Casharrada",
+        community: "Sheekada",
+        newTrade: "Ganacsi Cusub",
+        cancel: "Jooji",
+        trades: "Wadarta",
+        winRate: "Guusha %",
+        winLoss: "Guul / Khasaar",
+        netReturn: "Net R",
+        thisWeek: "Toddobaadkan",
+        symbol: "Symbol",
+        date: "Taariikh",
+        accountLabel: "Account",
+        session: "Session",
+        purgeTime: "Waqtiga Purge",
+        direction: "Jihada",
+        outcome: "Natiijada",
+        risk: "Risk %",
+        rrRatio: "R:R",
+        checklistTitle: "ICT Checklist",
+        chartsTitle: "Sawirrada Chart-ka",
+        notesLabel: "Falanqaynta & Fiiro Gaar ah",
+        saveTrade: "Kaydi Ganacsiga",
+        updateTrade: "Cusboonaysii Trade",
+        noTrades: "Weli wax trade ah lama diiwaangelin.",
+        noAccounts: "Weli ma jiro akoon la galiyay.",
+        noNotes: "Weli ma jiro cashar la qoray.",
+        allAccounts: "Dhammaan Akoonnada",
+        addAccount: "Ku dar Akoon",
+        addNote: "Qor Cashar",
+        signInGoogle: "Ku gal Google",
+        chatPlaceholder: "Qor fikrad ama fariin...",
+        devBy: "Waxaa dhisay",
+        calendarTitle: "Kalandarka Ganacsiga",
+        editChecklist: "Beddel Checklist",
+        addChecklistItem: "Ku dar Qodob"
+      }
+    };
+
+    const SESSIONS = [
+      { id: "asian", label: "Asian", flag: "🇯🇵", time: "8PM–9PM" },
+      { id: "london", label: "London", flag: "🇬🇧", time: "2AM–3AM" },
+      { id: "newyork", label: "New York", flag: "🇺🇸", time: "8AM–9AM" },
+    ];
+
+    const PURGE_TIMES = {
+      asian: ["8pm", "9pm"],
+      london: ["2am", "3am"],
+      newyork: ["8am", "9am"],
+    };
+
+    const DEFAULT_CHECKLIST = [
+      "IRL TO ERL",
+      "KL (Key Level)",
+      "PURGING (Session/Time)",
+      "SMT Divergence",
+      "M1 Execution (MSS/FVG)"
+    ];
+
+    const EMPTY_FORM = {
+      symbol: "",
+      date: new Date().toISOString().slice(0, 10),
+      accountName: "FTMO 100K",
+      session: "london",
+      purgeTime: "2am",
+      direction: "buy",
+      outcome: "win",
+      risk: "1",
+      rrRatio: "2",
+      notes: "",
+      images: [],
+      checklist: []
+    };
+
+    const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const MONTH_NAMES = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+
+    function resizeImage(dataUrl, maxWidth = 800) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const scale = Math.min(1, maxWidth / img.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.75));
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }
+
+    function App() {
+      const [lang, setLang] = useState("en");
+      const t = DICT[lang];
+
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+      const [trades, setTrades] = useState([]);
+      const [accounts, setAccounts] = useState([]);
+      const [notes, setNotes] = useState([]);
+      const [chatMessages, setChatMessages] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      // Customizable Checklist
+      const [checklistItems, setChecklistItems] = useState(DEFAULT_CHECKLIST);
+      const [showChecklistEditor, setShowChecklistEditor] = useState(false);
+      const [newChecklistInput, setNewChecklistInput] = useState("");
+
+      const [tab, setTab] = useState("journal");
+      const [showForm, setShowForm] = useState(false);
+      const [editingId, setEditingId] = useState(null);
+      const [form, setForm] = useState(EMPTY_FORM);
+      const [error, setError] = useState("");
+      const [lightbox, setLightbox] = useState(null);
+
+      const [newAcc, setNewAcc] = useState({ name: "", type: "Funded", balance: "$100,000", mt5Id: "" });
+      const [showAccModal, setShowAccModal] = useState(false);
+
+      const [noteForm, setNoteForm] = useState({ title: "", tag: "ICT Model", content: "" });
+      const [showNoteForm, setShowNoteForm] = useState(false);
+
+      const [chatInput, setChatInput] = useState("");
+      const chatScrollRef = useRef(null);
+
+      const [filterAccount, setFilterAccount] = useState("all");
+
+      const [viewMonth, setViewMonth] = useState(new Date().getMonth());
+      const [viewYear, setViewYear] = useState(new Date().getFullYear());
+
+      // Auth Listener
+      useEffect(() => {
+        const unsub = onAuthStateChanged(auth, (u) => {
+          setUser(u);
+          setAuthLoading(false);
+        });
+        return () => unsub();
+      }, []);
+
+      // Realtime Trades
+      useEffect(() => {
+        if (!user) { setTrades([]); setLoading(false); return; }
+        setLoading(true);
+        const colRef = collection(db, "users", user.uid, "trades");
+        const unsub = onSnapshot(colRef, (snap) => {
+          const list = [];
+          snap.forEach((d) => list.push(d.data()));
+          list.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+          setTrades(list);
+          setLoading(false);
+        }, (err) => { setError(err.message); setLoading(false); });
+        return () => unsub();
+      }, [user]);
+
+      // Realtime Checklist Settings
+      useEffect(() => {
+        if (!user) return;
+        const docRef = doc(db, "users", user.uid, "settings", "checklist");
+        const unsub = onSnapshot(docRef, (snap) => {
+          if (snap.exists() && snap.data().items) {
+            setChecklistItems(snap.data().items);
+          }
+        });
+        return () => unsub();
+      }, [user]);
+
+      // Realtime Accounts
+      useEffect(() => {
+        if (!user) return;
+        const accRef = collection(db, "users", user.uid, "accounts");
+        const unsub = onSnapshot(accRef, (snap) => {
+          const list = [];
+          snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+          setAccounts(list);
+        });
+        return () => unsub();
+      }, [user]);
+
+      // Realtime Notes
+      useEffect(() => {
+        if (!user) return;
+        const notesRef = collection(db, "users", user.uid, "notes");
+        const unsub = onSnapshot(notesRef, (snap) => {
+          const list = [];
+          snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+          list.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+          setNotes(list);
+        });
+        return () => unsub();
+      }, [user]);
+
+      // Realtime Chat
+      useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, "public_chat"), orderBy("timestamp", "asc"), limit(60));
+        const unsub = onSnapshot(q, (snap) => {
+          const msgs = [];
+          snap.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
+          setChatMessages(msgs);
+          setTimeout(() => chatScrollRef.current?.scrollIntoView({ behavior: "smooth" }), 120);
+        });
+        return () => unsub();
+      }, [user]);
+
+      const handleMultipleImages = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        try {
+          const promises = files.map((file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = async () => {
+                const resized = await resizeImage(reader.result);
+                resolve(resized);
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+          const newImgs = await Promise.all(promises);
+          setForm((prev) => ({
+            ...prev,
+            images: [...(prev.images || []), ...newImgs]
+          }));
+        } catch (err) {
+          setError("Image upload failed.");
+        }
+      };
+
+      // Checklist Management
+      const toggleChecklistItem = (item) => {
+        const cur = form.checklist || [];
+        if (cur.includes(item)) {
+          setForm({ ...form, checklist: cur.filter((i) => i !== item) });
+        } else {
+          setForm({ ...form, checklist: [...cur, item] });
+        }
+      };
+
+      const addCustomChecklistItem = async () => {
+        if (!newChecklistInput.trim()) return;
+        const updated = [...checklistItems, newChecklistInput.trim()];
+        setChecklistItems(updated);
+        setNewChecklistInput("");
+        if (user) {
+          await setDoc(doc(db, "users", user.uid, "settings", "checklist"), { items: updated });
+        }
+      };
+
+      const removeCustomChecklistItem = async (itemToRemove) => {
+        const updated = checklistItems.filter(i => i !== itemToRemove);
+        setChecklistItems(updated);
+        if (user) {
+          await setDoc(doc(db, "users", user.uid, "settings", "checklist"), { items: updated });
+        }
+      };
+
+      const saveTrade = async () => {
+        if (!form.symbol || !form.date) {
+          setError("Symbol and Date required.");
+          return;
+        }
+        const risk = parseFloat(form.risk) || 0;
+        const rr = parseFloat(form.rrRatio) || 0;
+        const reward = +(risk * rr).toFixed(2);
+        const rMultiple = form.outcome === "win" ? reward : form.outcome === "loss" ? -risk : 0;
+        const tradeId = editingId || Date.now().toString();
+
+        const tradeData = {
+          id: tradeId,
+          symbol: form.symbol.toUpperCase(),
+          date: form.date,
+          accountName: form.accountName || "Default Account",
+          session: form.session,
+          purgeTime: form.purgeTime,
+          direction: form.direction,
+          outcome: form.outcome,
+          risk,
+          rrRatio: rr,
+          reward,
+          rMultiple,
+          notes: form.notes || "",
+          images: form.images || [],
+          checklist: form.checklist || [],
+          updatedAt: new Date().toISOString()
+        };
+
+        try {
+          await setDoc(doc(db, "users", user.uid, "trades", tradeId), tradeData);
+          setForm(EMPTY_FORM);
+          setEditingId(null);
+          setShowForm(false);
+          setError("");
+        } catch (err) {
+          setError(err.message);
+        }
+      };
+
+      const startEditTrade = (tr) => {
+        setForm({
+          symbol: tr.symbol,
+          date: tr.date,
+          accountName: tr.accountName || "Default Account",
+          session: tr.session,
+          purgeTime: tr.purgeTime,
+          direction: tr.direction,
+          outcome: tr.outcome,
+          risk: tr.risk?.toString() || "1",
+          rrRatio: tr.rrRatio?.toString() || "2",
+          notes: tr.notes || "",
+          images: tr.images || (tr.image ? [tr.image] : []),
+          checklist: tr.checklist || []
+        });
+        setEditingId(tr.id);
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+
+      const removeTrade = async (id) => {
+        if (!confirm("Delete this trade?")) return;
+        try {
+          await deleteDoc(doc(db, "users", user.uid, "trades", id));
+        } catch (err) {
+          setError(err.message);
+        }
+      };
+
+      const saveAccount = async () => {
+        if (!newAcc.name) return;
+        try {
+          await addDoc(collection(db, "users", user.uid, "accounts"), {
+            ...newAcc,
+            createdAt: new Date().toISOString()
+          });
+          setNewAcc({ name: "", type: "Funded", balance: "$100,000", mt5Id: "" });
+          setShowAccModal(false);
+        } catch (e) {
+          alert(e.message);
+        }
+      };
+
+      const saveNote = async () => {
+        if (!noteForm.title) return;
+        try {
+          await addDoc(collection(db, "users", user.uid, "notes"), {
+            ...noteForm,
+            createdAt: new Date().toISOString()
+          });
+          setNoteForm({ title: "", tag: "ICT Model", content: "" });
+          setShowNoteForm(false);
+        } catch (e) {
+          alert(e.message);
+        }
+      };
+
+      const sendChatMessage = async (e) => {
+        e.preventDefault();
+        if (!chatInput.trim()) return;
+        const msg = {
+          uid: user.uid,
+          author: user.displayName || "Trader",
+          photo: user.photoURL || "",
+          text: chatInput.trim(),
+          timestamp: new Date().toISOString()
+        };
+        setChatInput("");
+        await addDoc(collection(db, "public_chat"), msg);
+      };
+
+      const deleteChatMessage = async (msgId) => {
+        if (!confirm("Delete message?")) return;
+        await deleteDoc(doc(db, "public_chat", msgId));
+      };
+
+      const filteredTrades = useMemo(() => {
+        return trades.filter((tr) => {
+          if (filterAccount !== "all" && tr.accountName !== filterAccount) return false;
+          return true;
+        });
+      }, [trades, filterAccount]);
+
+      // Stats
+      const stats = useMemo(() => {
+        const total = filteredTrades.length;
+        const wins = filteredTrades.filter((tr) => tr.outcome === "win").length;
+        const losses = filteredTrades.filter((tr) => tr.outcome === "loss").length;
+        const netR = filteredTrades.reduce((acc, tr) => acc + (tr.rMultiple || 0), 0);
+        const winRate = total ? Math.round((wins / total) * 100) : 0;
+
+        const sessionsStats = {};
+        ["asian", "london", "newyork"].forEach((s) => {
+          const list = filteredTrades.filter((tr) => tr.session === s);
+          const w = list.filter((tr) => tr.outcome === "win").length;
+          const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
+          sessionsStats[s] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
+        });
+
+        const purgeStats = {};
+        Object.values(PURGE_TIMES).flat().forEach((pt) => {
+          const list = filteredTrades.filter((tr) => tr.purgeTime === pt);
+          const w = list.filter((tr) => tr.outcome === "win").length;
+          const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
+          purgeStats[pt] = { count: list.length, winRate: list.length ? Math.round((w / list.length) * 100) : 0, netR: r };
+        });
+
+        return { total, wins, losses, netR, winRate, sessionsStats, purgeStats };
+      }, [filteredTrades]);
+
+      const weeklyConsistency = useMemo(() => {
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+        startOfWeek.setDate(diff);
+        const mondayStr = startOfWeek.toISOString().slice(0, 10);
+
+        const thisWeekTrades = trades.filter((tr) => tr.date >= mondayStr);
+        const count = thisWeekTrades.length;
+        const wins = thisWeekTrades.filter((tr) => tr.outcome === "win").length;
+        const netR = thisWeekTrades.reduce((acc, tr) => acc + (tr.rMultiple || 0), 0);
+        const winRate = count ? Math.round((wins / count) * 100) : 0;
+        return { count, wins, netR, winRate };
+      }, [trades]);
+
+      // Calendar
+      const dayMap = useMemo(() => {
+        const map = {};
+        filteredTrades.forEach((tr) => {
+          if (!map[tr.date]) map[tr.date] = { net: 0, count: 0 };
+          map[tr.date].net += tr.rMultiple || 0;
+          map[tr.date].count += 1;
+        });
+        return map;
+      }, [filteredTrades]);
+
+      const calendarCells = useMemo(() => {
+        const first = new Date(viewYear, viewMonth, 1);
+        const offset = (first.getDay() + 6) % 7;
+        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const cells = [];
+        for (let i = 0; i < offset; i++) cells.push(null);
+        for (let d = 1; d <= daysInMonth; d++) {
+          const key = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          cells.push({ day: d, key, data: dayMap[key] });
+        }
+        return cells;
+      }, [viewYear, viewMonth, dayMap]);
+
+      const fmtR = (n) => (n > 0 ? "+" : "") + n.toFixed(2) + "%";
+
+      if (authLoading) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-[#06090e]">
+            <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        );
+      }
+
+      // ================= LOGIN PAGE =================
+      if (!user) {
+        return (
+          <div className="min-h-screen flex flex-col justify-between items-center px-4 bg-[#06090e] relative py-12">
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="my-auto w-full max-w-sm glass-card p-8 rounded-3xl shadow-2xl relative z-10 border border-slate-800 text-center">
+              {/* Photo */}
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <div className="absolute -inset-1 bg-sky-400/20 rounded-full blur-sm"></div>
+                <img
+                  src="profile.jpg"
+                  alt="Amiir"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200";
+                  }}
+                  className="relative w-24 h-24 rounded-full object-cover border border-sky-400/60 shadow-xl"
+                />
+              </div>
+
+              <h1 className="text-xl font-bold tracking-tight text-white mb-4">Amiir Journal</h1>
+              
+              {/* Requested White Bold Small-Caps Quote */}
+              <div className="mb-8 px-2">
+                <p className="text-white text-sm sm:text-base font-semibold tracking-wider leading-relaxed drop-shadow-[0_2px_10px_rgba(255,255,255,0.15)]">
+                  ᴡᴀɴᴋᴀ ᴡᴇʏɴ ɴɪɴᴋɪɪ ʜᴇʟɪ ᴋᴀʀᴏᴏᴡ, ᴡᴀxᴀʀᴋᴀ ʜᴀᴡ ʟᴇᴇxᴀɴ
+                </p>
+              </div>
+
+              <button
+                onClick={() => signInWithPopup(auth, provider)}
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium text-xs bg-white hover:bg-slate-100 text-slate-950 transition-all shadow-md cursor-pointer"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                {t.signInGoogle}
+              </button>
+            </div>
+
+            <footer className="text-center text-[11px] text-slate-500 z-10 font-mono">
+              Amiir Journal · Developed by <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
+            </footer>
+          </div>
+        );
+      }
+
+      // ================= MAIN APP =================
+      return (
+        <div className="min-h-screen bg-[#06090e] text-slate-200 flex flex-col justify-between">
+          <div>
+            {/* Header */}
+            <header className="border-b border-slate-800/60 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-30">
+              <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+                
+                {/* Left Branding */}
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm tracking-tight text-white">Amiir Journal</span>
+                </div>
+
+                {/* Right Actions */}
+                <div className="flex items-center gap-3">
+                  {/* Language Toggle */}
+                  <button
+                    onClick={() => setLang(lang === "en" ? "so" : "en")}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 hover:border-sky-500/40 cursor-pointer"
+                  >
+                    <Globe size={12} className="text-sky-400" />
+                    <span>{lang.toUpperCase()}</span>
+                  </button>
+
+                  {/* User Chip */}
+                  <div className="flex items-center gap-2 bg-slate-900/90 px-2 py-1 rounded-full border border-slate-800">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="user" className="w-5 h-5 rounded-full" />
+                    ) : (
+                      <User size={13} className="text-slate-400" />
+                    )}
+                    <span className="text-xs text-slate-300 hidden sm:inline">{user.displayName?.split(" ")[0] || "Trader"}</span>
+                    <button onClick={() => signOut(auth)} title="Sign out" className="text-slate-500 hover:text-rose-400 ml-0.5 cursor-pointer">
+                      <LogOut size={12} />
+                    </button>
+                  </div>
+
+                  {/* New Trade Button */}
+                  <button
+                    onClick={() => {
+                      if (showForm) { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); }
+                      else { setShowForm(true); }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20"
+                  >
+                    {showForm ? <X size={13} /> : <Plus size={13} />}
+                    <span>{showForm ? t.cancel : t.newTrade}</span>
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            <main className="max-w-5xl mx-auto px-4 py-6">
+              
+              {/* Main Tabs */}
+              <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-6 overflow-x-auto w-fit">
+                {[
+                  { id: "journal", label: t.journal, icon: ListChecks },
+                  { id: "dashboard", label: t.dashboard, icon: LayoutGrid },
+                  { id: "accounts", label: t.accounts, icon: Wallet },
+                  { id: "notes", label: t.notes, icon: BookOpen },
+                  { id: "community", label: t.community, icon: MessageSquare }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setTab(item.id)}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                      tab === item.id 
+                        ? "bg-sky-500/15 text-sky-300 border border-sky-500/30" 
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <item.icon size={13} />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* STATS BANNER: ONLY ON JOURNAL TAB */}
+              {tab === "journal" && (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-6">
+                  <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.trades}</div>
+                    <div className="text-lg font-bold font-mono text-white mt-0.5">{stats.total}</div>
+                  </div>
+
+                  <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.winRate}</div>
+                    <div className="text-lg font-bold font-mono text-sky-400 mt-0.5">{stats.winRate}%</div>
+                  </div>
+
+                  <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.winLoss}</div>
+                    <div className="text-lg font-bold font-mono mt-0.5">
+                      <span className="text-emerald-400">{stats.wins}</span>
+                      <span className="text-slate-600 mx-1">/</span>
+                      <span className="text-rose-400">{stats.losses}</span>
+                    </div>
+                  </div>
+
+                  <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">{t.netReturn}</div>
+                    <div className={`text-lg font-bold font-mono mt-0.5 ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      {fmtR(stats.netR)}
+                    </div>
+                  </div>
+
+                  <div className="glass-card p-3 rounded-xl border border-sky-500/20 col-span-2 sm:col-span-1 bg-sky-950/20">
+                    <div className="text-[10px] text-sky-400 uppercase font-mono flex items-center gap-1">
+                      <Award size={11} /> {t.thisWeek}
+                    </div>
+                    <div className="text-sm font-bold font-mono text-white mt-1 flex items-center justify-between">
+                      <span>{fmtR(weeklyConsistency.netR)}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-sans">
+                        {weeklyConsistency.winRate}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ================= TRADE FORM ================= */}
+              {showForm && (
+                <div className="glass-card p-5 rounded-2xl mb-6 border border-sky-500/30 shadow-xl">
+                  <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+                    <h3 className="font-bold text-xs text-white uppercase tracking-wider">
+                      {editingId ? t.updateTrade : t.newTrade}
+                    </h3>
+                    <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-slate-500 hover:text-white cursor-pointer"><X size={15} /></button>
+                  </div>
+
+                  {error && <div className="text-xs text-rose-400 bg-rose-950/40 p-2 rounded mb-3 border border-rose-900/50">{error}</div>}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.symbol}</label>
+                      <input
+                        value={form.symbol}
+                        onChange={(e) => setForm({ ...form, symbol: e.target.value })}
+                        placeholder="NQ, EURUSD"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-sky-400 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.date}</label>
+                      <input
+                        type="date"
+                        value={form.date}
+                        onChange={(e) => setForm({ ...form, date: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-sky-400 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.accountLabel}</label>
+                      <select
+                        value={form.accountName}
+                        onChange={(e) => setForm({ ...form, accountName: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-sky-400 cursor-pointer"
+                      >
+                        {accounts.length === 0 && <option value="Default Account">Default Account</option>}
+                        {accounts.map((a) => (
+                          <option key={a.id} value={a.name}>{a.name} ({a.type})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Sessions & Purging */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.session}</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {SESSIONS.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setForm({ ...form, session: s.id, purgeTime: PURGE_TIMES[s.id][0] })}
+                            className={`py-1.5 px-2 rounded-lg text-xs border flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                              form.session === s.id
+                                ? "bg-sky-500/20 border-sky-400 text-sky-300"
+                                : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                            }`}
+                          >
+                            <span>{s.flag}</span>
+                            <span>{s.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.purgeTime}</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {PURGE_TIMES[form.session].map((pt) => (
+                          <button
+                            key={pt}
+                            type="button"
+                            onClick={() => setForm({ ...form, purgeTime: pt })}
+                            className={`py-1.5 rounded-lg text-xs font-mono border transition-all cursor-pointer ${
+                              form.purgeTime === pt
+                                ? "bg-sky-500/20 border-sky-400 text-sky-300"
+                                : "border-slate-800 bg-slate-900/60 text-slate-400"
+                            }`}
+                          >
+                            {pt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Direction, Outcome, Risk, R:R */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.direction}</label>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, direction: "buy" })}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+                            form.direction === "buy" ? "bg-sky-500/20 border-sky-400 text-sky-300" : "border-slate-800 bg-slate-900 text-slate-400"
+                          }`}
+                        >
+                          BUY
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, direction: "sell" })}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+                            form.direction === "sell" ? "bg-rose-500/20 border-rose-400 text-rose-300" : "border-slate-800 bg-slate-900 text-slate-400"
+                          }`}
+                        >
+                          SELL
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.outcome}</label>
+                      <div className="flex gap-1">
+                        {[
+                          { id: "win", label: "WIN", bg: "bg-emerald-500/20 border-emerald-400 text-emerald-300" },
+                          { id: "loss", label: "LOSS", bg: "bg-rose-500/20 border-rose-400 text-rose-300" },
+                          { id: "be", label: "BE", bg: "bg-slate-700 border-slate-500 text-slate-300" },
+                        ].map((o) => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => setForm({ ...form, outcome: o.id })}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono font-semibold border cursor-pointer ${
+                              form.outcome === o.id ? o.bg : "border-slate-800 bg-slate-900 text-slate-400"
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.risk}</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={form.risk}
+                        onChange={(e) => setForm({ ...form, risk: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.rrRatio}</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={form.rrRatio}
+                        onChange={(e) => setForm({ ...form, rrRatio: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Checklist with Edit Button */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[10px] uppercase font-mono text-slate-500 flex items-center gap-1">
+                        <CheckSquare size={12} /> {t.checklistTitle}:
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowChecklistEditor((s) => !s)}
+                        className="text-[10px] text-sky-400 hover:text-sky-300 flex items-center gap-1 font-mono cursor-pointer"
+                      >
+                        <Settings size={10} /> {t.editChecklist}
+                      </button>
+                    </div>
+
+                    {/* Checklist Editor Box */}
+                    {showChecklistEditor && (
+                      <div className="p-2.5 mb-2 rounded-lg bg-slate-900/90 border border-sky-500/30">
+                        <div className="flex gap-1.5 mb-2">
+                          <input
+                            value={newChecklistInput}
+                            onChange={(e) => setNewChecklistInput(e.target.value)}
+                            placeholder="New item..."
+                            className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={addCustomChecklistItem}
+                            className="px-2.5 py-1 bg-sky-500 text-slate-950 rounded text-xs font-semibold cursor-pointer"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {checklistItems.map((item) => (
+                            <span key={item} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300">
+                              {item}
+                              <button type="button" onClick={() => removeCustomChecklistItem(item)} className="text-rose-400 hover:text-rose-300">×</button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Active Checklist Items */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {checklistItems.map((item) => {
+                        const checked = (form.checklist || []).includes(item);
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => toggleChecklistItem(item)}
+                            className={`px-2 py-1 rounded text-[11px] font-mono transition-all border cursor-pointer ${
+                              checked
+                                ? "bg-sky-500/20 border-sky-400 text-sky-300"
+                                : "bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700"
+                            }`}
+                          >
+                            {checked ? "✓ " : ""}{item}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Multiple Images Upload */}
+                  <div className="mb-3">
+                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.chartsTitle}</label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleMultipleImages}
+                      className="block w-full text-xs text-slate-400 cursor-pointer file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:bg-sky-500/15 file:text-sky-300 file:text-xs"
+                    />
+                    {form.images?.length > 0 && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {form.images.map((img, i) => (
+                          <div key={i} className="relative group w-16 h-12 rounded overflow-hidden border border-slate-700">
+                            <img src={img} alt="thumb" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setForm((p) => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }))}
+                              className="absolute top-0.5 right-0.5 bg-black/80 text-rose-400 p-0.5 rounded-full"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Notes */}
+                  <div className="mb-3">
+                    <label className="text-[10px] uppercase font-mono text-slate-500 block mb-1">{t.notesLabel}</label>
+                    <textarea
+                      rows={2}
+                      value={form.notes}
+                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                      placeholder="Analysis notes..."
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:border-sky-400 resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={saveTrade}
+                    className="w-full py-2 rounded-xl text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20"
+                  >
+                    {editingId ? t.updateTrade : t.saveTrade}
+                  </button>
+                </div>
+              )}
+
+              {/* ================= TAB 1: JOURNAL ================= */}
+              {tab === "journal" && (
+                <div>
+                  {loading ? (
+                    <div className="py-16 text-center text-slate-500 font-mono text-xs">Loading...</div>
+                  ) : filteredTrades.length === 0 ? (
+                    <div className="glass-card py-12 text-center rounded-2xl border border-slate-800">
+                      <p className="text-xs text-slate-400">{t.noTrades}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-right text-[11px] text-slate-500 font-mono px-1">
+                        {filteredTrades.length} {t.trades}
+                      </div>
+
+                      {filteredTrades.map((tr) => {
+                        const sessionInfo = SESSIONS.find((s) => s.id === tr.session);
+                        const imgs = tr.images || (tr.image ? [tr.image] : []);
+
+                        return (
+                          <div
+                            key={tr.id}
+                            onDoubleClick={() => { if (imgs.length > 0) setLightbox(imgs[0]); }}
+                            className="glass-card rounded-xl border border-slate-800/80 p-3 flex items-center justify-between gap-3 hover:border-sky-500/30 transition-all select-none cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              {tr.outcome === "win" ? (
+                                <div className="w-6 h-6 rounded-md bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                                  <TrendingUp size={14} />
+                                </div>
+                              ) : (
+                                <div className="w-6 h-6 rounded-md bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                                  <TrendingDown size={14} />
+                                </div>
+                              )}
+
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-xs font-mono text-white">{tr.symbol}</span>
+                                  <span className={`text-[9px] uppercase font-mono px-1 rounded font-bold border ${
+                                    tr.direction === "buy" ? "bg-sky-500/20 text-sky-300 border-sky-400/30" : "bg-rose-500/20 text-rose-300 border-rose-400/30"
+                                  }`}>
+                                    {tr.direction}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    {tr.accountName}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono">
+                                  {tr.date} · {sessionInfo?.flag} {sessionInfo?.label} · {tr.purgeTime}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              {imgs.length > 0 && (
+                                <div className="flex items-center gap-1 text-slate-400 text-[10px] bg-slate-800/60 px-1.5 py-0.5 rounded border border-slate-700">
+                                  <ImageIcon size={11} className="text-sky-400" />
+                                  <span>{imgs.length}</span>
+                                </div>
+                              )}
+
+                              <div className={`text-xs font-bold font-mono ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                {fmtR(tr.rMultiple || 0)}
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); startEditTrade(tr); }}
+                                className="text-slate-500 hover:text-sky-400 p-1"
+                              >
+                                <Edit3 size={13} />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); removeTrade(tr.id); }}
+                                className="text-slate-500 hover:text-rose-400 p-1"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ================= TAB 2: DASHBOARD (CALENDAR ON TOP) ================= */}
+              {tab === "dashboard" && (
+                <div className="space-y-6">
+                  
+                  {/* 1. CALENDAR AT THE VERY TOP */}
+                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                        {t.calendarTitle}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setViewMonth((m) => (m === 0 ? 11 : m - 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
+                          <ChevronLeft size={16} />
+                        </button>
+                        <div className="font-bold text-xs text-white font-mono min-w-[120px] text-center">
+                          {MONTH_NAMES[viewMonth]} {viewYear}
+                        </div>
+                        <button onClick={() => setViewMonth((m) => (m === 11 ? 0 : m + 1))} className="p-1 rounded text-slate-400 hover:bg-slate-800">
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 mb-1">
+                      {WEEKDAYS.map((d) => (
+                        <div key={d} className="text-[9px] font-mono text-slate-500 text-center uppercase py-0.5">{d}</div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {calendarCells.map((cell, idx) => {
+                        if (!cell) return <div key={idx} className="aspect-square"></div>;
+                        const net = cell.data?.net || 0;
+                        return (
+                          <div
+                            key={idx}
+                            className={`aspect-square rounded-lg p-1 flex flex-col justify-between border text-[10px] ${
+                              !cell.data
+                                ? "bg-slate-900/30 border-slate-800/40"
+                                : net > 0
+                                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
+                                : net < 0
+                                ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
+                                : "bg-slate-800 border-slate-700 text-slate-300"
+                            }`}
+                          >
+                            <span className="text-[9px] font-mono text-slate-500">{cell.day}</span>
+                            {cell.data && (
+                              <div className="text-right font-mono text-[9px] font-bold">
+                                {fmtR(net)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. PURGING & SESSIONS PERFORMANCE BENEATH CALENDAR */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Purge Matrix */}
+                    <div className="glass-card p-4 rounded-xl border border-slate-800">
+                      <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
+                        <Clock size={13} className="text-sky-400" /> Purge Times Matrix
+                      </div>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                        {Object.entries(stats.purgeStats).map(([time, data]) => (
+                          <div key={time} className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
+                            <div className="text-[10px] font-mono text-sky-400 uppercase font-bold">{time}</div>
+                            <div className={`text-xs font-bold font-mono mt-0.5 ${data.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                              {data.winRate}%
+                            </div>
+                            <div className="text-[9px] text-slate-500 font-mono">{data.count}t</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sessions Matrix */}
+                    <div className="glass-card p-4 rounded-xl border border-slate-800">
+                      <div className="text-xs font-bold text-white mb-2.5 flex items-center gap-1.5 font-mono">
+                        <Clock size={13} className="text-sky-400" /> Sessions Performance
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {SESSIONS.map((s) => {
+                          const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0 };
+                          return (
+                            <div key={s.id} className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
+                              <div className="text-xs">{s.flag} <span className="font-semibold text-white">{s.label}</span></div>
+                              <div className={`text-xs font-bold font-mono mt-0.5 ${st.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}`}>
+                                {st.winRate}%
+                              </div>
+                              <div className="text-[9px] text-slate-500 font-mono">{st.count}t · {fmtR(st.netR)}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* ================= TAB 3: ACCOUNTS ================= */}
+              {tab === "accounts" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    {/* Account Filter placed inside Accounts tab */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">{t.accountLabel}:</span>
+                      <select
+                        value={filterAccount}
+                        onChange={(e) => setFilterAccount(e.target.value)}
+                        className="bg-slate-900 text-xs px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300 focus:border-sky-500 cursor-pointer"
+                      >
+                        <option value="all">{t.allAccounts}</option>
+                        {accounts.map((a) => <option key={a.id} value={a.name}>{a.name} ({a.type})</option>)}
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAccModal(true)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
+                    >
+                      <Plus size={13} /> {t.addAccount}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {accounts.length === 0 ? (
+                      <div className="col-span-3 py-10 text-center text-slate-500 glass-card rounded-xl text-xs">
+                        {t.noAccounts}
+                      </div>
+                    ) : (
+                      accounts.map((acc) => {
+                        const accTrades = trades.filter((tr) => tr.accountName === acc.name);
+                        const net = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
+                        return (
+                          <div key={acc.id} className="glass-card p-4 rounded-xl border border-slate-800">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/20">
+                                {acc.type}
+                              </span>
+                              <button onClick={() => deleteDoc(doc(db, "users", user.uid, "accounts", acc.id))} className="text-slate-500 hover:text-rose-400">
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                            <h4 className="font-bold text-white text-sm">{acc.name}</h4>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">{acc.balance}</div>
+                            {acc.mt5Id && <div className="text-[10px] text-slate-500 font-mono">MT5: {acc.mt5Id}</div>}
+                            <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between font-mono text-[11px]">
+                              <span className="text-slate-500">{accTrades.length} trades</span>
+                              <span className={`font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtR(net)}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Add Account Modal */}
+                  {showAccModal && (
+                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                      <div className="glass-card p-5 rounded-2xl max-w-xs w-full border border-sky-500/30">
+                        <h4 className="text-xs font-bold text-white mb-3">{t.addAccount}</h4>
+                        <div className="space-y-2 mb-3">
+                          <input
+                            placeholder="Account Name (e.g. FTMO 100K #1)"
+                            value={newAcc.name}
+                            onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                          <select
+                            value={newAcc.type}
+                            onChange={(e) => setNewAcc({ ...newAcc, type: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          >
+                            <option value="Funded">Funded</option>
+                            <option value="Challenge">Challenge</option>
+                            <option value="Real">Real</option>
+                            <option value="Demo">Demo</option>
+                          </select>
+                          <input
+                            placeholder="Balance (e.g. $100,000)"
+                            value={newAcc.balance}
+                            onChange={(e) => setNewAcc({ ...newAcc, balance: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                          <input
+                            placeholder="MT5 ID (Optional)"
+                            value={newAcc.mt5Id}
+                            onChange={(e) => setNewAcc({ ...newAcc, mt5Id: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowAccModal(false)} className="flex-1 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">{t.cancel}</button>
+                          <button onClick={saveAccount} className="flex-1 py-1.5 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ================= TAB 4: NOTES ================= */}
+              {tab === "notes" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-white">{t.notes}</h3>
+                    <button
+                      onClick={() => setShowNoteForm(true)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
+                    >
+                      <Plus size={13} /> {t.addNote}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {notes.length === 0 ? (
+                      <div className="col-span-2 py-10 text-center text-slate-500 glass-card rounded-xl text-xs">
+                        {t.noNotes}
+                      </div>
+                    ) : (
+                      notes.map((n) => (
+                        <div key={n.id} className="glass-card p-4 rounded-xl border border-slate-800">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">
+                              {n.tag}
+                            </span>
+                            <button onClick={() => deleteDoc(doc(db, "users", user.uid, "notes", n.id))} className="text-slate-500 hover:text-rose-400">
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                          <h4 className="text-xs font-bold text-white mb-1">{n.title}</h4>
+                          <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{n.content}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add Note Modal */}
+                  {showNoteForm && (
+                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                      <div className="glass-card p-5 rounded-2xl max-w-sm w-full border border-sky-500/30">
+                        <h4 className="text-xs font-bold text-white mb-3">{t.addNote}</h4>
+                        <div className="space-y-2.5 mb-3">
+                          <input
+                            placeholder="Title (e.g. London Judas Setup)"
+                            value={noteForm.title}
+                            onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                          <input
+                            placeholder="Tag (e.g. ICT, Psychology)"
+                            value={noteForm.tag}
+                            onChange={(e) => setNoteForm({ ...noteForm, tag: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
+                          />
+                          <textarea
+                            rows={4}
+                            placeholder="Write your note..."
+                            value={noteForm.content}
+                            onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white resize-none"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowNoteForm(false)} className="flex-1 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">{t.cancel}</button>
+                          <button onClick={saveNote} className="flex-1 py-1.5 rounded-lg bg-sky-500 text-xs font-semibold text-slate-950">Save</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ================= TAB 5: COMMUNITY CHAT ================= */}
+              {tab === "community" && (
+                <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[500px]">
+                  <div className="p-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+                    <span className="font-bold text-xs text-white font-mono">{t.community} Chat</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Live</span>
+                  </div>
+
+                  <div className="flex-1 p-3 overflow-y-auto space-y-2.5">
+                    {chatMessages.map((m) => {
+                      const isMe = m.uid === user.uid;
+                      return (
+                        <div key={m.id} className={`flex gap-2 ${isMe ? "justify-end" : "justify-start"}`}>
+                          {!isMe && (
+                            <img src={m.photo || "https://api.dicebear.com/7.x/bottts/svg"} className="w-6 h-6 rounded-full bg-slate-800 flex-shrink-0" />
+                          )}
+                          <div className={`max-w-xs p-2.5 rounded-xl text-xs relative group ${
+                            isMe ? "bg-sky-500/20 text-slate-100 border border-sky-500/30" : "bg-slate-900 text-slate-200 border border-slate-800"
+                          }`}>
+                            <div className="flex items-center justify-between gap-3 mb-0.5">
+                              <span className="font-bold text-[9px] text-sky-400">{m.author}</span>
+                              <button onClick={() => deleteChatMessage(m.id)} className="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 size={10} />
+                              </button>
+                            </div>
+                            <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={chatScrollRef}></div>
+                  </div>
+
+                  <form onSubmit={sendChatMessage} className="p-2.5 border-t border-slate-800 bg-slate-950/60 flex gap-2">
+                    <input
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder={t.chatPlaceholder}
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400"
+                    />
+                    <button type="submit" className="p-2 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer">
+                      <Send size={13} />
+                    </button>
+                  </form>
+                </div>
+              )}
+
+            </main>
+          </div>
+
+          {/* Minimal Footer with TikTok */}
+          <footer className="mt-8 py-4 border-t border-slate-800/60 text-center text-[11px] text-slate-500 font-mono">
+            Amiir Journal · {t.devBy} <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
+          </footer>
+
+          {/* LIGHTBOX FOR IMAGES */}
+          {lightbox && (
+            <div
+              onClick={() => setLightbox(null)}
+              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out"
+            >
+              <img src={lightbox} alt="Full Chart" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-slate-800" />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
 </html>
