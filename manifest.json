@@ -1,7 +1,6 @@
 {
   "name": "Amiir Journal",
-  "short_name": "AmiirJournal",
-  "description": "Professional Trading Ledger and Community",
+  "short_name": "Amiir",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#06090e",
