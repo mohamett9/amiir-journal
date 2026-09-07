@@ -254,162 +254,128 @@
       });
     }
 
-    // FUTURISTIC CYBERPUNK CARD WITH A|A LOGO, NEON LINES & QR CODE (MATCHING USER REFERENCE)
+    // LUXURY DIGITAL ASSET RECEIPT CARD (CLEAN, MINIMALIST & PRO)
     function downloadTradeReceipt(tr) {
       const canvas = document.createElement("canvas");
-      canvas.width = 700;
-      canvas.height = 400;
+      canvas.width = 800;
+      canvas.height = 440;
       const ctx = canvas.getContext("2d");
 
-      // 1. Dark Cyber Background
-      ctx.fillStyle = "#080d1a";
-      ctx.fillRect(0, 0, 700, 400);
+      // Dark luxury background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, 800, 440);
+      bgGrad.addColorStop(0, "#070c18");
+      bgGrad.addColorStop(1, "#0d1527");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 800, 440);
 
-      // 2. Circuit Trace Lines (Neon Cyan & Magenta)
-      const drawCircuit = (color, points, endRadius = 3.5) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        ctx.moveTo(points[0][0], points[0][1]);
-        for (let i = 1; i < points.length; i++) {
-          ctx.lineTo(points[i][0], points[i][1]);
-        }
-        ctx.stroke();
-        const end = points[points.length - 1];
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(end[0], end[1], endRadius, 0, Math.PI * 2);
-        ctx.fill();
-      };
-
-      // Top cyan & pink circuit lines
-      drawCircuit("#00f0ff", [[280, 40], [380, 40], [430, 80], [600, 80]], 3.5);
-      drawCircuit("#ec4899", [[350, 65], [420, 65], [450, 95], [580, 95]], 3);
-      drawCircuit("#00f0ff", [[480, 115], [570, 115], [590, 135]], 3);
-
-      // Bottom-left cyan & pink circuit lines
-      drawCircuit("#00f0ff", [[50, 200], [130, 200], [170, 240], [210, 240], [250, 280]], 3.5);
-      drawCircuit("#ec4899", [[50, 215], [120, 215], [155, 250], [195, 250], [225, 280], [225, 310]], 3);
-
-      // 3. Top-Left Cyber Tech Brackets [ A | A ]
-      ctx.strokeStyle = "#ec4899";
+      // Subtle border
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
       ctx.lineWidth = 2;
+      ctx.strokeRect(14, 14, 772, 412);
+
+      // Header Branding
+      ctx.fillStyle = "#38bdf8";
+      ctx.font = "bold 16px 'JetBrains Mono', monospace";
+      ctx.fillText("AMIIR JOURNAL · VERIFIED EXECUTION", 40, 52);
+
+      // Outcome Badge Pill
+      const isWin = tr.outcome === "win";
+      const badgeBg = isWin ? "rgba(52, 211, 153, 0.15)" : "rgba(229, 152, 160, 0.15)";
+      const badgeBorder = isWin ? "#34d399" : "#E598A0";
+      const badgeText = isWin ? "● WIN" : "● LOSS";
+
+      ctx.fillStyle = badgeBg;
+      ctx.strokeStyle = badgeBorder;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      // top-left corner
-      ctx.moveTo(40, 55); ctx.lineTo(40, 40); ctx.lineTo(55, 40);
-      // top-right corner
-      ctx.moveTo(95, 40); ctx.lineTo(110, 40); ctx.lineTo(110, 55);
-      // bottom-left corner
-      ctx.moveTo(40, 90); ctx.lineTo(40, 105); ctx.lineTo(55, 105);
-      // bottom-right corner
-      ctx.moveTo(95, 105); ctx.lineTo(110, 105); ctx.lineTo(110, 90);
+      ctx.roundRect(660, 32, 100, 30, 8);
+      ctx.fill();
       ctx.stroke();
 
-      // Letters inside: A | A
-      ctx.font = "bold 26px 'JetBrains Mono', monospace";
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText("A", 49, 82);
-      ctx.fillStyle = "#64748b";
-      ctx.fillText("|", 72, 80);
-      ctx.fillStyle = "#00f0ff";
-      ctx.fillText("A", 87, 82);
-
-      // 4. Center Main Info
-      const isWin = tr.outcome === "win";
-      const outcomeColor = isWin ? "#00f0ff" : "#ec4899";
-
-      // Bold Title: Symbol & Direction
-      ctx.font = "bold 32px 'Plus Jakarta Sans', sans-serif";
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = badgeBorder;
+      ctx.font = "bold 13px 'JetBrains Mono', monospace";
       ctx.textAlign = "center";
-      ctx.fillText(`${tr.symbol} · ${tr.direction.toUpperCase()}`, 350, 160);
+      ctx.fillText(badgeText, 710, 52);
+      ctx.textAlign = "left";
 
-      // Outcome & PnL / Return
+      // Divider Line
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.beginPath();
+      ctx.moveTo(40, 78);
+      ctx.lineTo(760, 78);
+      ctx.stroke();
+
+      // Large Symbol & Direction
+      ctx.font = "bold 38px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(`${tr.symbol} · ${tr.direction.toUpperCase()}`, 40, 132);
+
+      // Amount / PnL Display
       const pnlStr = tr.pnlDollar
         ? (tr.pnlDollar >= 0 ? `+$${tr.pnlDollar}` : `-$${Math.abs(tr.pnlDollar)}`)
         : `${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}%`;
 
-      ctx.font = "bold 28px 'JetBrains Mono', monospace";
-      ctx.fillStyle = outcomeColor;
-      ctx.shadowColor = outcomeColor;
-      ctx.shadowBlur = 10;
-      ctx.fillText(`${pnlStr}  (${tr.outcome.toUpperCase()})`, 350, 205);
-      ctx.shadowBlur = 0; // reset glow
+      ctx.font = "bold 36px 'JetBrains Mono', monospace";
+      ctx.fillStyle = isWin ? "#34d399" : "#E598A0";
+      ctx.fillText(pnlStr, 40, 185);
 
-      // Metadata line
-      ctx.font = "12px 'JetBrains Mono', monospace";
+      // Secondary details line
+      ctx.font = "14px 'JetBrains Mono', monospace";
       ctx.fillStyle = "#94a3b8";
-      ctx.fillText(`${tr.date}  ·  ${tr.session.toUpperCase()} (${tr.purgeTime || "Entry"})  ·  R:R 1:${tr.rrRatio}`, 350, 235);
+      ctx.fillText(`Return: ${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}%   ·   R:R 1:${tr.rrRatio}   ·   Account: ${tr.accountName || "Primary"}`, 40, 222);
+      ctx.fillText(`Date: ${tr.date}   ·   Session: ${tr.session.toUpperCase()} (${tr.purgeTime || "Entry"})`, 40, 248);
 
-      // Short Notes (if any)
+      // Notes (if any)
       if (tr.notes) {
-        ctx.font = "italic 12px 'Plus Jakarta Sans', sans-serif";
         ctx.fillStyle = "#cbd5e1";
-        const shortNote = tr.notes.length > 55 ? tr.notes.substring(0, 52) + "..." : tr.notes;
-        ctx.fillText(`"${shortNote}"`, 350, 262);
+        ctx.font = "italic 13px 'Plus Jakarta Sans', sans-serif";
+        const shortNote = tr.notes.length > 70 ? tr.notes.substring(0, 67) + "..." : tr.notes;
+        ctx.fillText(`"${shortNote}"`, 40, 290);
       }
 
-      ctx.textAlign = "left"; // reset
-
-      // 5. Bottom-Left Cyber Chip Icon (Pink)
-      const chipX = 40, chipY = 270, chipW = 85, chipH = 85;
-      ctx.strokeStyle = "#ec4899";
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(chipX, chipY, chipW, chipH);
-      ctx.strokeStyle = "rgba(236, 72, 153, 0.7)";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(chipX + 10, chipY + 10, chipW - 20, chipH - 20);
+      // Divider Line
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.beginPath();
-      ctx.moveTo(chipX + 25, chipY + 25); ctx.lineTo(chipX + 60, chipY + 25);
-      ctx.moveTo(chipX + 25, chipY + 42); ctx.lineTo(chipX + 50, chipY + 42);
-      ctx.moveTo(chipX + 35, chipY + 60); ctx.lineTo(chipX + 60, chipY + 60);
+      ctx.moveTo(40, 315);
+      ctx.lineTo(760, 315);
       ctx.stroke();
-      ctx.fillStyle = "#00f0ff";
-      ctx.fillRect(chipX + 38, chipY + 38, 8, 8);
 
-      // 6. Bottom-Right Neon Cyan QR Code (matching image)
-      const qrX = 550, qrY = 245, qrSize = 110;
-      ctx.strokeStyle = "#00f0ff";
-      ctx.lineWidth = 3;
-      ctx.shadowColor = "#00f0ff";
-      ctx.shadowBlur = 12;
-      ctx.strokeRect(qrX, qrY, qrSize, qrSize);
-      ctx.shadowBlur = 0;
-
-      // 3 Corner QR Finder Patterns
-      const drawFinder = (x, y) => {
-        ctx.fillStyle = "#00f0ff";
-        ctx.fillRect(x, y, 24, 24);
-        ctx.fillStyle = "#080d1a";
-        ctx.fillRect(x + 5, y + 5, 14, 14);
-        ctx.fillStyle = "#00f0ff";
-        ctx.fillRect(x + 8, y + 8, 8, 8);
-      };
-      drawFinder(qrX + 8, qrY + 8);
-      drawFinder(qrX + qrSize - 32, qrY + 8);
-      drawFinder(qrX + 8, qrY + qrSize - 32);
-
-      // Matrix Cells
-      ctx.fillStyle = "#00f0ff";
-      const seedData = [
-        [40, 10], [50, 10], [60, 10], [70, 15],
-        [10, 40], [20, 40], [35, 45], [50, 40], [70, 40], [85, 45],
-        [38, 55], [48, 52], [58, 55], [68, 58], [80, 55],
-        [40, 70], [52, 70], [65, 75], [78, 70],
-        [38, 85], [50, 85], [62, 88], [75, 85], [88, 85]
-      ];
-      seedData.forEach(([px, py]) => {
-        ctx.fillRect(qrX + px, qrY + py, 6, 6);
-      });
-
-      // Bottom Watermark
-      ctx.font = "10px 'JetBrains Mono', monospace";
+      // Bottom Footer URL
+      ctx.font = "12px 'JetBrains Mono', monospace";
       ctx.fillStyle = "#64748b";
-      ctx.fillText("amiir-journal.vercel.app · @amiir_pr", 255, 365);
+      ctx.fillText("amiir-journal.vercel.app · Developed by @amiir_pr", 40, 375);
+
+      // QR Code Box on Bottom Right
+      const qrX = 660, qrY = 325, qrSize = 95;
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(qrX, qrY, qrSize, qrSize);
+
+      const drawFinder = (x, y) => {
+        ctx.fillStyle = "#38bdf8";
+        ctx.fillRect(x, y, 20, 20);
+        ctx.fillStyle = "#070c18";
+        ctx.fillRect(x + 4, y + 4, 12, 12);
+        ctx.fillStyle = "#38bdf8";
+        ctx.fillRect(x + 7, y + 7, 6, 6);
+      };
+      drawFinder(qrX + 6, qrY + 6);
+      drawFinder(qrX + qrSize - 26, qrY + 6);
+      drawFinder(qrX + 6, qrY + qrSize - 26);
+
+      ctx.fillStyle = "#38bdf8";
+      const matrix = [
+        [32, 10], [42, 10], [52, 10],
+        [10, 32], [20, 32], [35, 36], [45, 32], [60, 32], [72, 36],
+        [32, 48], [42, 45], [52, 48], [62, 50],
+        [32, 60], [44, 60], [56, 64], [68, 60],
+        [32, 74], [44, 74], [56, 76], [68, 74]
+      ];
+      matrix.forEach(([px, py]) => ctx.fillRect(qrX + px, qrY + py, 5, 5));
 
       // Trigger Download
       const link = document.createElement("a");
-      link.download = `${tr.symbol}-${tr.date}-card.png`;
+      link.download = `${tr.symbol}-${tr.date}-receipt.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     }
@@ -456,6 +422,7 @@
       const [noteForm, setNoteForm] = useState({ title: "", tag: "ICT Model", content: "" });
       const [showNoteForm, setShowNoteForm] = useState(false);
 
+      // Community State
       const [chatInput, setChatInput] = useState("");
       const [chatImages, setChatImages] = useState([]);
       const [chatUploading, setChatUploading] = useState(false);
@@ -752,7 +719,7 @@
       const handlePublishUpdate = async (e) => {
         e.preventDefault();
         if (!isAdmin) return alert("Only the Creator (Amiir) can post updates.");
-        if (!newUpdate.title || !newUpdate.text) return alert("Title and description required.");
+        if (!newUpdate.title || !newUpdate.text) return alert("Title and details required.");
 
         try {
           await addDoc(collection(db, "app_announcements"), {
@@ -770,7 +737,7 @@
           setShowNewUpdateForm(false);
           alert("Update published! ✓");
         } catch (err) {
-          alert("Error: " + err.message + "\nMake sure Firestore rules allow writes.");
+          alert("Error: " + err.message);
         }
       };
 
@@ -1059,43 +1026,46 @@
       return (
         <div className="min-h-screen bg-[#06090e] text-slate-200 flex flex-col justify-between">
           <div>
-            {/* Top Bar */}
+            {/* Top Bar with One-Line Title on Mobile */}
             <header className="border-b border-slate-800/60 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-30">
-              <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+              <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-1 sm:gap-3">
                 
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm tracking-tight text-white font-mono">Amiir Journal</span>
+                {/* Fixed Single Line Branding */}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                  <span className="font-bold text-xs sm:text-sm tracking-tight text-white font-mono whitespace-nowrap">
+                    Amiir Journal
+                  </span>
                   {isAdmin && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-0.5">
-                      <ShieldCheck size={10} /> Creator
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-0.5 whitespace-nowrap">
+                      <ShieldCheck size={11} className="text-sky-400" /> Creator
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
                   <button
                     onClick={() => setLang(lang === "en" ? "so" : "en")}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 hover:border-sky-500/40 cursor-pointer"
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[10px] sm:text-[11px] font-mono text-slate-300 hover:border-sky-500/40 cursor-pointer"
                   >
-                    <Globe size={12} className="text-sky-400" />
+                    <Globe size={11} className="text-sky-400" />
                     <span>{lang.toUpperCase()}</span>
                   </button>
 
-                  <div className="flex items-center gap-2 bg-slate-900/90 px-2 py-1 rounded-full border border-slate-800">
+                  <div className="flex items-center gap-1.5 bg-slate-900/90 px-1.5 sm:px-2 py-1 rounded-full border border-slate-800">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="user" className="w-5 h-5 rounded-full" />
                     ) : (
-                      <User size={13} className="text-slate-400" />
+                      <User size={12} className="text-slate-400" />
                     )}
                     <span 
                       onClick={unlockAdminMode}
                       title="Creator PIN"
-                      className="text-xs text-slate-300 hidden sm:inline font-mono cursor-pointer hover:underline"
+                      className="text-[11px] text-slate-300 hidden md:inline font-mono cursor-pointer hover:underline"
                     >
                       {user.displayName?.split(" ")[0] || "Trader"}
                     </span>
                     <button onClick={() => signOut(auth)} title="Sign out" className="text-slate-500 hover:text-rose-400 ml-0.5 cursor-pointer">
-                      <LogOut size={12} />
+                      <LogOut size={11} />
                     </button>
                   </div>
 
@@ -1104,38 +1074,47 @@
                       if (showForm) { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); }
                       else { setShowForm(true); }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20 active:scale-95 font-mono"
+                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-sm shadow-sky-500/20 active:scale-95 font-mono whitespace-nowrap"
                   >
-                    {showForm ? <X size={13} /> : <Plus size={13} />}
+                    {showForm ? <X size={12} /> : <Plus size={12} />}
                     <span className="small-caps">{showForm ? t.cancel : t.newTrade}</span>
                   </button>
                 </div>
               </div>
             </header>
 
-            <main className="max-w-5xl mx-auto px-4 py-4">
+            <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4">
               
-              {/* TOP SWIPEABLE NAV TABS: UPDATES PLACED RIGHT AFTER NOTES */}
+              {/* TOP SWIPEABLE NAV TABS (UPDATES AFTER NOTES) */}
               <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-5 overflow-x-auto no-scrollbar w-full snap-x">
                 {[
                   { id: "journal", label: t.journal, icon: ListChecks },
                   { id: "dashboard", label: t.dashboard, icon: LayoutGrid },
                   { id: "accounts", label: t.accounts, icon: Wallet },
                   { id: "notes", label: t.notes, icon: BookOpen },
-                  { id: "updates", label: t.updates, icon: Sparkles },
+                  { id: "updates", label: t.updates, icon: Sparkles, isGold: true },
                   { id: "community", label: t.community, icon: MessageSquare }
                 ].map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setTab(item.id)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap snap-start flex-shrink-0 font-mono small-caps ${
+                    className={`relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap snap-start flex-shrink-0 font-mono small-caps ${
                       tab === item.id 
-                        ? "bg-sky-500/15 text-sky-300 border border-sky-500/30" 
+                        ? item.isGold
+                          ? "bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/10"
+                          : "bg-sky-500/15 text-sky-300 border border-sky-500/30" 
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    <item.icon size={13} className={item.id === "updates" ? "text-sky-400" : ""} />
+                    <item.icon size={13} className={item.isGold ? "text-amber-400 animate-pulse" : ""} />
                     {item.label}
+                    {/* Glowing ping indicator on Updates */}
+                    {item.isGold && (
+                      <span className="relative flex h-2 w-2 ml-0.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -1451,7 +1430,7 @@
                               isExpanded ? "border-sky-500/60 shadow-lg shadow-sky-500/10" : "border-slate-800/80"
                             }`}
                           >
-                            {/* Summary Row */}
+                            {/* FULL DETAILS ROW (RESTORED) */}
                             <div
                               onClick={() => setExpandedTradeId(isExpanded ? null : tr.id)}
                               className="px-3 py-2.5 flex items-center justify-between gap-2 select-none cursor-pointer active:bg-slate-800/40"
@@ -1509,14 +1488,9 @@
                               </div>
                             </div>
 
-                            {/* Expanded Details */}
+                            {/* EXPANDED DETAILS */}
                             {isExpanded && (
                               <div className="px-3.5 pb-3 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2">
-                                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pb-1 border-b border-slate-800">
-                                  <span>Account: <strong className="text-white">{tr.accountName}</strong></span>
-                                  <span className="text-sky-400 font-bold">{fmtR(tr.rMultiple || 0)} Return</span>
-                                </div>
-
                                 {tr.checklist && tr.checklist.length > 0 && (
                                   <div>
                                     <div className="text-[9px] uppercase font-mono text-slate-500 mb-1 flex items-center gap-1">
@@ -1593,7 +1567,7 @@
                                       onClick={() => downloadTradeReceipt(tr)}
                                       className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 cursor-pointer"
                                     >
-                                      <Download size={11} /> Receipt
+                                      <Download size={11} /> Receipt Card
                                     </button>
                                   </div>
 
@@ -1620,7 +1594,7 @@
                         );
                       })}
 
-                      {/* UNIFIED SEE MORE BUTTON ON THE LEFT */}
+                      {/* SEE MORE ON LEFT */}
                       {filteredTrades.length > 5 && (
                         <div className="flex items-center pt-2 pb-1">
                           <button
@@ -2117,55 +2091,45 @@
                 </div>
               )}
 
-              {/* ================= TAB 5: UPDATES (RIGHT AFTER NOTES) ================= */}
+              {/* ================= TAB 5: UPDATES (RIGHT AFTER NOTES WITH GOLD ACCENT) ================= */}
               {tab === "updates" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-bold text-white font-mono flex items-center gap-1.5">
-                        <Sparkles size={15} className="text-sky-400" /> Official Updates & Releases
+                        <Sparkles size={15} className="text-amber-400" /> Updates
                       </h3>
-                      <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                        Feature releases, patches and upcoming roadmap.
-                      </p>
                     </div>
 
                     {isAdmin && (
                       <button
                         onClick={() => setShowNewUpdateForm((s) => !s)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 font-mono cursor-pointer transition-all shadow-md shadow-sky-500/20"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono cursor-pointer transition-all shadow-md shadow-amber-500/20"
                       >
                         {showNewUpdateForm ? <X size={13} /> : <Plus size={13} />}
-                        <span>{showNewUpdateForm ? "Close" : "+ New Update"}</span>
+                        <span>{showNewUpdateForm ? "Close" : "+ New"}</span>
                       </button>
                     )}
                   </div>
 
                   {/* ADMIN FORM */}
                   {isAdmin && showNewUpdateForm && (
-                    <form onSubmit={handlePublishUpdate} className="glass-card p-4 sm:p-5 rounded-2xl border border-sky-500/40 shadow-xl space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                        <span className="text-xs font-bold text-sky-400 font-mono">Create Update (Creator Only)</span>
-                        <span className="text-[10px] text-slate-500 font-mono">Verified Creator</span>
-                      </div>
-
+                    <form onSubmit={handlePublishUpdate} className="glass-card p-4 sm:p-5 rounded-2xl border border-amber-500/40 shadow-xl space-y-3">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Title</label>
                           <input
                             value={newUpdate.title}
                             onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })}
-                            placeholder="e.g. Version 2.5 - Risk Calculator & Trade Receipt"
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-sky-400"
+                            placeholder="Title..."
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-amber-400"
                           />
                         </div>
 
                         <div>
-                          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Tag</label>
                           <select
                             value={newUpdate.category}
                             onChange={(e) => setNewUpdate({ ...newUpdate, category: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400 cursor-pointer"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-amber-400 cursor-pointer"
                           >
                             <option value="Upcoming Feature">Upcoming Feature</option>
                             <option value="New Feature Live">New Feature Live</option>
@@ -2176,18 +2140,16 @@
                       </div>
 
                       <div>
-                        <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Details</label>
                         <textarea
                           rows={3}
                           value={newUpdate.text}
                           onChange={(e) => setNewUpdate({ ...newUpdate, text: e.target.value })}
-                          placeholder="Write update details and what users can expect..."
-                          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-sky-400 resize-none"
+                          placeholder="Details..."
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 resize-none"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Image (Optional)</label>
                         <input
                           type="file"
                           accept="image/*"
@@ -2208,7 +2170,7 @@
 
                       <button
                         type="submit"
-                        className="w-full py-2 rounded-xl text-xs font-bold font-mono bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-md active:scale-98"
+                        className="w-full py-2 rounded-xl text-xs font-bold font-mono bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all cursor-pointer shadow-md active:scale-98"
                       >
                         Publish Update
                       </button>
@@ -2219,7 +2181,7 @@
                   <div className="space-y-4">
                     {appUpdates.length === 0 ? (
                       <div className="glass-card p-12 text-center rounded-2xl text-slate-500 font-mono text-xs">
-                        No updates posted yet. Coming soon!
+                        No updates posted yet.
                       </div>
                     ) : (
                       appUpdates.map((item) => (
@@ -2227,21 +2189,21 @@
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2.5">
                               {item.authorPhoto ? (
-                                <img src={item.authorPhoto} alt="creator" className="w-8 h-8 rounded-full object-cover border border-sky-500/40" />
+                                <img src={item.authorPhoto} alt="creator" className="w-8 h-8 rounded-full object-cover border border-amber-500/40" />
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-bold text-xs font-mono">
+                                <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs font-mono">
                                   A
                                 </div>
                               )}
                               <div>
                                 <div className="flex items-center gap-2">
                                   <span className="font-bold text-xs text-white font-mono">{item.authorName}</span>
-                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
                                     {item.category}
                                   </span>
                                 </div>
                                 <div className="text-[10px] text-slate-500 font-mono">
-                                  {new Date(item.createdAt).toLocaleDateString()} · Official Release
+                                  {new Date(item.createdAt).toLocaleDateString()}
                                 </div>
                               </div>
                             </div>
@@ -2269,7 +2231,7 @@
                               src={item.image}
                               alt="update feature"
                               onClick={() => { setLightbox(item.image); setZoomScale(1); }}
-                              className="rounded-xl w-full max-h-72 object-cover border border-slate-700 cursor-zoom-in hover:border-sky-400"
+                              className="rounded-xl w-full max-h-72 object-cover border border-slate-700 cursor-zoom-in hover:border-amber-400"
                             />
                           )}
 
