@@ -78,7 +78,7 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, ShieldCheck, Activity, Users, Radio, Pin, ThumbsUp, Heart, Rocket, Flame
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, ShieldCheck, Activity, Users, Radio, Pin
     } from "lucide-react";
 
     // Firebase
@@ -87,7 +87,7 @@
       getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { 
-      getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, addDoc, getDocs 
+      getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, addDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -263,6 +263,7 @@
       });
     }
 
+    // PRO RECEIPT CARD DOWNLOAD (NO PRO LEDGER, DYNAMIC WIN/LOSS/BE COLORS)
     function downloadTradeReceipt(tr) {
       const canvas = document.createElement("canvas");
       canvas.width = 800;
@@ -288,6 +289,7 @@
       ctx.lineWidth = 2;
       ctx.strokeRect(14, 14, 772, 422);
 
+      // Header Branding (ONLY AMIIR JOURNAL)
       ctx.fillStyle = "#38bdf8";
       ctx.font = "bold 18px 'JetBrains Mono', monospace";
       ctx.fillText("AMIIR JOURNAL", 40, 52);
@@ -296,9 +298,11 @@
       ctx.font = "11px 'JetBrains Mono', monospace";
       ctx.fillText("VERIFIED EXECUTION", 195, 50);
 
+      // Outcome Pill
       ctx.fillStyle = themeBg;
       ctx.strokeStyle = themeColor;
       ctx.lineWidth = 1.5;
+      ctx.beginPath();
       ctx.strokeRect(630, 30, 130, 32);
       ctx.fillRect(630, 30, 130, 32);
 
@@ -308,12 +312,14 @@
       ctx.fillText(statusText, 695, 51);
       ctx.textAlign = "left";
 
+      // Divider Line
       ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.beginPath();
       ctx.moveTo(40, 78);
       ctx.lineTo(760, 78);
       ctx.stroke();
 
+      // Large Symbol & Direction
       ctx.font = "bold 38px 'Plus Jakarta Sans', sans-serif";
       ctx.fillStyle = "#ffffff";
       ctx.fillText(`${tr.symbol} · ${tr.direction.toUpperCase()}`, 40, 130);
@@ -326,6 +332,7 @@
       ctx.fillStyle = themeColor;
       ctx.fillText(pnlStr, 40, 185);
 
+      // Info Capsules
       const drawCapsule = (label, val, x, y, w) => {
         ctx.fillStyle = "#0c172e";
         ctx.strokeStyle = "#1a294b";
@@ -347,6 +354,7 @@
       drawCapsule("R:R Ratio", `1:${tr.rrRatio || "3"}`, 340, 210, 100);
       drawCapsule("Account", tr.accountName || "Primary", 450, 210, 130);
 
+      // Notes Quote Box
       if (tr.notes) {
         ctx.fillStyle = "#091224";
         ctx.strokeStyle = themeColor;
@@ -370,6 +378,7 @@
         ctx.fillText("ICT Model Execution · Disciplined Risk Management", 52, 310);
       }
 
+      // QR Code Container
       const qrX = 610, qrY = 210, qrSize = 150;
       ctx.fillStyle = "#091224";
       ctx.strokeStyle = "#38bdf8";
@@ -426,7 +435,7 @@
       const [chatMessages, setChatMessages] = useState([]);
       const [loading, setLoading] = useState(true);
 
-      // Presence and Live Users Monitor State (ADMIN ONLY)
+      // Presence & Live Monitor State (ADMIN ONLY)
       const [presenceUsers, setPresenceUsers] = useState([]);
 
       // Updates Tab State
@@ -453,6 +462,7 @@
       const [calMode, setCalMode] = useState("$");
       const [expandedSession, setExpandedSession] = useState(null);
 
+      // Accounts modal & live balance state
       const [accountForm, setAccountForm] = useState({ name: "", type: "Funded", initialBalance: "100000", mt5Id: "" });
       const [editingAccountId, setEditingAccountId] = useState(null);
       const [showAccModal, setShowAccModal] = useState(false);
@@ -482,7 +492,7 @@
         const pin = prompt("Enter Creator PIN:");
         if (pin === "amiir2026") {
           localStorage.setItem("amiir_creator_admin", "true");
-          alert("Creator Admin Mode Unlocked! ✓");
+          alert("Creator Mode Unlocked! ✓");
           window.location.reload();
         }
       };
@@ -494,7 +504,6 @@
           setAuthLoading(false);
 
           if (u) {
-            // Heartbeat: update last active timestamp
             const updatePresence = () => {
               const uRef = doc(db, "users_presence", u.uid);
               setDoc(uRef, {
@@ -508,7 +517,7 @@
             };
 
             updatePresence();
-            const interval = setInterval(updatePresence, 35000); // every 35s
+            const interval = setInterval(updatePresence, 35000);
             window.addEventListener("visibilitychange", () => {
               if (document.visibilityState === "visible") updatePresence();
             });
@@ -518,7 +527,7 @@
         return () => unsub();
       }, []);
 
-      // Realtime Presence Listener (ONLY FOR ADMIN)
+      // Realtime Presence for Admin Only
       useEffect(() => {
         if (!isAdmin) return;
         const unsub = onSnapshot(collection(db, "users_presence"), (snap) => {
@@ -529,7 +538,6 @@
         return () => unsub();
       }, [isAdmin]);
 
-      // Online status calculator: Active if seen within 90 seconds
       const onlineCount = useMemo(() => {
         const now = Date.now();
         return presenceUsers.filter(u => (now - (u.lastSeen || 0)) < 90000).length;
@@ -555,7 +563,6 @@
         const unsub = onSnapshot(q, (snap) => {
           const list = [];
           snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
-          // Pinned first, then by date
           list.sort((a, b) => {
             if (b.isPinned && !a.isPinned) return 1;
             if (!b.isPinned && a.isPinned) return -1;
@@ -830,7 +837,6 @@
         }
       };
 
-      // REACT TO AN UPDATE (🔥, 🚀, ❤️, 👍)
       const handleReaction = async (updateId, emojiType) => {
         const target = appUpdates.find(u => u.id === updateId);
         if (!target) return;
@@ -875,6 +881,7 @@
         await deleteDoc(doc(db, "app_announcements", updateId));
       };
 
+      // Save / Edit Account with live balance support
       const saveAccount = async () => {
         if (!accountForm.name.trim()) return;
         const initial = parseFloat(accountForm.initialBalance) || 0;
@@ -1802,6 +1809,7 @@
                       </div>
                     </div>
 
+                    {/* SWIPEABLE CALENDAR CONTAINER */}
                     <div className="overflow-x-auto no-scrollbar pb-1">
                       <div className="min-w-[450px]">
                         
@@ -2169,7 +2177,7 @@
                 </div>
               )}
 
-              {/* ================= TAB 4: ADMIN / LIVE MONITOR (CREATOR ONLY - BETWEEN ACCOUNTS & UPDATES) ================= */}
+              {/* ================= TAB 4: ADMIN / LIVE MONITOR (CREATOR ONLY) ================= */}
               {tab === "admin" && isAdmin && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -2186,7 +2194,7 @@
                     </span>
                   </div>
 
-                  {/* Summary KPI Cards */}
+                  {/* KPI Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono">
                     <div className="glass-card p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20">
                       <div className="text-[9px] text-emerald-400 uppercase flex items-center gap-1">
@@ -2217,7 +2225,7 @@
                     </div>
                   </div>
 
-                  {/* Live Users List */}
+                  {/* Users Presence List */}
                   <div className="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                       <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
@@ -2377,7 +2385,7 @@
                     </form>
                   )}
 
-                  {/* UPDATES FEED (WITH EMOJI REACTIONS, COMMENTS, PINNED SUPPORT) */}
+                  {/* UPDATES FEED */}
                   <div className="space-y-4">
                     {appUpdates.length === 0 ? (
                       <div className="glass-card p-12 text-center rounded-2xl text-slate-500 font-mono text-xs">
@@ -2700,7 +2708,7 @@
             </main>
           </div>
 
-          {/* COMPACT FLOATING (+) BUTTON: SMALLER & TOGGLES FORM */}
+          {/* COMPACT FLOATING (+) BUTTON */}
           <button
             type="button"
             onClick={() => {
