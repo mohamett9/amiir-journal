@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Amiir Journal - Pro Trading Ledger</title>
+  <title>Amiir Journal</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -81,7 +81,7 @@
       LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, ShieldCheck
     } from "lucide-react";
 
-    // Firebase SDKs
+    // Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
@@ -261,82 +261,165 @@
       });
     }
 
+    // PRO BINANCE/TRADEZELLA STYLE RECEIPT CARD (CLEAN, NO EMPTY VOID, ACCURATE BE COLORS)
     function downloadTradeReceipt(tr) {
       const canvas = document.createElement("canvas");
-      canvas.width = 750;
-      canvas.height = 400;
+      canvas.width = 800;
+      canvas.height = 450;
       const ctx = canvas.getContext("2d");
 
-      ctx.fillStyle = "#070c18";
-      ctx.fillRect(0, 0, 750, 400);
+      // Dynamic Colors Based on Outcome (Win, Loss, Break-Even)
+      const outcome = (tr.outcome || "win").toLowerCase();
+      const isWin = outcome === "win";
+      const isLoss = outcome === "loss";
+      const isBE = outcome === "be";
 
-      ctx.strokeStyle = "#1e293b";
+      const themeColor = isWin ? "#34d399" : isBE ? "#fbbf24" : "#f43f5e";
+      const themeBg = isWin ? "rgba(52, 211, 153, 0.12)" : isBE ? "rgba(251, 191, 36, 0.12)" : "rgba(244, 63, 94, 0.12)";
+      const statusText = isWin ? "● WIN" : isBE ? "● BREAKEVEN" : "● LOSS";
+
+      // 1. Dark Luxury Background
+      const bgGrad = ctx.createLinearGradient(0, 0, 800, 450);
+      bgGrad.addColorStop(0, "#080e1c");
+      bgGrad.addColorStop(1, "#03060d");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 800, 450);
+
+      // Card Border with subtle glow
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.22)";
       ctx.lineWidth = 2;
-      ctx.strokeRect(12, 12, 726, 376);
+      ctx.strokeRect(14, 14, 772, 422);
 
+      // 2. Header Branding (ONLY "AMIIR JOURNAL" - Removed "PRO LEDGER")
       ctx.fillStyle = "#38bdf8";
-      ctx.font = "bold 16px monospace";
-      ctx.fillText("AMIIR JOURNAL · PRO LEDGER", 35, 48);
+      ctx.font = "bold 18px 'JetBrains Mono', monospace";
+      ctx.fillText("AMIIR JOURNAL", 40, 52);
 
-      const isWin = tr.outcome === "win";
-      ctx.fillStyle = isWin ? "#10b981" : "#f43f5e";
-      ctx.font = "bold 15px monospace";
-      ctx.fillText(tr.outcome.toUpperCase(), 640, 48);
+      ctx.fillStyle = "#64748b";
+      ctx.font = "11px 'JetBrains Mono', monospace";
+      ctx.fillText("VERIFIED EXECUTION", 195, 50);
 
+      // 3. Outcome Status Pill (Top Right)
+      ctx.fillStyle = themeBg;
+      ctx.strokeStyle = themeColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.strokeRect(630, 30, 130, 32);
+      ctx.fillRect(630, 30, 130, 32);
+
+      ctx.fillStyle = themeColor;
+      ctx.font = "bold 13px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(statusText, 695, 51);
+      ctx.textAlign = "left";
+
+      // Divider Line
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.beginPath();
+      ctx.moveTo(40, 78);
+      ctx.lineTo(760, 78);
+      ctx.stroke();
+
+      // 4. Hero Section: Symbol, Direction, and P&L Return
+      ctx.font = "bold 38px 'Plus Jakarta Sans', sans-serif";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 32px sans-serif";
-      ctx.fillText(`${tr.symbol} · ${tr.direction.toUpperCase()}`, 35, 105);
+      ctx.fillText(`${tr.symbol} · ${tr.direction.toUpperCase()}`, 40, 130);
 
       const pnlStr = tr.pnlDollar
         ? (tr.pnlDollar >= 0 ? `+$${tr.pnlDollar}` : `-$${Math.abs(tr.pnlDollar)}`)
         : `${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}%`;
 
-      ctx.font = "bold 30px monospace";
-      ctx.fillStyle = isWin ? "#34d399" : "#fda4af";
-      ctx.fillText(pnlStr, 35, 155);
+      ctx.font = "bold 38px 'JetBrains Mono', monospace";
+      ctx.fillStyle = themeColor;
+      ctx.fillText(pnlStr, 40, 185);
 
-      ctx.font = "14px monospace";
-      ctx.fillStyle = "#94a3b8";
-      ctx.fillText(`Return: ${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}%   ·   R:R 1:${tr.rrRatio}   ·   ${tr.accountName || "Account"}`, 35, 195);
-      ctx.fillText(`Date: ${tr.date}   ·   Session: ${tr.session.toUpperCase()} (${tr.purgeTime || "Entry"})`, 35, 222);
+      // 5. Spec Capsules / Info Boxes (Grid Layout)
+      const drawCapsule = (label, val, x, y, w) => {
+        ctx.fillStyle = "#0c172e";
+        ctx.strokeStyle = "#1a294b";
+        ctx.lineWidth = 1.2;
+        ctx.fillRect(x, y, w, 44);
+        ctx.strokeRect(x, y, w, 44);
 
+        ctx.fillStyle = "#64748b";
+        ctx.font = "10px 'JetBrains Mono', monospace";
+        ctx.fillText(label.toUpperCase(), x + 10, y + 17);
+
+        ctx.fillStyle = "#f1f5f9";
+        ctx.font = "bold 12px 'JetBrains Mono', monospace";
+        ctx.fillText(val, x + 10, y + 34);
+      };
+
+      drawCapsule("Date", tr.date || "Today", 40, 210, 120);
+      drawCapsule("Session", `${tr.session.toUpperCase()} (${tr.purgeTime || "Entry"})`, 170, 210, 160);
+      drawCapsule("R:R Ratio", `1:${tr.rrRatio || "3"}`, 340, 210, 100);
+      drawCapsule("Account", tr.accountName || "Primary", 450, 210, 130);
+
+      // 6. Trader's Notes Quote Box (Bottom Left)
       if (tr.notes) {
-        ctx.fillStyle = "#cbd5e1";
-        ctx.font = "italic 13px sans-serif";
+        ctx.fillStyle = "#091224";
+        ctx.strokeStyle = themeColor;
+        ctx.lineWidth = 2;
+        ctx.fillRect(40, 272, 540, 68);
+        ctx.strokeRect(40, 272, 4, 68); // Left accent bar
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "10px 'JetBrains Mono', monospace";
+        ctx.fillText("TRADER NOTES & CONFLUENCE:", 52, 290);
+
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "italic 12px 'Plus Jakarta Sans', sans-serif";
         const shortNote = tr.notes.length > 70 ? tr.notes.substring(0, 67) + "..." : tr.notes;
-        ctx.fillText(`"${shortNote}"`, 35, 265);
+        ctx.fillText(`"${shortNote}"`, 52, 315);
+      } else {
+        ctx.fillStyle = "#091224";
+        ctx.fillRect(40, 272, 540, 68);
+        ctx.fillStyle = "#475569";
+        ctx.font = "12px 'JetBrains Mono', monospace";
+        ctx.fillText("ICT Model Execution · Disciplined Risk Management", 52, 310);
       }
 
-      ctx.fillStyle = "#475569";
-      ctx.font = "12px monospace";
-      ctx.fillText("amiir-journal.vercel.app · @amiir_pr", 35, 345);
-
-      const qrX = 615, qrY = 275, qrSize = 90;
+      // 7. QR Code Container (Bottom Right)
+      const qrX = 610, qrY = 210, qrSize = 150;
+      ctx.fillStyle = "#091224";
       ctx.strokeStyle = "#38bdf8";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(qrX, qrY, qrSize, qrSize);
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(qrX, qrY, qrSize, 130);
+      ctx.strokeRect(qrX, qrY, qrSize, 130);
 
+      // Draw QR Finder Squares
       const drawFinder = (x, y) => {
         ctx.fillStyle = "#38bdf8";
-        ctx.fillRect(x, y, 18, 18);
-        ctx.fillStyle = "#070c18";
-        ctx.fillRect(x + 3, y + 3, 12, 12);
+        ctx.fillRect(x, y, 20, 20);
+        ctx.fillStyle = "#091224";
+        ctx.fillRect(x + 4, y + 4, 12, 12);
         ctx.fillStyle = "#38bdf8";
-        ctx.fillRect(x + 6, y + 6, 6, 6);
+        ctx.fillRect(x + 7, y + 7, 6, 6);
       };
-      drawFinder(qrX + 6, qrY + 6);
-      drawFinder(qrX + qrSize - 24, qrY + 6);
-      drawFinder(qrX + 6, qrY + qrSize - 24);
+      drawFinder(qrX + 15, qrY + 15);
+      drawFinder(qrX + qrSize - 35, qrY + 15);
+      drawFinder(qrX + 15, qrY + 75);
 
+      // Matrix Data Blocks
       ctx.fillStyle = "#38bdf8";
       const matrix = [
-        [30, 10], [40, 10], [50, 10],
-        [10, 30], [20, 30], [35, 35], [45, 30], [60, 30],
-        [30, 45], [40, 45], [50, 45],
-        [30, 60], [42, 60], [54, 60],
-        [30, 72], [42, 72], [54, 72]
+        [45, 15], [58, 15], [72, 15], [85, 15],
+        [15, 45], [28, 45], [45, 45], [60, 45], [75, 45], [90, 45], [105, 45],
+        [45, 60], [58, 60], [72, 60], [85, 60], [100, 60],
+        [45, 75], [60, 75], [75, 75], [90, 75], [105, 75]
       ];
-      matrix.forEach(([px, py]) => ctx.fillRect(qrX + px, qrY + py, 5, 5));
+      matrix.forEach(([px, py]) => ctx.fillRect(qrX + px, qrY + py, 6, 6));
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "bold 9px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("SCAN TO VERIFY", qrX + (qrSize / 2), qrY + 120);
+      ctx.textAlign = "left";
+
+      // 8. Bottom Footer URL
+      ctx.font = "11px 'JetBrains Mono', monospace";
+      ctx.fillStyle = "#475569";
+      ctx.fillText("amiir-journal.vercel.app · Developed by @amiir_pr", 40, 420);
 
       const link = document.createElement("a");
       link.download = `${tr.symbol}-${tr.date}-receipt.png`;
@@ -743,7 +826,7 @@
         await deleteDoc(doc(db, "app_announcements", updateId));
       };
 
-      // Save or Update Account (with live balance support)
+      // Save or Update Account (with live balance calculation)
       const saveAccount = async () => {
         if (!accountForm.name.trim()) return;
         const initial = parseFloat(accountForm.initialBalance) || 0;
@@ -1080,7 +1163,7 @@
               </div>
             </header>
 
-            {/* Main view with safe bottom padding for FAB */}
+            {/* Main container with safe bottom padding for FAB */}
             <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 pb-28 relative z-10">
               
               {/* TOP TABS: Ordered as requested: Journal -> Dashboard -> Accounts -> UPDATES -> Notes -> Community */}
@@ -1479,6 +1562,7 @@
                               </div>
                             </div>
 
+                            {/* Expanded Details */}
                             {isExpanded && (
                               <div className="px-3.5 pb-3 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2">
                                 <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pb-1 border-b border-slate-800">
@@ -1589,6 +1673,7 @@
                         );
                       })}
 
+                      {/* SEE MORE ON LEFT */}
                       {filteredTrades.length > 5 && (
                         <div className="flex items-center pt-2 pb-1">
                           <button
@@ -1609,7 +1694,7 @@
               {tab === "dashboard" && (
                 <div className="space-y-4">
                   
-                  {/* CALENDAR CARD WITH SWIPEABLE INNER CONTAINER */}
+                  {/* CALENDAR */}
                   <div className="glass-card p-3 sm:p-5 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-3 pb-2.5 border-b border-slate-800/80">
                       
@@ -1668,11 +1753,10 @@
                       </div>
                     </div>
 
-                    {/* INNER SWIPEABLE CONTAINER FOR CALENDAR */}
+                    {/* SWIPEABLE CALENDAR CONTAINER */}
                     <div className="overflow-x-auto no-scrollbar pb-1">
                       <div className="min-w-[450px]">
                         
-                        {/* Days Header */}
                         <div className="grid grid-cols-8 gap-1.5 mb-1.5 text-center">
                           {WEEKDAYS.map((d) => (
                             <div key={d} className="text-[10px] font-mono font-bold text-slate-500 uppercase py-0.5">{d}</div>
@@ -1680,7 +1764,6 @@
                           <div className="text-[10px] font-mono font-bold text-sky-400 uppercase py-0.5">Week</div>
                         </div>
 
-                        {/* Weeks Grid with VIBRANT PRO COLORS */}
                         <div className="space-y-1.5">
                           {calendarWeeks.map((week, wIdx) => {
                             const hasWeekData = week.summary.tradingDays > 0;
@@ -1729,7 +1812,6 @@
                                   );
                                 })}
 
-                                {/* Week Summary Cell */}
                                 <div className={`min-h-[56px] rounded-xl p-1.5 flex flex-col justify-between border font-mono overflow-hidden ${
                                   hasWeekData
                                     ? isWeekWin
@@ -1915,7 +1997,7 @@
                 </div>
               )}
 
-              {/* ================= TAB 3: ACCOUNTS (WITH EDIT & LIVE BALANCE) ================= */}
+              {/* ================= TAB 3: ACCOUNTS ================= */}
               {tab === "accounts" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1944,7 +2026,7 @@
                     </button>
                   </div>
 
-                  {/* Accounts Cards with Live Calculated Balance */}
+                  {/* Accounts Cards with Live Balance */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {accounts.length === 0 ? (
                       <div className="col-span-3 py-10 text-center text-slate-500 glass-card rounded-xl text-xs font-mono">
@@ -1956,7 +2038,7 @@
                         const netR = accTrades.reduce((a, b) => a + (b.rMultiple || 0), 0);
                         const netD = accTrades.reduce((a, b) => a + (b.pnlDollar || 0), 0);
                         const initialBal = acc.initialBalance ? parseFloat(acc.initialBalance) : 100000;
-                        const currentBalance = initialBal + netD; // LIVE BALANCE LINKED TO TRADES
+                        const currentBalance = initialBal + netD;
 
                         return (
                           <div key={acc.id} className="glass-card p-4 rounded-xl border border-slate-800">
@@ -1976,7 +2058,6 @@
 
                             <h4 className="font-bold text-white text-sm font-mono">{acc.name}</h4>
                             
-                            {/* Live Balance */}
                             <div className="text-xs text-sky-400 font-mono mt-1 font-bold">
                               ${Math.round(currentBalance).toLocaleString()} <span className="text-[10px] font-normal text-slate-400">(Live Bal)</span>
                             </div>
@@ -1996,7 +2077,7 @@
                     )}
                   </div>
 
-                  {/* Add / Edit Account Modal */}
+                  {/* Add/Edit Modal */}
                   {showAccModal && (
                     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                       <div className="glass-card p-5 rounded-2xl max-w-xs w-full border border-sky-500/30">
@@ -2042,7 +2123,7 @@
                 </div>
               )}
 
-              {/* ================= TAB 4: UPDATES (RIGHT AFTER ACCOUNTS) ================= */}
+              {/* ================= TAB 4: UPDATES ================= */}
               {tab === "updates" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
