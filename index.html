@@ -43,42 +43,23 @@
   <style>
     * { -webkit-tap-highlight-color: transparent; }
     body {
-      background-color: #03060b;
+      background-color: #040711;
       color: #f1f5f9;
       font-family: 'Plus Jakarta Sans', sans-serif;
-      overflow-x: hidden;
     }
-    /* Advanced Glassmorphism */
     .glass-card {
-      background: rgba(13, 21, 39, 0.7);
+      background: rgba(13, 21, 39, 0.8);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    .glass-card:hover {
-      border-color: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.1);
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    /* Elegant Cyber Scrollbars for desktop */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #040711; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
-
     input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
     .small-caps { font-variant: all-small-caps; }
-
-    /* Background Ambient Lights */
-    .glow-1 { position: fixed; top: -10%; left: -10%; width: 40%; height: 40%; background: radial-gradient(circle, rgba(56, 189, 248, 0.05) 0%, transparent 70%); pointer-events: none; z-index: -1; }
-    .glow-2 { position: fixed; bottom: -10%; right: -10%; width: 40%; height: 40%; background: radial-gradient(circle, rgba(236, 72, 153, 0.03) 0%, transparent 70%); pointer-events: none; z-index: -1; }
   </style>
 </head>
 <body>
-  <div class="glow-1"></div>
-  <div class="glow-2"></div>
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
@@ -87,7 +68,7 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, ShieldCheck, Activity, Users, Radio, Pin, Flame
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, ShieldCheck, Activity, Users, Radio, Pin
     } from "lucide-react";
 
     // Firebase
@@ -111,8 +92,8 @@
     const provider = new GoogleAuthProvider();
 
     const DICT = {
-      en: { journal: "Journal", dashboard: "Dashboard", accounts: "Accounts", admin: "Admin", updates: "Updates", notes: "Notes", community: "Community", trades: "Trades", winRate: "Win Rate", netReturn: "Net Return", thisWeek: "This Week", calendarTitle: "Calendar", seeMore: "sᴇᴇ ᴍᴏʀᴇ", showLess: "sʜᴏᴡ ʟᴇss" },
-      so: { journal: "Diiwaanka", dashboard: "Dashboard", accounts: "Accounts", admin: "Admin", updates: "Updates", notes: "Casharrada", community: "Sheekada", trades: "Wadarta", winRate: "Guusha %", netReturn: "Net R", thisWeek: "Toddobaadkan", calendarTitle: "Calendar", seeMore: "sᴇᴇ ᴍᴏʀᴇ", showLess: "sᴇᴇ ʟᴇss" }
+      en: { journal: "Journal", dashboard: "Dashboard", accounts: "Accounts", admin: "Admin", updates: "Updates", notes: "Notes", community: "Community", trades: "Trades", winRate: "Win Rate", netReturn: "Net Return", thisWeek: "This Week", seeMore: "sᴇᴇ ᴍᴏʀᴇ", showLess: "sʜᴏᴡ ʟᴇss" },
+      so: { journal: "Diiwaanka", dashboard: "Dashboard", accounts: "Accounts", admin: "Admin", updates: "Updates", notes: "Casharrada", community: "Sheekada", trades: "Wadarta", winRate: "Guusha %", netReturn: "Net R", thisWeek: "Toddobaadkan", seeMore: "sᴇᴇ ᴍᴏʀᴇ", showLess: "sʜᴏᴡ ʟᴇss" }
     };
 
     const SESSIONS = [
@@ -124,45 +105,39 @@
     const ACCOUNT_TYPES = ["Funded", "Challenge", "Real", "Demo"];
     const EMPTY_FORM = { symbol: "", date: new Date().toISOString().slice(0, 10), accountName: "", session: "london", purgeTime: "2am", direction: "buy", outcome: "win", risk: "1", rrRatio: "3", pnlDollar: "", notes: "", images: [], checklist: [] };
 
+    // Format for TradeZella Style
+    const fmtTradeZella = (netDollar, netR, mode) => {
+      if (mode === "%") return (netR >= 0 ? "+" : "") + Number(netR).toFixed(1) + "%";
+      const sign = netDollar >= 0 ? "+" : "-";
+      const abs = Math.abs(netDollar);
+      if (abs >= 1000) return sign + "$" + (abs / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+      return sign + "$" + Math.round(abs).toLocaleString();
+    };
+
     function App() {
       const [lang, setLang] = useState("en");
       const t = DICT[lang];
       const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
       const [trades, setTrades] = useState([]);
       const [accounts, setAccounts] = useState([]);
-      const [notes, setNotes] = useState([]);
       const [tab, setTab] = useState("journal");
       const [isAdmin, setIsAdmin] = useState(false);
       const [showForm, setShowForm] = useState(false);
       const [expandedTradeId, setExpandedTradeId] = useState(null);
-      const [editingId, setEditingId] = useState(null);
       const [form, setForm] = useState(EMPTY_FORM);
-      const [error, setError] = useState("");
-      const [lightbox, setLightbox] = useState(null);
-      const [zoomScale, setZoomScale] = useState(1);
       const [visibleCount, setVisibleCount] = useState(5);
       const [calMode, setCalMode] = useState("$");
       const [presenceUsers, setPresenceUsers] = useState([]);
-      const [appUpdates, setAppUpdates] = useState([]);
-      const [chatMessages, setChatMessages] = useState([]);
       const [viewMonth, setViewMonth] = useState(new Date().getMonth());
       const [viewYear, setViewYear] = useState(new Date().getFullYear());
-
-      // Admin PIN system
-      const checkAdmin = () => {
-        const pin = prompt("Enter Creator PIN:");
-        if (pin === "amiir2026") {
-          localStorage.setItem("amiir_creator_admin", "true");
-          setIsAdmin(true);
-          window.location.reload();
-        }
-      };
 
       useEffect(() => {
         onAuthStateChanged(auth, (u) => {
           setUser(u);
+          setAuthLoading(false);
           if (u) {
-            const adminStatus = u.email?.toLowerCase().includes("amiir") || localStorage.getItem("amiir_creator_admin") === "true";
+            const adminStatus = u.email?.toLowerCase().includes("amiir") || u.email?.toLowerCase().includes("admin") || localStorage.getItem("amiir_creator_admin") === "true";
             setIsAdmin(adminStatus);
             setDoc(doc(db, "users_presence", u.uid), { uid: u.uid, name: u.displayName || "Trader", photo: u.photoURL || "", lastSeen: Date.now() }, { merge: true });
           }
@@ -179,10 +154,6 @@
           const list = []; snap.forEach(d => list.push({id: d.id, ...d.data()}));
           setAccounts(list);
         });
-        onSnapshot(query(collection(db, "app_announcements"), orderBy("createdAt", "desc")), (snap) => {
-          const list = []; snap.forEach(d => list.push({id: d.id, ...d.data()}));
-          setAppUpdates(list);
-        });
         if (isAdmin) {
           onSnapshot(collection(db, "users_presence"), (snap) => {
             const list = []; snap.forEach(d => list.push(d.data()));
@@ -191,22 +162,11 @@
         }
       }, [user, isAdmin]);
 
-      // Calculations
-      const filteredTrades = useMemo(() => trades.filter(tr => filterAccount === "all" || tr.accountName === filterAccount), [trades, filterAccount]);
       const stats = useMemo(() => {
         const wins = trades.filter(t => t.outcome === "win").length;
         const netR = trades.reduce((acc, t) => acc + (t.rMultiple || 0), 0);
         const totalDollar = trades.reduce((acc, t) => acc + (t.pnlDollar || 0), 0);
         return { total: trades.length, wins, netR, totalDollar, winRate: trades.length ? Math.round((wins/trades.length)*100) : 0 };
-      }, [trades]);
-
-      const weeklyStats = useMemo(() => {
-        const now = new Date();
-        const start = new Date(now.setDate(now.getDate() - now.getDay() + 1)).toISOString().slice(0, 10);
-        const thisWeek = trades.filter(t => t.date >= start);
-        const netR = thisWeek.reduce((acc, t) => acc + (t.rMultiple || 0), 0);
-        const netD = thisWeek.reduce((acc, t) => acc + (t.pnlDollar || 0), 0);
-        return { netR, netD, count: thisWeek.length };
       }, [trades]);
 
       const calendarWeeks = useMemo(() => {
@@ -226,19 +186,23 @@
           cells.push({ day: d, data: dayMap[key] });
         }
         const weeks = [];
-        for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+        for (let i = 0; i < cells.length; i += 7) {
+            const slice = cells.slice(i, i + 7);
+            while(slice.length < 7) slice.push(null);
+            weeks.push(slice);
+        }
         return weeks;
       }, [viewYear, viewMonth, trades]);
 
       const fmtR = (n) => (n > 0 ? "+" : "") + Number(n).toFixed(1) + "%";
       const fmtDollar = (n) => (n >= 0 ? "+$" : "-$") + Math.abs(Number(n)).toLocaleString();
 
+      if (authLoading) return <div className="min-h-screen bg-[#040711] flex items-center justify-center text-sky-400 font-mono">LOADING...</div>;
+
       if (!user) return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#040711]">
-          <div className="glass-card p-10 rounded-3xl text-center max-w-sm w-full">
-            <img src="profile.jpg" className="w-24 h-24 rounded-full mx-auto mb-6 border-2 border-sky-500 shadow-lg" />
-            <h1 className="text-2xl font-bold text-white mb-2 font-mono">Amiir Journal</h1>
-            <p className="text-xs text-slate-400 mb-8 leading-relaxed">Professional Trading Ledger & Insights</p>
+          <div className="glass-card p-10 rounded-3xl text-center max-w-sm w-full border border-slate-800">
+            <h1 className="text-2xl font-bold text-white mb-6 font-mono">Amiir Journal</h1>
             <button onClick={() => signInWithPopup(auth, provider)} className="w-full py-4 bg-white text-black rounded-2xl font-bold active:scale-95 transition-all">Continue with Google</button>
           </div>
         </div>
@@ -246,24 +210,23 @@
 
       return (
         <div className="min-h-screen flex flex-col">
-          {/* Header */}
-          <header className="border-b border-slate-800/60 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-40">
+          <header className="border-b border-slate-800/60 bg-[#090e17] sticky top-0 z-40">
             <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-              <span className="font-bold text-sm font-mono tracking-tighter text-white">AMIIR JOURNAL</span>
+              <span className="font-bold text-sm font-mono text-white">AMIIR JOURNAL</span>
               <div className="flex items-center gap-4">
-                <button onClick={() => setLang(lang === "en" ? "so" : "en")} className="text-[10px] font-mono text-sky-400 border border-sky-500/20 px-2 py-1 rounded bg-sky-500/5 uppercase">{lang}</button>
+                <button onClick={() => setLang(lang === "en" ? "so" : "en")} className="text-[10px] font-mono text-sky-400 px-2 py-1 rounded bg-sky-500/5 uppercase">{lang}</button>
                 <div className="flex items-center gap-2 bg-slate-900/80 px-2 py-1 rounded-full border border-slate-800">
                   <img src={user.photoURL} className="w-5 h-5 rounded-full" />
-                  <span onClick={checkAdmin} className="text-[11px] font-mono cursor-pointer hover:text-sky-400">{user.displayName?.split(" ")[0]}</span>
+                  <span className="text-[11px] font-mono text-slate-300">{user.displayName?.split(" ")[0]}</span>
                   <button onClick={() => signOut(auth)} className="text-rose-500 ml-1"><LogOut size={14}/></button>
                 </div>
               </div>
             </div>
           </header>
 
-          <main className="max-w-6xl mx-auto w-full px-4 py-6 flex-1">
+          <main className="max-w-6xl mx-auto w-full px-4 py-5">
             {/* Nav Tabs */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-8 pb-2 snap-x">
+            <div className="flex gap-1.5 bg-slate-900/50 p-1 rounded-xl border border-slate-800 mb-6 overflow-x-auto no-scrollbar">
               {[
                 {id: "journal", label: t.journal, icon: ListChecks}, 
                 {id: "dashboard", label: t.dashboard, icon: LayoutGrid}, 
@@ -275,200 +238,149 @@
               ].map(item => {
                 if (item.adminOnly && !isAdmin) return null;
                 return (
-                  <button key={item.id} onClick={() => setTab(item.id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold font-mono whitespace-nowrap snap-start transition-all ${tab === item.id ? "bg-sky-500 text-black shadow-lg shadow-sky-500/20" : "bg-slate-900/50 text-slate-400 hover:bg-slate-800"}`}>
+                  <button key={item.id} onClick={() => setTab(item.id)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold font-mono whitespace-nowrap transition-all ${tab === item.id ? "bg-sky-500 text-black shadow-lg shadow-sky-500/10" : "text-slate-500 hover:text-slate-200"}`}>
                     <item.icon size={14}/> {item.label}
                   </button>
                 )
               })}
             </div>
 
-            {/* Content Area */}
-            <div className="animate-in fade-in duration-500">
-              
-              {/* JOURNAL TAB */}
-              {tab === "journal" && (
-                <div className="space-y-3 max-w-2xl mx-auto">
-                  {filteredTrades.slice(0, visibleCount).map(tr => (
-                    <div key={tr.id} onClick={() => setExpandedTradeId(expandedTradeId === tr.id ? null : tr.id)} className="glass-card p-4 rounded-2xl cursor-pointer hover:translate-y-[-2px]">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          {tr.outcome === "win" ? <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> : <div className="w-2 h-2 rounded-full bg-rose-500"></div>}
-                          <span className="font-bold font-mono">{tr.symbol} · <span className="text-[10px] opacity-60 uppercase">{tr.direction}</span></span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`font-bold font-mono ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>{fmtR(tr.rMultiple)}</span>
-                          <ChevronDown size={14} className={`text-slate-500 transition-transform ${expandedTradeId === tr.id ? 'rotate-180' : ''}`} />
-                        </div>
+            {tab === "journal" && (
+              <div className="space-y-3 max-w-2xl mx-auto">
+                {trades.slice(0, visibleCount).map(tr => (
+                  <div key={tr.id} onClick={() => setExpandedTradeId(expandedTradeId === tr.id ? null : tr.id)} className="glass-card p-4 rounded-2xl cursor-pointer">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold font-mono text-sm">{tr.symbol} · <span className="text-[10px] opacity-60 uppercase">{tr.direction}</span></span>
                       </div>
-                      {expandedTradeId === tr.id && (
-                        <div className="mt-4 pt-4 border-t border-slate-800 text-xs text-slate-300 space-y-3 font-mono">
-                          <div className="grid grid-cols-2 gap-4">
-                            <p><span className="text-slate-500 uppercase text-[9px]">Account:</span><br/>{tr.accountName}</p>
-                            <p><span className="text-slate-500 uppercase text-[9px]">Date:</span><br/>{tr.date}</p>
-                          </div>
-                          <p><span className="text-slate-500 uppercase text-[9px]">Notes:</span><br/>{tr.notes || "No notes."}</p>
-                          <div className="flex gap-2 pt-2">
-                             <button onClick={(e) => { e.stopPropagation(); downloadTradeReceipt(tr); }} className="flex-1 py-2 bg-slate-800 rounded-lg text-sky-400 font-bold border border-sky-500/20">RECEIPT</button>
-                             <button onClick={(e) => { e.stopPropagation(); shareTrade(tr); }} className="p-2 bg-slate-800 rounded-lg text-white border border-slate-700"><Share2 size={14}/></button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {filteredTrades.length > visibleCount && (
-                    <button onClick={() => setVisibleCount(visibleCount + 5)} className="text-[10px] font-bold text-sky-400 uppercase tracking-widest mt-6 hover:underline font-mono">sᴇᴇ ᴍᴏʀᴇ</button>
-                  )}
-                </div>
-              )}
-
-              {/* DASHBOARD TAB - DESKTOP GRID */}
-              {tab === "dashboard" && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  
-                  {/* Left Column (Stats & Week) */}
-                  <div className="lg:col-span-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="glass-card p-5 rounded-2xl">
-                         <p className="text-[10px] text-slate-500 uppercase font-mono">{t.trades}</p>
-                         <h3 className="text-2xl font-bold font-mono">{stats.total}</h3>
-                      </div>
-                      <div className="glass-card p-5 rounded-2xl">
-                         <p className="text-[10px] text-slate-500 uppercase font-mono">{t.winRate}</p>
-                         <h3 className="text-2xl font-bold font-mono text-sky-400">{stats.winRate}%</h3>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className={`font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>{fmtR(tr.rMultiple)}</span>
+                        {tr.pnlDollar !== 0 && <span className="text-[10px] opacity-60">({fmtDollar(tr.pnlDollar)})</span>}
                       </div>
                     </div>
-                    <div className="glass-card p-5 rounded-2xl">
-                       <p className="text-[10px] text-slate-500 uppercase font-mono">{t.netReturn}</p>
-                       <div className="flex items-center justify-between mt-1">
-                          <h3 className={`text-2xl font-bold font-mono ${stats.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtR(stats.netR)}</h3>
-                          <span className="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 border border-slate-800">{fmtDollar(stats.totalDollar)}</span>
-                       </div>
-                    </div>
-                    <div className="glass-card p-5 rounded-2xl border-sky-500/20 bg-gradient-to-br from-[#0d1527] to-[#040711]">
-                       <div className="flex items-center gap-2 mb-3">
-                          <Award size={16} className="text-amber-400" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">{t.thisWeek}</span>
-                       </div>
-                       <div className="flex justify-between items-end">
-                          <div>
-                             <h4 className="text-xl font-bold font-mono">{fmtR(weeklyStats.netR)}</h4>
-                             <p className="text-[10px] text-slate-500 font-mono">{weeklyStats.count} Trades</p>
-                          </div>
-                          <span className="text-xs font-mono text-emerald-400 font-bold">{fmtDollar(weeklyStats.netD)}</span>
-                       </div>
-                    </div>
+                    {expandedTradeId === tr.id && (
+                      <div className="mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400 space-y-2 font-mono">
+                        <p>Account: {tr.accountName}</p>
+                        <p>Date: {tr.date}</p>
+                        <p>Notes: {tr.notes || "None."}</p>
+                      </div>
+                    )}
                   </div>
+                ))}
+                {trades.length > visibleCount && (
+                  <button onClick={() => setVisibleCount(visibleCount + 5)} className="text-[10px] font-bold text-sky-400 uppercase tracking-widest mt-4 hover:underline font-mono">{t.seeMore}</button>
+                )}
+              </div>
+            )}
 
-                  {/* Right Column (Big Pro Calendar) */}
-                  <div className="lg:col-span-8">
-                    <div className="glass-card p-5 rounded-3xl overflow-hidden shadow-2xl border-slate-800/40">
-                      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800/60">
-                        <div className="flex items-center gap-3">
-                           <button onClick={() => setViewMonth(m => m === 0 ? 11 : m - 1)} className="p-2 hover:bg-slate-800 rounded-full"><ChevronLeft size={20}/></button>
-                           <h2 className="text-sm font-bold font-mono min-w-[140px] text-center uppercase tracking-widest">{MONTH_NAMES[viewMonth]} {viewYear}</h2>
-                           <button onClick={() => setViewMonth(m => m === 11 ? 0 : m + 1)} className="p-2 hover:bg-slate-800 rounded-full"><ChevronRight size={20}/></button>
-                        </div>
-                        <div className="flex gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 font-mono">
-                           <button onClick={() => setCalMode("$")} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${calMode === "$" ? 'bg-sky-500 text-black' : 'text-slate-500'}`}>$</button>
-                           <button onClick={() => setCalMode("%")} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${calMode === "%" ? 'bg-sky-500 text-black' : 'text-slate-500'}`}>%</button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-8 gap-2 text-center mb-2">
-                        {WEEKDAYS.map(d => <div key={d} className="text-[10px] font-bold text-slate-600 uppercase">{d}</div>)}
-                        <div className="text-[10px] font-bold text-sky-500 uppercase">Wk</div>
-                      </div>
-
-                      {calendarWeeks.map((week, widx) => {
-                        let weekR = 0, weekD = 0, weekActive = false;
-                        return (
-                          <div key={widx} className="grid grid-cols-8 gap-2 mb-2">
-                            {week.map((cell, didx) => {
-                              if (!cell) return <div key={didx} className="aspect-square rounded-xl bg-slate-900/20 border border-transparent"></div>;
-                              const hasData = !!cell.data;
-                              if(hasData) { weekR += cell.data.netR; weekD += cell.data.netD; weekActive = true; }
-                              return (
-                                <div key={didx} className={`aspect-square rounded-xl p-1.5 flex flex-col justify-between border transition-all duration-300 group hover:scale-[1.05] ${!hasData ? 'bg-slate-900/40 border-slate-800/40' : cell.data.netR >= 0 ? 'bg-[#062019] border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#220a0e] border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.1)]'}`}>
-                                   <span className="text-[9px] font-bold opacity-40 font-mono group-hover:opacity-100">{cell.day}</span>
-                                   {hasData && (
-                                     <div className="text-center pb-1">
-                                        <div className="text-[10px] font-bold font-mono truncate">{calMode === "$" ? fmtTradeZella(cell.data.netD, 0, "$") : fmtR(cell.data.netR)}</div>
-                                        <div className="text-[7px] opacity-60 font-bold uppercase">{cell.data.count}T</div>
-                                     </div>
-                                   )}
-                                </div>
-                              )
-                            })}
-                            <div className={`aspect-square rounded-xl p-1.5 flex flex-col justify-center items-center border font-mono ${weekActive ? (weekR >= 0 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400') : 'bg-slate-900/20 border-slate-800/40 text-slate-700'}`}>
-                               <span className="text-[8px] uppercase font-bold mb-1">W{widx+1}</span>
-                               <span className="text-[9px] font-bold">{weekActive ? (calMode === "$" ? fmtTradeZella(weekD, 0, "$") : fmtR(weekR)) : '-'}</span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+            {tab === "dashboard" && (
+              <div className="space-y-6">
+                {/* 4 Stats Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono">
+                  <div className="glass-card p-4 rounded-2xl">
+                    <div className="text-[10px] text-slate-500 uppercase">{t.trades}</div>
+                    <div className="text-xl font-bold text-white">{stats.total}</div>
+                  </div>
+                  <div className="glass-card p-4 rounded-2xl">
+                    <div className="text-[10px] text-slate-500 uppercase">{t.winRate}</div>
+                    <div className="text-xl font-bold text-sky-400">{stats.winRate}%</div>
+                  </div>
+                  <div className="glass-card p-4 rounded-2xl">
+                    <div className="text-[10px] text-slate-500 uppercase">Return</div>
+                    <div className={`text-xl font-bold ${stats.netR >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>{fmtR(stats.netR)}</div>
+                  </div>
+                  <div className="glass-card p-4 rounded-2xl">
+                    <div className="text-[10px] text-slate-500 uppercase">PnL</div>
+                    <div className={`text-xl font-bold ${stats.totalDollar >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>{fmtDollar(stats.totalDollar)}</div>
                   </div>
                 </div>
-              )}
 
-              {/* ADMIN TAB */}
-              {tab === "admin" && isAdmin && (
-                <div className="max-w-3xl mx-auto space-y-6">
-                   <div className="glass-card p-6 rounded-3xl border-rose-500/20">
-                      <div className="flex items-center gap-3 mb-6">
-                         <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/30"><Users size={20}/></div>
-                         <div>
-                            <h2 className="text-lg font-bold text-white font-mono uppercase tracking-tighter">Live Monitor</h2>
-                            <p className="text-xs text-slate-500 font-mono">{presenceUsers.length} total registered users</p>
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        {presenceUsers.map(u => {
-                          const isOnline = (Date.now() - (u.lastSeen || 0)) < 90000;
-                          return (
-                            <div key={u.uid} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/50 border border-slate-800">
-                               <div className="flex items-center gap-3">
-                                  <img src={u.photo || "profile.jpg"} className="w-8 h-8 rounded-full border border-slate-700"/>
-                                  <div>
-                                     <p className="text-xs font-bold text-white font-mono">{u.name}</p>
-                                     <p className="text-[10px] text-slate-500 font-mono">{u.email}</p>
-                                  </div>
-                               </div>
-                               <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-full ${isOnline ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse' : 'bg-slate-800 text-slate-500'}`}>
-                                 {isOnline ? 'ONLINE' : 'OFFLINE'}
-                               </span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                   </div>
+                {/* Pro Calendar */}
+                <div className="glass-card p-4 rounded-2xl border border-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                       <button onClick={() => setViewMonth(m => m === 0 ? 11 : m - 1)} className="p-1 hover:bg-slate-800 rounded"><ChevronLeft/></button>
+                       <span className="font-bold font-mono text-sm">{MONTH_NAMES[viewMonth]} {viewYear}</span>
+                       <button onClick={() => setViewMonth(m => m === 11 ? 0 : m + 1)} className="p-1 hover:bg-slate-800 rounded"><ChevronRight/></button>
+                    </div>
+                    <div className="flex bg-slate-900 rounded p-1">
+                       <button onClick={() => setCalMode("$")} className={`px-3 py-1 rounded text-xs font-bold ${calMode === "$" ? "bg-sky-500 text-black" : "text-slate-500"}`}>$</button>
+                       <button onClick={() => setCalMode("%")} className={`px-3 py-1 rounded text-xs font-bold ${calMode === "%" ? "bg-sky-500 text-black" : "text-slate-500"}`}>%</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-8 gap-1.5">
+                    {WEEKDAYS.map(d => <div key={d} className="text-[9px] font-bold text-slate-600 text-center uppercase">{d}</div>)}
+                    <div className="text-[9px] font-bold text-sky-500 text-center uppercase">Wk</div>
+                    {calendarWeeks.map((week, widx) => {
+                      let wkD = 0, wkR = 0, wkActive = false;
+                      return (
+                        <React.Fragment key={widx}>
+                          {week.map((cell, didx) => {
+                            if (!cell) return <div key={didx} className="aspect-square rounded bg-[#0b1324]/30"></div>;
+                            if(cell.data) { wkD += cell.data.netD; wkR += cell.data.netR; wkActive = true; }
+                            const isWin = cell.data?.netR > 0;
+                            const isLoss = cell.data?.netR < 0;
+                            return (
+                              <div key={didx} className={`aspect-square rounded-lg p-1 flex flex-col justify-between border transition-all ${!cell.data ? 'bg-slate-900/40 border-slate-800/40' : isWin ? 'bg-[#062019] border-emerald-500/50 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : isLoss ? 'bg-[#240a10] border-[#f43f5e]/40 text-[#e598a0]' : 'bg-slate-800 border-slate-700'}`}>
+                                <span className="text-[8px] font-bold opacity-40">{cell.day}</span>
+                                {cell.data && <div className="text-[9px] font-bold text-center truncate">{calMode === "$" ? fmtTradeZella(cell.data.netD, 0, "$") : fmtR(cell.data.netR)}</div>}
+                              </div>
+                            )
+                          })}
+                          <div className={`aspect-square rounded-lg p-1 flex flex-col justify-center items-center border ${wkActive ? (wkR >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-[#e598a0]') : 'bg-slate-900/20 border-slate-800/20 text-slate-700'}`}>
+                            <span className="text-[8px] font-bold">W{widx+1}</span>
+                            <span className="text-[8px] font-bold">{wkActive ? (calMode === "$" ? fmtTradeZella(wkD, 0, "$") : fmtR(wkR)) : "-"}</span>
+                          </div>
+                        </React.Fragment>
+                      )
+                    })}
+                  </div>
                 </div>
-              )}
-            </div>
+
+                <div className="glass-card p-4 rounded-2xl border border-sky-500/20 bg-gradient-to-r from-slate-900/90 to-sky-950/40 shadow-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-400 uppercase">
+                        <Award size={15} /> {t.thisWeek}
+                      </div>
+                      <span className="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono font-bold">
+                        {weeklyStats.count} trades
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm font-mono pt-2 border-t border-slate-800">
+                      <span className="text-slate-400">Total Return:</span>
+                      <div className="flex items-center gap-2.5 font-bold">
+                        <span className={weeklyStats.netR >= 0 ? "text-emerald-400" : "text-[#e598a0]"}>{fmtR(weeklyStats.netR)}</span>
+                        <span className="text-white opacity-80">{fmtDollar(weeklyStats.netD)}</span>
+                      </div>
+                    </div>
+                </div>
+              </div>
+            )}
+
+            {tab === "admin" && isAdmin && (
+              <div className="glass-card p-5 rounded-2xl max-w-xl mx-auto border border-rose-500/30">
+                <h2 className="text-white font-bold mb-4 flex items-center gap-2 uppercase tracking-tighter text-sm"><ShieldCheck size={16}/> Live Monitor ({presenceUsers.length})</h2>
+                <div className="space-y-2">
+                  {presenceUsers.map(u => {
+                    const isOnline = (Date.now() - (u.lastSeen || 0)) < 90000;
+                    return (
+                      <div key={u.uid} className="flex justify-between items-center p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                        <div className="flex items-center gap-2">
+                           <img src={u.photo || "profile.jpg"} className="w-6 h-6 rounded-full border border-slate-700" />
+                           <span className="text-xs font-mono text-slate-200">{u.name}</span>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isOnline ? 'bg-emerald-500/20 text-emerald-400 animate-pulse' : 'bg-slate-800 text-slate-500'}`}>{isOnline ? "ONLINE" : "OFFLINE"}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </main>
-
-          {/* Minimal Floating FAB */}
-          <button onClick={() => { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); window.scrollTo({top:0, behavior:'smooth'}); }} className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-sky-500 text-black flex items-center justify-center shadow-xl shadow-sky-500/20 z-50 hover:scale-110 transition-all active:scale-90">
-             <Plus size={24} className="stroke-[3]"/>
+          
+          <button onClick={() => setShowForm(!showForm)} className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-sky-500 text-black flex items-center justify-center shadow-2xl z-50 active:scale-90 transition-all cursor-pointer">
+            {showForm ? <X size={24}/> : <Plus size={24} className="stroke-[3]"/>}
           </button>
-
-          <footer className="py-8 border-t border-slate-800/40 text-center">
-             <p className="text-[10px] font-mono text-slate-600 tracking-widest uppercase">Amiir Journal · Developed by <a href="https://tiktok.com/@amiir_pr" target="_blank" className="text-sky-500 hover:underline">@amiir_pr</a></p>
-          </footer>
-
-          {/* Lightbox */}
-          {lightbox && (
-            <div onClick={() => { setLightbox(null); setZoomScale(1); }} className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 cursor-zoom-out">
-              <div className="absolute top-6 right-6 flex gap-2">
-                 <button onClick={(e) => { e.stopPropagation(); setZoomScale(z => Math.min(3, z+0.5)); }} className="p-2 bg-slate-800 rounded-lg text-white"><ZoomIn size={18}/></button>
-                 <button onClick={(e) => { e.stopPropagation(); setZoomScale(z => Math.max(1, z-0.5)); }} className="p-2 bg-slate-800 rounded-lg text-white"><ZoomOut size={18}/></button>
-                 <button onClick={() => setLightbox(null)} className="p-2 bg-rose-500 rounded-lg text-white"><X size={18}/></button>
-              </div>
-              <div className="overflow-auto max-w-full max-h-[85vh] zoom-container">
-                 <img src={lightbox} style={{ transform: `scale(${zoomScale})` }} className="max-w-full max-h-[85vh] rounded-xl shadow-2xl transition-transform" />
-              </div>
-            </div>
-          )}
         </div>
       );
     }
