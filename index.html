@@ -1,4 +1,4 @@
-```html
+html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,6 +60,9 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
     .small-caps { font-variant: all-small-caps; }
+    .zoom-container {
+      touch-action: pan-x pan-y pinch-zoom;
+    }
   </style>
 </head>
 <body>
@@ -71,7 +74,7 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, Lock, ShieldCheck
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, ShieldCheck
     } from "lucide-react";
 
     // Firebase
@@ -104,8 +107,8 @@
         dashboard: "Dashboard",
         accounts: "Accounts",
         notes: "Notes",
-        community: "Community",
         updates: "Updates",
+        community: "Community",
         newTrade: "New Trade",
         cancel: "Cancel",
         trades: "Trades",
@@ -148,8 +151,8 @@
         dashboard: "Dashboard",
         accounts: "Accounts",
         notes: "Casharrada",
-        community: "Sheekada",
         updates: "Updates",
+        community: "Sheekada",
         newTrade: "Ganacsi Cusub",
         cancel: "Jooji",
         trades: "Wadarta",
@@ -252,68 +255,162 @@
       });
     }
 
+    // FUTURISTIC CYBERPUNK CARD WITH A|A LOGO, NEON LINES & QR CODE (MATCHING USER REFERENCE)
     function downloadTradeReceipt(tr) {
       const canvas = document.createElement("canvas");
-      canvas.width = 640;
-      canvas.height = 360;
+      canvas.width = 700;
+      canvas.height = 400;
       const ctx = canvas.getContext("2d");
 
-      const grad = ctx.createLinearGradient(0, 0, 640, 360);
-      grad.addColorStop(0, "#0d1527");
-      grad.addColorStop(1, "#06090e");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 640, 360);
+      // 1. Dark Cyber Background
+      ctx.fillStyle = "#080d1a";
+      ctx.fillRect(0, 0, 700, 400);
 
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+      // 2. Circuit Trace Lines (Neon Cyan & Magenta)
+      const drawCircuit = (color, points, endRadius = 3.5) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i][0], points[i][1]);
+        }
+        ctx.stroke();
+        const end = points[points.length - 1];
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(end[0], end[1], endRadius, 0, Math.PI * 2);
+        ctx.fill();
+      };
+
+      // Top cyan & pink circuit lines
+      drawCircuit("#00f0ff", [[280, 40], [380, 40], [430, 80], [600, 80]], 3.5);
+      drawCircuit("#ec4899", [[350, 65], [420, 65], [450, 95], [580, 95]], 3);
+      drawCircuit("#00f0ff", [[480, 115], [570, 115], [590, 135]], 3);
+
+      // Bottom-left cyan & pink circuit lines
+      drawCircuit("#00f0ff", [[50, 200], [130, 200], [170, 240], [210, 240], [250, 280]], 3.5);
+      drawCircuit("#ec4899", [[50, 215], [120, 215], [155, 250], [195, 250], [225, 280], [225, 310]], 3);
+
+      // 3. Top-Left Cyber Tech Brackets [ A | A ]
+      ctx.strokeStyle = "#ec4899";
       ctx.lineWidth = 2;
-      ctx.strokeRect(12, 12, 616, 336);
-
-      ctx.fillStyle = "#38bdf8";
-      ctx.font = "bold 16px 'JetBrains Mono', monospace";
-      ctx.fillText("AMIIR JOURNAL · PRO LEDGER", 35, 48);
-
-      const isWin = tr.outcome === "win";
-      ctx.fillStyle = isWin ? "#34d399" : "#E598A0";
-      ctx.font = "bold 16px 'JetBrains Mono', monospace";
-      ctx.fillText(tr.outcome.toUpperCase(), 530, 48);
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 26px 'JetBrains Mono', monospace";
-      ctx.fillText(`${tr.symbol} · ${tr.direction.toUpperCase()}`, 35, 95);
-
-      ctx.fillStyle = "#94a3b8";
-      ctx.font = "13px 'JetBrains Mono', monospace";
-      ctx.fillText(`${tr.date} · ${tr.session.toUpperCase()} (${tr.purgeTime || "Entry"})`, 35, 122);
-      ctx.fillText(`Account: ${tr.accountName || "Primary"}`, 35, 144);
-
-      ctx.strokeStyle = "#1e293b";
       ctx.beginPath();
-      ctx.moveTo(35, 168);
-      ctx.lineTo(605, 168);
+      // top-left corner
+      ctx.moveTo(40, 55); ctx.lineTo(40, 40); ctx.lineTo(55, 40);
+      // top-right corner
+      ctx.moveTo(95, 40); ctx.lineTo(110, 40); ctx.lineTo(110, 55);
+      // bottom-left corner
+      ctx.moveTo(40, 90); ctx.lineTo(40, 105); ctx.lineTo(55, 105);
+      // bottom-right corner
+      ctx.moveTo(95, 105); ctx.lineTo(110, 105); ctx.lineTo(110, 90);
       ctx.stroke();
 
-      ctx.fillStyle = isWin ? "#34d399" : "#E598A0";
+      // Letters inside: A | A
+      ctx.font = "bold 26px 'JetBrains Mono', monospace";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("A", 49, 82);
+      ctx.fillStyle = "#64748b";
+      ctx.fillText("|", 72, 80);
+      ctx.fillStyle = "#00f0ff";
+      ctx.fillText("A", 87, 82);
+
+      // 4. Center Main Info
+      const isWin = tr.outcome === "win";
+      const outcomeColor = isWin ? "#00f0ff" : "#ec4899";
+
+      // Bold Title: Symbol & Direction
+      ctx.font = "bold 32px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.fillText(`${tr.symbol} · ${tr.direction.toUpperCase()}`, 350, 160);
+
+      // Outcome & PnL / Return
+      const pnlStr = tr.pnlDollar
+        ? (tr.pnlDollar >= 0 ? `+$${tr.pnlDollar}` : `-$${Math.abs(tr.pnlDollar)}`)
+        : `${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}%`;
+
       ctx.font = "bold 28px 'JetBrains Mono', monospace";
-      const pnlStr = tr.pnlDollar ? (tr.pnlDollar >= 0 ? `+$${tr.pnlDollar}` : `-$${Math.abs(tr.pnlDollar)}`) : `${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}R`;
-      ctx.fillText(pnlStr, 35, 215);
+      ctx.fillStyle = outcomeColor;
+      ctx.shadowColor = outcomeColor;
+      ctx.shadowBlur = 10;
+      ctx.fillText(`${pnlStr}  (${tr.outcome.toUpperCase()})`, 350, 205);
+      ctx.shadowBlur = 0; // reset glow
 
+      // Metadata line
+      ctx.font = "12px 'JetBrains Mono', monospace";
       ctx.fillStyle = "#94a3b8";
-      ctx.font = "14px 'JetBrains Mono', monospace";
-      ctx.fillText(`Return: ${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}% · R:R 1:${tr.rrRatio}`, 35, 242);
+      ctx.fillText(`${tr.date}  ·  ${tr.session.toUpperCase()} (${tr.purgeTime || "Entry"})  ·  R:R 1:${tr.rrRatio}`, 350, 235);
 
+      // Short Notes (if any)
       if (tr.notes) {
+        ctx.font = "italic 12px 'Plus Jakarta Sans', sans-serif";
         ctx.fillStyle = "#cbd5e1";
-        ctx.font = "italic 13px 'Plus Jakarta Sans', sans-serif";
-        const shortNote = tr.notes.length > 70 ? tr.notes.substring(0, 67) + "..." : tr.notes;
-        ctx.fillText(`"${shortNote}"`, 35, 285);
+        const shortNote = tr.notes.length > 55 ? tr.notes.substring(0, 52) + "..." : tr.notes;
+        ctx.fillText(`"${shortNote}"`, 350, 262);
       }
 
-      ctx.fillStyle = "#475569";
-      ctx.font = "11px 'JetBrains Mono', monospace";
-      ctx.fillText("amiir-journal.vercel.app · @amiir_pr", 35, 325);
+      ctx.textAlign = "left"; // reset
 
+      // 5. Bottom-Left Cyber Chip Icon (Pink)
+      const chipX = 40, chipY = 270, chipW = 85, chipH = 85;
+      ctx.strokeStyle = "#ec4899";
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(chipX, chipY, chipW, chipH);
+      ctx.strokeStyle = "rgba(236, 72, 153, 0.7)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(chipX + 10, chipY + 10, chipW - 20, chipH - 20);
+      ctx.beginPath();
+      ctx.moveTo(chipX + 25, chipY + 25); ctx.lineTo(chipX + 60, chipY + 25);
+      ctx.moveTo(chipX + 25, chipY + 42); ctx.lineTo(chipX + 50, chipY + 42);
+      ctx.moveTo(chipX + 35, chipY + 60); ctx.lineTo(chipX + 60, chipY + 60);
+      ctx.stroke();
+      ctx.fillStyle = "#00f0ff";
+      ctx.fillRect(chipX + 38, chipY + 38, 8, 8);
+
+      // 6. Bottom-Right Neon Cyan QR Code (matching image)
+      const qrX = 550, qrY = 245, qrSize = 110;
+      ctx.strokeStyle = "#00f0ff";
+      ctx.lineWidth = 3;
+      ctx.shadowColor = "#00f0ff";
+      ctx.shadowBlur = 12;
+      ctx.strokeRect(qrX, qrY, qrSize, qrSize);
+      ctx.shadowBlur = 0;
+
+      // 3 Corner QR Finder Patterns
+      const drawFinder = (x, y) => {
+        ctx.fillStyle = "#00f0ff";
+        ctx.fillRect(x, y, 24, 24);
+        ctx.fillStyle = "#080d1a";
+        ctx.fillRect(x + 5, y + 5, 14, 14);
+        ctx.fillStyle = "#00f0ff";
+        ctx.fillRect(x + 8, y + 8, 8, 8);
+      };
+      drawFinder(qrX + 8, qrY + 8);
+      drawFinder(qrX + qrSize - 32, qrY + 8);
+      drawFinder(qrX + 8, qrY + qrSize - 32);
+
+      // Matrix Cells
+      ctx.fillStyle = "#00f0ff";
+      const seedData = [
+        [40, 10], [50, 10], [60, 10], [70, 15],
+        [10, 40], [20, 40], [35, 45], [50, 40], [70, 40], [85, 45],
+        [38, 55], [48, 52], [58, 55], [68, 58], [80, 55],
+        [40, 70], [52, 70], [65, 75], [78, 70],
+        [38, 85], [50, 85], [62, 88], [75, 85], [88, 85]
+      ];
+      seedData.forEach(([px, py]) => {
+        ctx.fillRect(qrX + px, qrY + py, 6, 6);
+      });
+
+      // Bottom Watermark
+      ctx.font = "10px 'JetBrains Mono', monospace";
+      ctx.fillStyle = "#64748b";
+      ctx.fillText("amiir-journal.vercel.app · @amiir_pr", 255, 365);
+
+      // Trigger Download
       const link = document.createElement("a");
-      link.download = `${tr.symbol}-${tr.date}-receipt.png`;
+      link.download = `${tr.symbol}-${tr.date}-card.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     }
@@ -330,9 +427,9 @@
       const [chatMessages, setChatMessages] = useState([]);
       const [loading, setLoading] = useState(true);
 
-      // UPDATES & FEATURES SECTION STATE
+      // Updates Tab State
       const [appUpdates, setAppUpdates] = useState([]);
-      const [showNewUpdateForm, setShowNewNewUpdateForm] = useState(false);
+      const [showNewUpdateForm, setShowNewUpdateForm] = useState(false);
       const [newUpdate, setNewUpdate] = useState({ title: "", category: "Upcoming Feature", text: "", image: "" });
       const [commentInputs, setCommentInputs] = useState({});
 
@@ -369,23 +466,21 @@
       const [viewMonth, setViewMonth] = useState(new Date().getMonth());
       const [viewYear, setViewYear] = useState(new Date().getFullYear());
 
-      // Creator Admin Check: matches your accounts or PIN
+      // Creator Admin Detection
       const isAdmin = useMemo(() => {
         if (!user) return false;
         const email = user.email?.toLowerCase() || "";
-        if (email.includes("amiir") || email.includes("amein") || email.includes("mohamet")) return true;
+        if (email.includes("amiir") || email.includes("amein") || email.includes("mohamet") || email.includes("admin")) return true;
         if (localStorage.getItem("amiir_creator_admin") === "true") return true;
         return false;
       }, [user]);
 
       const unlockAdminMode = () => {
-        const pin = prompt("Geli Creator PIN-kaaga si aad u fasaxdo Admin Mode:");
+        const pin = prompt("Enter Creator PIN:");
         if (pin === "amiir2026") {
           localStorage.setItem("amiir_creator_admin", "true");
-          alert("Creator Mode unlocked! Waxaad hadda soo dhigi kartaa Updates.");
+          alert("Creator Mode Unlocked! ✓");
           window.location.reload();
-        } else if (pin) {
-          alert("PIN khaldan.");
         }
       };
 
@@ -411,7 +506,6 @@
         return () => unsub();
       }, [user]);
 
-      // Realtime Updates & Announcements
       useEffect(() => {
         if (!user) return;
         const q = query(collection(db, "app_announcements"), orderBy("createdAt", "desc"));
@@ -624,7 +718,7 @@
       };
 
       const shareTrade = async (tr) => {
-        const choice = confirm("Do you want to share this trade directly to Community Chat?\n(Cancel to share to other apps / copy text)");
+        const choice = confirm("Share this trade directly to Community Chat?\n(Cancel to copy summary)");
         if (choice) {
           try {
             await addDoc(collection(db, "public_chat"), {
@@ -650,15 +744,15 @@
             } catch (e) {}
           } else {
             navigator.clipboard.writeText(shareText);
-            alert("Trade summary copied to clipboard! ✓");
+            alert("Trade summary copied! ✓");
           }
         }
       };
 
-      // PUBLISH NEW UPDATE (ADMIN ONLY)
+      // Publish Update (Creator Only)
       const handlePublishUpdate = async (e) => {
         e.preventDefault();
-        if (!isAdmin) return alert("Only the Creator (Amiir) can post official updates.");
+        if (!isAdmin) return alert("Only the Creator (Amiir) can post updates.");
         if (!newUpdate.title || !newUpdate.text) return alert("Title and description required.");
 
         try {
@@ -674,14 +768,14 @@
           });
 
           setNewUpdate({ title: "", category: "Upcoming Feature", text: "", image: "" });
-          setShowNewNewUpdateForm(false);
-          alert("Update published successfully! ✓");
+          setShowNewUpdateForm(false);
+          alert("Update published! ✓");
         } catch (err) {
-          alert("Error: " + err.message);
+          alert("Error: " + err.message + "\nMake sure Firestore rules allow writes.");
         }
       };
 
-      // ADD COMMENT TO AN UPDATE (EVERYONE CAN COMMENT)
+      // Add Comment to an Update
       const handleAddComment = async (updateId) => {
         const commentText = (commentInputs[updateId] || "").trim();
         if (!commentText) return;
@@ -706,7 +800,7 @@
           });
           setCommentInputs((prev) => ({ ...prev, [updateId]: "" }));
         } catch (err) {
-          alert("Failed to post comment: " + err.message);
+          alert("Failed: " + err.message);
         }
       };
 
@@ -973,7 +1067,7 @@
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm tracking-tight text-white font-mono">Amiir Journal</span>
                   {isAdmin && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-0.5">
                       <ShieldCheck size={10} /> Creator
                     </span>
                   )}
@@ -996,7 +1090,7 @@
                     )}
                     <span 
                       onClick={unlockAdminMode}
-                      title="Click if creator"
+                      title="Creator PIN"
                       className="text-xs text-slate-300 hidden sm:inline font-mono cursor-pointer hover:underline"
                     >
                       {user.displayName?.split(" ")[0] || "Trader"}
@@ -1022,15 +1116,15 @@
 
             <main className="max-w-5xl mx-auto px-4 py-4">
               
-              {/* TOP SWIPEABLE NAV TABS WITH UPDATES ADDED AFTER COMMUNITY */}
+              {/* TOP SWIPEABLE NAV TABS: UPDATES PLACED RIGHT AFTER NOTES */}
               <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-5 overflow-x-auto no-scrollbar w-full snap-x">
                 {[
                   { id: "journal", label: t.journal, icon: ListChecks },
                   { id: "dashboard", label: t.dashboard, icon: LayoutGrid },
                   { id: "accounts", label: t.accounts, icon: Wallet },
                   { id: "notes", label: t.notes, icon: BookOpen },
-                  { id: "community", label: t.community, icon: MessageSquare },
-                  { id: "updates", label: t.updates, icon: Sparkles }
+                  { id: "updates", label: t.updates, icon: Sparkles },
+                  { id: "community", label: t.community, icon: MessageSquare }
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -1041,7 +1135,7 @@
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    <item.icon size={13} className={item.id === "updates" ? "text-amber-400" : ""} />
+                    <item.icon size={13} className={item.id === "updates" ? "text-sky-400" : ""} />
                     {item.label}
                   </button>
                 ))}
@@ -1358,9 +1452,10 @@
                               isExpanded ? "border-sky-500/60 shadow-lg shadow-sky-500/10" : "border-slate-800/80"
                             }`}
                           >
+                            {/* Summary Row */}
                             <div
                               onClick={() => setExpandedTradeId(isExpanded ? null : tr.id)}
-                              className="px-3 py-2 flex items-center justify-between gap-2.5 select-none cursor-pointer active:bg-slate-800/40"
+                              className="px-3 py-2.5 flex items-center justify-between gap-2 select-none cursor-pointer active:bg-slate-800/40"
                             >
                               <div className="flex items-center gap-2 flex-wrap">
                                 {tr.outcome === "win" ? (
@@ -1373,12 +1468,15 @@
                                   </div>
                                 )}
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-bold text-xs font-mono text-white">{tr.symbol}</span>
                                   <span className={`text-[8px] uppercase font-mono px-1.5 py-0.5 rounded font-bold border ${
                                     tr.direction === "buy" ? "bg-sky-500/20 text-sky-300 border-sky-400/30" : "bg-rose-500/20 text-rose-300 border-rose-400/30"
                                   }`}>
                                     {tr.direction}
+                                  </span>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                    {tr.accountName || "Account"}
                                   </span>
                                   <span className="text-[10px] text-slate-500 font-mono">
                                     {tr.date} · {sessionInfo?.flag} {tr.purgeTime}
@@ -1394,26 +1492,27 @@
                                   </div>
                                 )}
 
-                                {tr.pnlDollar !== undefined && tr.pnlDollar !== 0 ? (
-                                  <div className={`text-xs px-1.5 py-0.5 rounded font-bold ${
+                                <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>
+                                  {fmtR(tr.rMultiple || 0)}
+                                </div>
+
+                                {tr.pnlDollar !== undefined && tr.pnlDollar !== 0 && (
+                                  <div className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
                                     tr.pnlDollar >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-[#240a10] text-[#E598A0] border border-[#C73A4B]/30"
                                   }`}>
                                     {fmtDollar(tr.pnlDollar)}
                                   </div>
-                                ) : (
-                                  <div className={`text-xs font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>
-                                    {fmtR(tr.rMultiple || 0)}
-                                  </div>
                                 )}
 
-                                <div className="text-slate-500 ml-1">
+                                <div className="text-slate-500 ml-0.5">
                                   {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </div>
                               </div>
                             </div>
 
+                            {/* Expanded Details */}
                             {isExpanded && (
-                              <div className="px-3 pb-3 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2">
+                              <div className="px-3.5 pb-3 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2">
                                 <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pb-1 border-b border-slate-800">
                                   <span>Account: <strong className="text-white">{tr.accountName}</strong></span>
                                   <span className="text-sky-400 font-bold">{fmtR(tr.rMultiple || 0)} Return</span>
@@ -1487,7 +1586,6 @@
                                       type="button"
                                       onClick={() => shareTrade(tr)}
                                       className="flex items-center gap-1 text-[10px] font-mono text-sky-400 hover:text-sky-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 cursor-pointer"
-                                      title="Share to Community or Web"
                                     >
                                       <Share2 size={11} /> Share
                                     </button>
@@ -1495,9 +1593,8 @@
                                       type="button"
                                       onClick={() => downloadTradeReceipt(tr)}
                                       className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 cursor-pointer"
-                                      title="Download sleek Trade Receipt Card"
                                     >
-                                      <Download size={11} /> Receipt Card
+                                      <Download size={11} /> Receipt
                                     </button>
                                   </div>
 
@@ -1524,6 +1621,7 @@
                         );
                       })}
 
+                      {/* UNIFIED SEE MORE BUTTON ON THE LEFT */}
                       {filteredTrades.length > 5 && (
                         <div className="flex items-center pt-2 pb-1">
                           <button
@@ -1693,7 +1791,7 @@
                     </div>
                   </div>
 
-                  {/* 4 STATS CARDS IN DASHBOARD (ABOVE SESSIONS) */}
+                  {/* 4 STATS CARDS (ABOVE SESSIONS) */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono">
                     <div className="glass-card p-3 rounded-xl border border-slate-800">
                       <div className="text-[10px] text-slate-500 uppercase">{t.trades}</div>
@@ -2020,7 +2118,223 @@
                 </div>
               )}
 
-              {/* ================= TAB 5: COMMUNITY CHAT ================= */}
+              {/* ================= TAB 5: UPDATES (RIGHT AFTER NOTES) ================= */}
+              {tab === "updates" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-white font-mono flex items-center gap-1.5">
+                        <Sparkles size={15} className="text-sky-400" /> Official Updates & Releases
+                      </h3>
+                      <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                        Feature releases, patches and upcoming roadmap.
+                      </p>
+                    </div>
+
+                    {isAdmin && (
+                      <button
+                        onClick={() => setShowNewUpdateForm((s) => !s)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 font-mono cursor-pointer transition-all shadow-md shadow-sky-500/20"
+                      >
+                        {showNewUpdateForm ? <X size={13} /> : <Plus size={13} />}
+                        <span>{showNewUpdateForm ? "Close" : "+ New Update"}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* ADMIN FORM */}
+                  {isAdmin && showNewUpdateForm && (
+                    <form onSubmit={handlePublishUpdate} className="glass-card p-4 sm:p-5 rounded-2xl border border-sky-500/40 shadow-xl space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                        <span className="text-xs font-bold text-sky-400 font-mono">Create Update (Creator Only)</span>
+                        <span className="text-[10px] text-slate-500 font-mono">Verified Creator</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Title</label>
+                          <input
+                            value={newUpdate.title}
+                            onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })}
+                            placeholder="e.g. Version 2.5 - Risk Calculator & Trade Receipt"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-sky-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Tag</label>
+                          <select
+                            value={newUpdate.category}
+                            onChange={(e) => setNewUpdate({ ...newUpdate, category: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400 cursor-pointer"
+                          >
+                            <option value="Upcoming Feature">Upcoming Feature</option>
+                            <option value="New Feature Live">New Feature Live</option>
+                            <option value="Announcement">Announcement</option>
+                            <option value="Patch & Fixes">Patch & Fixes</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Details</label>
+                        <textarea
+                          rows={3}
+                          value={newUpdate.text}
+                          onChange={(e) => setNewUpdate({ ...newUpdate, text: e.target.value })}
+                          placeholder="Write update details and what users can expect..."
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-sky-400 resize-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Image (Optional)</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const f = e.target.files && e.target.files[0];
+                            if (f) {
+                              const r = new FileReader();
+                              r.onload = async () => {
+                                const resized = await resizeImage(r.result, 800);
+                                setNewUpdate((p) => ({ ...p, image: resized }));
+                              };
+                              r.readAsDataURL(f);
+                            }
+                          }}
+                          className="block w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:bg-slate-800 file:text-slate-300 font-mono"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2 rounded-xl text-xs font-bold font-mono bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all cursor-pointer shadow-md active:scale-98"
+                      >
+                        Publish Update
+                      </button>
+                    </form>
+                  )}
+
+                  {/* UPDATES FEED */}
+                  <div className="space-y-4">
+                    {appUpdates.length === 0 ? (
+                      <div className="glass-card p-12 text-center rounded-2xl text-slate-500 font-mono text-xs">
+                        No updates posted yet. Coming soon!
+                      </div>
+                    ) : (
+                      appUpdates.map((item) => (
+                        <div key={item.id} className="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800 space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                              {item.authorPhoto ? (
+                                <img src={item.authorPhoto} alt="creator" className="w-8 h-8 rounded-full object-cover border border-sky-500/40" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-bold text-xs font-mono">
+                                  A
+                                </div>
+                              )}
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-xs text-white font-mono">{item.authorName}</span>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                                    {item.category}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono">
+                                  {new Date(item.createdAt).toLocaleDateString()} · Official Release
+                                </div>
+                              </div>
+                            </div>
+
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDeleteUpdate(item.id)}
+                                className="text-slate-500 hover:text-rose-400 p-1 cursor-pointer"
+                                title="Delete"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+
+                          <div>
+                            <h4 className="font-bold text-sm text-white mb-1.5 font-mono">{item.title}</h4>
+                            <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-mono">
+                              {item.text}
+                            </p>
+                          </div>
+
+                          {item.image && (
+                            <img
+                              src={item.image}
+                              alt="update feature"
+                              onClick={() => { setLightbox(item.image); setZoomScale(1); }}
+                              className="rounded-xl w-full max-h-72 object-cover border border-slate-700 cursor-zoom-in hover:border-sky-400"
+                            />
+                          )}
+
+                          {/* COMMENTS */}
+                          <div className="pt-3 border-t border-slate-800/80 space-y-2.5">
+                            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                              <span className="flex items-center gap-1.5">
+                                <MessageCircle size={13} className="text-sky-400" />
+                                Comments ({item.comments ? item.comments.length : 0})
+                              </span>
+                            </div>
+
+                            {item.comments && item.comments.length > 0 && (
+                              <div className="space-y-2 pl-2 border-l-2 border-slate-800">
+                                {item.comments.map((c) => (
+                                  <div key={c.id} className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 text-xs">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                      <div className="flex items-center gap-1.5">
+                                        {c.photo ? (
+                                          <img src={c.photo} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                        ) : (
+                                          <div className="w-4 h-4 rounded-full bg-slate-800 text-[9px] flex items-center justify-center font-bold text-sky-400">
+                                            {c.author ? c.author[0] : "T"}
+                                          </div>
+                                        )}
+                                        <span className="font-bold text-[10px] text-sky-300 font-mono">{c.author}</span>
+                                      </div>
+                                      <span className="text-[9px] text-slate-500 font-mono">
+                                        {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                    <p className="text-slate-300 text-[11px] font-mono leading-relaxed pl-5">
+                                      {c.text}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <input
+                                value={commentInputs[item.id] || ""}
+                                onChange={(e) => setCommentInputs({ ...commentInputs, [item.id]: e.target.value })}
+                                onKeyDown={(e) => { if (e.key === "Enter") handleAddComment(item.id); }}
+                                placeholder="Add a comment..."
+                                className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:border-sky-400 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAddComment(item.id)}
+                                className="p-2 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer transition-all active:scale-95"
+                              >
+                                <Send size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ================= TAB 6: COMMUNITY CHAT ================= */}
               {tab === "community" && (
                 <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[520px]">
                   <div className="p-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
@@ -2122,231 +2436,6 @@
                 </div>
               )}
 
-              {/* ================= TAB 6: OFFICIAL UPDATES & ROADMAP (AFTER COMMUNITY) ================= */}
-              {tab === "updates" && (
-                <div className="space-y-4">
-                  {/* Header & Creator Post Button */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-white font-mono flex items-center gap-1.5">
-                        <Sparkles size={16} className="text-amber-400" /> Official Updates & Features
-                      </h3>
-                      <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                        Wararkii ugu dambeeyay iyo waxyaabaha cusub ee la soo wado.
-                      </p>
-                    </div>
-
-                    {/* ONLY ADMIN SEES 'NEW UPDATE' BUTTON */}
-                    {isAdmin && (
-                      <button
-                        onClick={() => setShowNewNewUpdateForm((s) => !s)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono cursor-pointer transition-all shadow-md shadow-amber-500/20"
-                      >
-                        {showNewUpdateForm ? <X size={13} /> : <Plus size={13} />}
-                        <span>{showNewUpdateForm ? "Close" : "+ New Update"}</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* ADMIN FORM TO POST AN UPDATE */}
-                  {isAdmin && showNewUpdateForm && (
-                    <form onSubmit={handlePublishUpdate} className="glass-card p-4 sm:p-5 rounded-2xl border border-amber-500/40 shadow-xl space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                        <span className="text-xs font-bold text-amber-400 font-mono">Soo saar Update Cusub (Creator Only)</span>
-                        <span className="text-[10px] text-slate-500 font-mono">Verified Creator</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Update Title</label>
-                          <input
-                            value={newUpdate.title}
-                            onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })}
-                            placeholder="e.g. Version 2.5 - Risk Management & Receipt Card"
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-amber-400"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Category / Tag</label>
-                          <select
-                            value={newUpdate.category}
-                            onChange={(e) => setNewUpdate({ ...newUpdate, category: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-amber-400 cursor-pointer"
-                          >
-                            <option value="Upcoming Feature">Upcoming Feature (Waa La Soo Wadaa)</option>
-                            <option value="New Feature Live">New Feature Live (Hadda Diyaar Ah)</option>
-                            <option value="Announcement">Announcement (Ogeysiis)</option>
-                            <option value="Bug Fixes & Patch">Bug Fixes & Patch (Hagaajin)</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Description & Details</label>
-                        <textarea
-                          rows={3}
-                          value={newUpdate.text}
-                          onChange={(e) => setNewUpdate({ ...newUpdate, text: e.target.value })}
-                          placeholder="Sharax waxa cusub, sida loo isticmaalo, ama fikradda aad ka rabto dadka..."
-                          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 resize-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Image / Preview (Optional)</label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const f = e.target.files && e.target.files[0];
-                            if (f) {
-                              const r = new FileReader();
-                              r.onload = async () => {
-                                const resized = await resizeImage(r.result, 800);
-                                setNewUpdate((p) => ({ ...p, image: resized }));
-                              };
-                              r.readAsDataURL(f);
-                            }
-                          }}
-                          className="block w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:bg-slate-800 file:text-slate-300 font-mono"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full py-2 rounded-xl text-xs font-bold font-mono bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all cursor-pointer shadow-md active:scale-98"
-                      >
-                        Publish Update
-                      </button>
-                    </form>
-                  )}
-
-                  {/* UPDATES FEED (EVERYONE SEES, EVERYONE CAN COMMENT) */}
-                  <div className="space-y-4">
-                    {appUpdates.length === 0 ? (
-                      <div className="glass-card p-12 text-center rounded-2xl text-slate-500 font-mono text-xs">
-                        Weli ma jiraan updates la soo saaray. Dhowaan filo waxyaabo waaweyn!
-                      </div>
-                    ) : (
-                      appUpdates.map((item) => (
-                        <div key={item.id} className="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800 space-y-3">
-                          {/* Post Header */}
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-2.5">
-                              {item.authorPhoto ? (
-                                <img src={item.authorPhoto} alt="creator" className="w-8 h-8 rounded-full object-cover border border-amber-500/40" />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs font-mono">
-                                  A
-                                </div>
-                              )}
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-xs text-white font-mono">{item.authorName}</span>
-                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                                    {item.category}
-                                  </span>
-                                </div>
-                                <div className="text-[10px] text-slate-500 font-mono">
-                                  {new Date(item.createdAt).toLocaleDateString()} · Official
-                                </div>
-                              </div>
-                            </div>
-
-                            {isAdmin && (
-                              <button
-                                onClick={() => handleDeleteUpdate(item.id)}
-                                className="text-slate-500 hover:text-rose-400 p-1 cursor-pointer"
-                                title="Delete Update"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Title & Body */}
-                          <div>
-                            <h4 className="font-bold text-sm text-white mb-1.5">{item.title}</h4>
-                            <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-mono">
-                              {item.text}
-                            </p>
-                          </div>
-
-                          {/* Image Attachment */}
-                          {item.image && (
-                            <img
-                              src={item.image}
-                              alt="update feature"
-                              onClick={() => { setLightbox(item.image); setZoomScale(1); }}
-                              className="rounded-xl w-full max-h-72 object-cover border border-slate-700 cursor-zoom-in hover:border-amber-400"
-                            />
-                          )}
-
-                          {/* COMMENTS SECTION (EVERYONE CAN PARTICIPATE) */}
-                          <div className="pt-3 border-t border-slate-800/80 space-y-2.5">
-                            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                              <span className="flex items-center gap-1.5">
-                                <MessageCircle size={13} className="text-sky-400" />
-                                Comments ({item.comments ? item.comments.length : 0})
-                              </span>
-                              <span className="text-[10px] text-slate-500">Dadku fikradooda way ku darsan karaan</span>
-                            </div>
-
-                            {/* List of Comments */}
-                            {item.comments && item.comments.length > 0 && (
-                              <div className="space-y-2 pl-2 border-l-2 border-slate-800">
-                                {item.comments.map((c) => (
-                                  <div key={c.id} className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 text-xs">
-                                    <div className="flex items-center justify-between gap-2 mb-1">
-                                      <div className="flex items-center gap-1.5">
-                                        {c.photo ? (
-                                          <img src={c.photo} alt="" className="w-4 h-4 rounded-full object-cover" />
-                                        ) : (
-                                          <div className="w-4 h-4 rounded-full bg-slate-800 text-[9px] flex items-center justify-center font-bold text-sky-400">
-                                            {c.author ? c.author[0] : "T"}
-                                          </div>
-                                        )}
-                                        <span className="font-bold text-[10px] text-sky-300 font-mono">{c.author}</span>
-                                      </div>
-                                      <span className="text-[9px] text-slate-500 font-mono">
-                                        {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                      </span>
-                                    </div>
-                                    <p className="text-slate-300 text-[11px] font-mono leading-relaxed pl-5">
-                                      {c.text}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Add Comment Input */}
-                            <div className="flex items-center gap-2 pt-1">
-                              <input
-                                value={commentInputs[item.id] || ""}
-                                onChange={(e) => setCommentInputs({ ...commentInputs, [item.id]: e.target.value })}
-                                onKeyDown={(e) => { if (e.key === "Enter") handleAddComment(item.id); }}
-                                placeholder="Fikrad ka dhiibo update-kan..."
-                                className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:border-sky-400 focus:outline-none"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleAddComment(item.id)}
-                                className="p-2 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-xl cursor-pointer transition-all active:scale-95"
-                                title="Post comment"
-                              >
-                                <Send size={12} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-
             </main>
           </div>
 
@@ -2354,11 +2443,11 @@
             Amiir Journal · {t.devBy} <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
           </footer>
 
-          {/* LIGHTBOX WITH ZOOM CONTROLS */}
+          {/* LIGHTBOX WITH PINCH, DOUBLE-TAP & BUTTON ZOOM */}
           {lightbox && (
             <div
               onClick={() => { setLightbox(null); setZoomScale(1); }}
-              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4"
+              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 zoom-container select-none"
             >
               <div 
                 onClick={(e) => e.stopPropagation()} 
@@ -2375,7 +2464,7 @@
                 <span className="text-[11px] min-w-[36px] text-center">{Math.round(zoomScale * 100)}%</span>
                 <button
                   type="button"
-                  onClick={() => setZoomScale((z) => Math.min(3, z + 0.25))}
+                  onClick={() => setZoomScale((z) => Math.min(3.5, z + 0.25))}
                   className="p-1 hover:text-sky-400 cursor-pointer"
                   title="Zoom In"
                 >
@@ -2385,7 +2474,7 @@
                   type="button"
                   onClick={() => setZoomScale(1)}
                   className="p-1 hover:text-sky-400 ml-1 cursor-pointer"
-                  title="Reset Zoom"
+                  title="Reset"
                 >
                   <RotateCcw size={14} />
                 </button>
@@ -2400,12 +2489,12 @@
               </div>
 
               <div 
-                onClick={(e) => e.stopPropagation()} 
-                className="overflow-auto max-w-full max-h-[85vh] flex items-center justify-center cursor-default"
+                onClick={(e) => { e.stopPropagation(); setZoomScale((z) => z === 1 ? 2 : 1); }} 
+                className="overflow-auto max-w-full max-h-[85vh] flex items-center justify-center cursor-zoom-in"
               >
                 <img 
                   src={lightbox} 
-                  alt="Full Chart" 
+                  alt="Chart" 
                   style={{ transform: `scale(${zoomScale})`, transition: 'transform 0.15s ease-out' }}
                   className="max-w-full max-h-[85vh] rounded-xl shadow-2xl border border-slate-800 object-contain origin-center" 
                 />
@@ -2421,4 +2510,3 @@
   </script>
 </body>
 </html>
-``
