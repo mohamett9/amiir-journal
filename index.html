@@ -43,28 +43,49 @@
   <style>
     * { -webkit-tap-highlight-color: transparent; }
     body {
-      background-color: #06090e;
+      background-color: #040711;
       color: #f1f5f9;
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .glass-card {
-      background: rgba(13, 19, 33, 0.85);
+      background: rgba(11, 19, 36, 0.85);
       backdrop-filter: blur(14px);
       border: 1px solid rgba(56, 189, 248, 0.08);
+      transition: all 0.2s ease;
     }
     .glass-card:hover {
-      border-color: rgba(56, 189, 248, 0.25);
+      border-color: rgba(56, 189, 248, 0.28);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.06);
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Cyber Scrollbars */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #06090e; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
     input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
     .small-caps { font-variant: all-small-caps; }
-    .zoom-container {
-      touch-action: pan-x pan-y pinch-zoom;
+    .zoom-container { touch-action: pan-x pan-y pinch-zoom; }
+
+    /* Ambient Aurora Glow */
+    .aurora-glow {
+      position: fixed;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 650px;
+      height: 280px;
+      background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.12), transparent 70%);
+      pointer-events-none;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
+  <div class="aurora-glow"></div>
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
@@ -73,10 +94,10 @@
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
-      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, ShieldCheck
+      LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet, Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, MessageCircle, ShieldCheck, Flame
     } from "lucide-react";
 
-    // Firebase
+    // Firebase SDKs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
@@ -192,9 +213,9 @@
     };
 
     const SESSIONS = [
-      { id: "asian", label: "Asian", flag: "🇯🇵", time: "8PM–9PM" },
-      { id: "london", label: "London", flag: "🇬🇧", time: "2AM–3AM" },
-      { id: "newyork", label: "New York", flag: "🇺🇸", time: "8AM–9AM" },
+      { id: "asian", label: "Asian", flag: "🇯🇵", time: "8PM–9PM", liveHours: [20, 21] },
+      { id: "london", label: "London", flag: "🇬🇧", time: "2AM–3AM", liveHours: [2, 3] },
+      { id: "newyork", label: "New York", flag: "🇺🇸", time: "8AM–9AM", liveHours: [8, 9] },
     ];
 
     const PURGE_TIMES = {
@@ -254,7 +275,7 @@
       });
     }
 
-    // LUXURY DIGITAL ASSET RECEIPT CARD (CLEAN, MINIMALIST & PRO)
+    // LUXURY DIGITAL ASSET RECEIPT CARD
     function downloadTradeReceipt(tr) {
       const canvas = document.createElement("canvas");
       canvas.width = 800;
@@ -268,7 +289,7 @@
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, 800, 440);
 
-      // Subtle border
+      // Border
       ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
       ctx.lineWidth = 2;
       ctx.strokeRect(14, 14, 772, 412);
@@ -373,7 +394,6 @@
       ];
       matrix.forEach(([px, py]) => ctx.fillRect(qrX + px, qrY + py, 5, 5));
 
-      // Trigger Download
       const link = document.createElement("a");
       link.download = `${tr.symbol}-${tr.date}-receipt.png`;
       link.href = canvas.toDataURL("image/png");
@@ -422,7 +442,6 @@
       const [noteForm, setNoteForm] = useState({ title: "", tag: "ICT Model", content: "" });
       const [showNoteForm, setShowNoteForm] = useState(false);
 
-      // Community State
       const [chatInput, setChatInput] = useState("");
       const [chatImages, setChatImages] = useState([]);
       const [chatUploading, setChatUploading] = useState(false);
@@ -715,10 +734,9 @@
         }
       };
 
-      // Publish Update (Creator Only)
       const handlePublishUpdate = async (e) => {
         e.preventDefault();
-        if (!isAdmin) return alert("Only the Creator (Amiir) can post updates.");
+        if (!isAdmin) return alert("Only Creator can post updates.");
         if (!newUpdate.title || !newUpdate.text) return alert("Title and details required.");
 
         try {
@@ -741,7 +759,6 @@
         }
       };
 
-      // Add Comment to an Update
       const handleAddComment = async (updateId) => {
         const commentText = (commentInputs[updateId] || "").trim();
         if (!commentText) return;
@@ -832,6 +849,38 @@
         });
       }, [trades, filterAccount]);
 
+      // Win Streak Calculation
+      const winStreak = useMemo(() => {
+        let streak = 0;
+        for (let i = 0; i < filteredTrades.length; i++) {
+          if (filteredTrades[i].outcome === "win") streak++;
+          else break;
+        }
+        return streak;
+      }, [filteredTrades]);
+
+      // Sparkline Points
+      const sparklinePoints = useMemo(() => {
+        if (!filteredTrades.length) return "";
+        const points = [0];
+        let cum = 0;
+        const reversed = [...filteredTrades].reverse();
+        reversed.forEach(t => {
+          cum += (t.rMultiple || 0);
+          points.push(cum);
+        });
+        const min = Math.min(...points);
+        const max = Math.max(...points);
+        const range = max - min || 1;
+        const width = 70;
+        const height = 20;
+        return points.map((p, idx) => {
+          const x = (idx / (points.length - 1)) * width;
+          const y = height - ((p - min) / range) * height;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+      }, [filteredTrades]);
+
       const stats = useMemo(() => {
         const total = filteredTrades.length;
         const wins = filteredTrades.filter((tr) => tr.outcome === "win").length;
@@ -840,15 +889,17 @@
         const totalDollar = filteredTrades.reduce((acc, tr) => acc + (tr.pnlDollar || 0), 0);
         const winRate = total ? Math.round((wins / total) * 100) : 0;
 
+        const currentHour = new Date().getUTCHours();
+
         const sessionsStats = {};
-        ["asian", "london", "newyork"].forEach((s) => {
-          const list = filteredTrades.filter((tr) => tr.session === s);
+        SESSIONS.forEach((s) => {
+          const list = filteredTrades.filter((tr) => tr.session === s.id);
           const w = list.filter((tr) => tr.outcome === "win").length;
           const r = list.reduce((sum, tr) => sum + (tr.rMultiple || 0), 0);
           const d = list.reduce((sum, tr) => sum + (tr.pnlDollar || 0), 0);
           
           const purges = {};
-          (PURGE_TIMES[s] || []).forEach((pt) => {
+          (PURGE_TIMES[s.id] || []).forEach((pt) => {
             const ptList = list.filter((tr) => tr.purgeTime === pt);
             const ptw = ptList.filter((tr) => tr.outcome === "win").length;
             purges[pt] = {
@@ -859,11 +910,15 @@
             };
           });
 
-          sessionsStats[s] = {
+          // Check if session is live
+          const isLive = s.liveHours.includes(currentHour);
+
+          sessionsStats[s.id] = {
             count: list.length,
             winRate: list.length ? Math.round((w / list.length) * 100) : 0,
             netR: r,
             netDollar: d,
+            isLive,
             purges
           };
         });
@@ -969,7 +1024,7 @@
 
       if (authLoading) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-[#06090e]">
+          <div className="min-h-screen flex items-center justify-center bg-[#040711]">
             <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
           </div>
         );
@@ -978,7 +1033,7 @@
       // ================= LOGIN PAGE =================
       if (!user) {
         return (
-          <div className="min-h-screen flex flex-col justify-between items-center px-4 bg-[#06090e] relative py-12">
+          <div className="min-h-screen flex flex-col justify-between items-center px-4 bg-[#040711] relative py-12">
             <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="my-auto w-full max-w-sm glass-card p-8 rounded-3xl shadow-2xl relative z-10 border border-slate-800 text-center">
@@ -1024,13 +1079,12 @@
 
       // ================= MAIN APP =================
       return (
-        <div className="min-h-screen bg-[#06090e] text-slate-200 flex flex-col justify-between">
+        <div className="min-h-screen bg-[#040711] text-slate-200 flex flex-col justify-between relative">
           <div>
             {/* Top Bar with One-Line Title on Mobile */}
             <header className="border-b border-slate-800/60 bg-[#090e17]/80 backdrop-blur-md sticky top-0 z-30">
               <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-1 sm:gap-3">
                 
-                {/* Fixed Single Line Branding */}
                 <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                   <span className="font-bold text-xs sm:text-sm tracking-tight text-white font-mono whitespace-nowrap">
                     Amiir Journal
@@ -1085,7 +1139,7 @@
 
             <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4">
               
-              {/* TOP SWIPEABLE NAV TABS (UPDATES AFTER NOTES) */}
+              {/* TOP SWIPEABLE NAV TABS */}
               <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 mb-5 overflow-x-auto no-scrollbar w-full snap-x">
                 {[
                   { id: "journal", label: t.journal, icon: ListChecks },
@@ -1108,7 +1162,6 @@
                   >
                     <item.icon size={13} className={item.isGold ? "text-amber-400 animate-pulse" : ""} />
                     {item.label}
-                    {/* Glowing ping indicator on Updates */}
                     {item.isGold && (
                       <span className="relative flex h-2 w-2 ml-0.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -1217,20 +1270,20 @@
                         <button
                           type="button"
                           onClick={() => setForm({ ...form, direction: "buy" })}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border cursor-pointer ${
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border cursor-pointer flex items-center justify-center gap-1 ${
                             form.direction === "buy" ? "bg-sky-500/20 border-sky-400 text-sky-300" : "border-slate-800 bg-slate-900 text-slate-400"
                           }`}
                         >
-                          BUY
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> BUY
                         </button>
                         <button
                           type="button"
                           onClick={() => setForm({ ...form, direction: "sell" })}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border cursor-pointer ${
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold border cursor-pointer flex items-center justify-center gap-1 ${
                             form.direction === "sell" ? "bg-rose-500/20 border-rose-400 text-rose-300" : "border-slate-800 bg-slate-900 text-slate-400"
                           }`}
                         >
-                          SELL
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span> SELL
                         </button>
                       </div>
                     </div>
@@ -1334,6 +1387,7 @@
                       </div>
                     )}
 
+                    {/* Micro-Chip Confluences */}
                     <div className="flex flex-wrap gap-1.5">
                       {checklistItems.map((item) => {
                         const checked = (form.checklist || []).includes(item);
@@ -1344,7 +1398,7 @@
                             onClick={() => toggleChecklistItem(item)}
                             className={`px-2 py-1 rounded text-[11px] font-mono transition-all border cursor-pointer ${
                               checked
-                                ? "bg-sky-500/20 border-sky-400 text-sky-300"
+                                ? "bg-sky-500/20 border-sky-400 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.2)]"
                                 : "bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700"
                             }`}
                           >
@@ -1403,11 +1457,25 @@
                 </div>
               )}
 
-              {/* ================= TAB 1: JOURNAL ================= */}
+              {/* ================= TAB 1: JOURNAL (WITH SKELETON SHIMMER & SMOOTH ACCORDION) ================= */}
               {tab === "journal" && (
                 <div>
                   {loading ? (
-                    <div className="py-16 text-center text-slate-500 font-mono text-xs">Loading...</div>
+                    /* SKELETON SHIMMER LOADING */
+                    <div className="space-y-2.5">
+                      {[1, 2, 3].map((n) => (
+                        <div key={n} className="glass-card rounded-xl border border-slate-800/80 p-3 flex items-center justify-between animate-pulse">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-6 h-6 rounded bg-slate-800"></div>
+                            <div className="space-y-1">
+                              <div className="w-20 h-3 rounded bg-slate-800"></div>
+                              <div className="w-32 h-2 rounded bg-slate-800/60"></div>
+                            </div>
+                          </div>
+                          <div className="w-12 h-4 rounded bg-slate-800"></div>
+                        </div>
+                      ))}
+                    </div>
                   ) : filteredTrades.length === 0 ? (
                     <div className="glass-card py-12 text-center rounded-2xl border border-slate-800">
                       <p className="text-xs text-slate-400 font-mono">{t.noTrades}</p>
@@ -1426,11 +1494,11 @@
                         return (
                           <div
                             key={tr.id}
-                            className={`glass-card rounded-xl border transition-all duration-150 overflow-hidden ${
+                            className={`glass-card rounded-xl border transition-all duration-300 overflow-hidden ${
                               isExpanded ? "border-sky-500/60 shadow-lg shadow-sky-500/10" : "border-slate-800/80"
                             }`}
                           >
-                            {/* FULL DETAILS ROW (RESTORED) */}
+                            {/* Summary Row */}
                             <div
                               onClick={() => setExpandedTradeId(isExpanded ? null : tr.id)}
                               className="px-3 py-2.5 flex items-center justify-between gap-2 select-none cursor-pointer active:bg-slate-800/40"
@@ -1448,9 +1516,10 @@
 
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-bold text-xs font-mono text-white">{tr.symbol}</span>
-                                  <span className={`text-[8px] uppercase font-mono px-1.5 py-0.5 rounded font-bold border ${
+                                  <span className={`text-[8px] uppercase font-mono px-1.5 py-0.5 rounded font-bold border flex items-center gap-0.5 ${
                                     tr.direction === "buy" ? "bg-sky-500/20 text-sky-300 border-sky-400/30" : "bg-rose-500/20 text-rose-300 border-rose-400/30"
                                   }`}>
+                                    <span className={`w-1 h-1 rounded-full ${tr.direction === "buy" ? "bg-emerald-400" : "bg-rose-400"}`}></span>
                                     {tr.direction}
                                   </span>
                                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
@@ -1488,9 +1557,15 @@
                               </div>
                             </div>
 
-                            {/* EXPANDED DETAILS */}
+                            {/* EXPANDED DETAILS (SMOOTH ACCORDION FEEL) */}
                             {isExpanded && (
-                              <div className="px-3.5 pb-3 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2">
+                              <div className="px-3.5 pb-3 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-2.5 transition-all">
+                                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pb-1 border-b border-slate-800">
+                                  <span>Account: <strong className="text-white">{tr.accountName}</strong></span>
+                                  <span className="text-sky-400 font-bold">{fmtR(tr.rMultiple || 0)} Return</span>
+                                </div>
+
+                                {/* Micro-Chip Confluences */}
                                 {tr.checklist && tr.checklist.length > 0 && (
                                   <div>
                                     <div className="text-[9px] uppercase font-mono text-slate-500 mb-1 flex items-center gap-1">
@@ -1498,7 +1573,7 @@
                                     </div>
                                     <div className="flex flex-wrap gap-1">
                                       {tr.checklist.map((item, i) => (
-                                        <span key={i} className="px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/25 text-sky-300 font-mono text-[9px]">
+                                        <span key={i} className="px-2 py-0.5 rounded bg-sky-950/40 border border-sky-500/30 text-sky-300 font-mono text-[9px] flex items-center gap-1 shadow-sm">
                                           ✓ {item}
                                         </span>
                                       ))}
@@ -1515,9 +1590,12 @@
                                     <div className="text-[8px] text-slate-500 uppercase">Reward</div>
                                     <div className="text-xs text-white font-semibold">{tr.reward}%</div>
                                   </div>
-                                  <div className="p-1 rounded bg-slate-900 border border-slate-800">
+                                  <div className="p-1 rounded bg-slate-900 border border-slate-800 relative">
                                     <div className="text-[8px] text-slate-500 uppercase">{t.rrRatio}</div>
-                                    <div className="text-xs text-white font-semibold">1:{tr.rrRatio}</div>
+                                    <div className="text-xs text-white font-semibold flex items-center justify-center gap-0.5">
+                                      1:{tr.rrRatio}
+                                      {tr.rrRatio >= 3 && <span title="High R:R Setup" className="text-amber-400 text-[10px]">🏆</span>}
+                                    </div>
                                   </div>
                                   <div className="p-1 rounded bg-slate-900 border border-slate-800">
                                     <div className="text-[8px] text-slate-500 uppercase">Profit/Loss</div>
@@ -1558,14 +1636,14 @@
                                     <button
                                       type="button"
                                       onClick={() => shareTrade(tr)}
-                                      className="flex items-center gap-1 text-[10px] font-mono text-sky-400 hover:text-sky-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 cursor-pointer"
+                                      className="flex items-center gap-1 text-[10px] font-mono text-sky-400 hover:text-sky-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 cursor-pointer active:scale-95"
                                     >
                                       <Share2 size={11} /> Share
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => downloadTradeReceipt(tr)}
-                                      className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 cursor-pointer"
+                                      className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 cursor-pointer active:scale-95"
                                     >
                                       <Download size={11} /> Receipt Card
                                     </button>
@@ -1594,7 +1672,6 @@
                         );
                       })}
 
-                      {/* SEE MORE ON LEFT */}
                       {filteredTrades.length > 5 && (
                         <div className="flex items-center pt-2 pb-1">
                           <button
@@ -1615,7 +1692,7 @@
               {tab === "dashboard" && (
                 <div className="space-y-5">
                   
-                  {/* CALENDAR */}
+                  {/* CALENDAR WITH CELL HOVER LIFT */}
                   <div className="glass-card p-3 sm:p-5 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-4 pb-3 border-b border-slate-800/80">
                       
@@ -1651,6 +1728,7 @@
                           <span className="text-slate-400">{monthStats.days} days</span>
                         </div>
 
+                        {/* TOGGLE BUTTON FOR $ / % */}
                         <div className="flex items-center rounded-lg bg-slate-900 border border-slate-800 p-0.5 font-mono">
                           <button
                             type="button"
@@ -1704,13 +1782,13 @@
                               return (
                                 <div
                                   key={dIdx}
-                                  className={`min-h-[54px] sm:min-h-[72px] rounded-lg sm:rounded-xl p-1 sm:p-1.5 flex flex-col justify-between border transition-all overflow-hidden ${
+                                  className={`min-h-[54px] sm:min-h-[72px] rounded-lg sm:rounded-xl p-1 sm:p-1.5 flex flex-col justify-between border transition-all duration-200 overflow-hidden hover:scale-[1.04] cursor-pointer ${
                                     !hasData
                                       ? "bg-[#0b1120]/90 border-slate-800/40"
                                       : isWinDay
-                                      ? "bg-[#06251b] border-[#10b981]/40 text-[#6ee7b7] shadow-[0_0_12px_rgba(16,185,129,0.12)]"
+                                      ? "bg-[#06251b] border-[#10b981]/40 text-[#6ee7b7] shadow-[0_0_12px_rgba(16,185,129,0.12)] hover:border-emerald-400"
                                       : isLossDay
-                                      ? "bg-[#240a10] border-[#c73a4b]/45 text-[#e598a0] shadow-[0_0_12px_rgba(199,58,75,0.15)]"
+                                      ? "bg-[#240a10] border-[#c73a4b]/45 text-[#e598a0] shadow-[0_0_12px_rgba(199,58,75,0.15)] hover:border-rose-400"
                                       : "bg-slate-800/80 border-slate-700 text-slate-300"
                                   }`}
                                 >
@@ -1764,11 +1842,16 @@
                     </div>
                   </div>
 
-                  {/* 4 STATS CARDS (ABOVE SESSIONS) */}
+                  {/* 4 STATS CARDS WITH SPARKLINE & WIN STREAK */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono">
-                    <div className="glass-card p-3 rounded-xl border border-slate-800">
+                    <div className="glass-card p-3 rounded-xl border border-slate-800 relative overflow-hidden">
                       <div className="text-[10px] text-slate-500 uppercase">{t.trades}</div>
                       <div className="text-lg font-bold text-white mt-0.5">{stats.total}</div>
+                      {winStreak >= 2 && (
+                        <div className="absolute top-2.5 right-2 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold flex items-center gap-0.5 border border-amber-500/30">
+                          <Flame size={10} className="text-amber-400" /> {winStreak} Streak
+                        </div>
+                      )}
                     </div>
 
                     <div className="glass-card p-3 rounded-xl border border-slate-800">
@@ -1785,26 +1868,43 @@
                       </div>
                     </div>
 
-                    <div className="glass-card p-3 rounded-xl border border-slate-800">
-                      <div className="text-[10px] text-slate-500 uppercase">{t.netReturn}</div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-lg font-bold ${stats.netR >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>
-                          {fmtR(stats.netR)}
-                        </span>
-                        {stats.totalDollar !== 0 && (
-                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
-                            stats.totalDollar >= 0 
-                              ? "bg-emerald-500/15 text-emerald-300" 
-                              : "bg-[#240a10] text-[#E598A0] border border-[#C73A4B]/30"
-                          }`}>
-                            {fmtDollar(stats.totalDollar)}
+                    {/* Net Return with Mini Trend Sparkline */}
+                    <div className="glass-card p-3 rounded-xl border border-slate-800 relative flex flex-col justify-between">
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">{t.netReturn}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-lg font-bold ${stats.netR >= 0 ? "text-emerald-400" : "text-[#E598A0]"}`}>
+                            {fmtR(stats.netR)}
                           </span>
-                        )}
+                          {stats.totalDollar !== 0 && (
+                            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                              stats.totalDollar >= 0 
+                                ? "bg-emerald-500/15 text-emerald-300" 
+                                : "bg-[#240a10] text-[#E598A0] border border-[#C73A4B]/30"
+                            }`}>
+                              {fmtDollar(stats.totalDollar)}
+                            </span>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Inline Mini Sparkline */}
+                      {sparklinePoints && (
+                        <div className="mt-1 flex justify-end">
+                          <svg className="w-16 h-5 overflow-visible">
+                            <polyline
+                              fill="none"
+                              stroke={stats.netR >= 0 ? "#34d399" : "#E598A0"}
+                              strokeWidth="1.8"
+                              points={sparklinePoints}
+                            />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* SESSIONS */}
+                  {/* SESSIONS WITH LIVE RADAR PULSE */}
                   <div className="glass-card p-4 rounded-xl border border-slate-800">
                     <div className="text-xs font-bold text-white mb-2 flex items-center justify-between font-mono">
                       <span className="flex items-center gap-1.5"><Clock size={13} className="text-sky-400" /> Sessions</span>
@@ -1813,17 +1913,25 @@
                     <div className="space-y-2">
                       <div className="grid grid-cols-3 gap-2">
                         {SESSIONS.map((s) => {
-                          const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0, netDollar: 0, purges: {} };
+                          const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0, netDollar: 0, isLive: false, purges: {} };
                           const isExp = expandedSession === s.id;
 
                           return (
                             <div
                               key={s.id}
                               onClick={() => setExpandedSession(isExp ? null : s.id)}
-                              className={`p-2.5 rounded-xl border transition-all cursor-pointer text-center select-none ${
+                              className={`p-2.5 rounded-xl border transition-all cursor-pointer text-center select-none relative ${
                                 isExp ? "bg-sky-500/10 border-sky-400 shadow-md" : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
                               }`}
                             >
+                              {/* Live Radar Pulse Indicator */}
+                              {st.isLive && (
+                                <span className="absolute top-2 right-2 flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                              )}
+
                               <div className="text-xs">{s.flag} <span className="font-semibold text-white">{s.label}</span></div>
                               <div className={`text-xs font-bold font-mono mt-0.5 ${st.winRate >= 50 ? "text-emerald-400" : "text-[#E598A0]"}`}>
                                 {st.winRate}% WR
@@ -2091,7 +2199,7 @@
                 </div>
               )}
 
-              {/* ================= TAB 5: UPDATES (RIGHT AFTER NOTES WITH GOLD ACCENT) ================= */}
+              {/* ================= TAB 5: UPDATES ================= */}
               {tab === "updates" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -2400,11 +2508,20 @@
             </main>
           </div>
 
+          {/* FLOATING ACTION BUTTON (MOBILE ONLY FOR + NEW TRADE) */}
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="fixed bottom-6 right-5 sm:hidden z-40 w-12 h-12 rounded-full bg-sky-500 text-slate-950 flex items-center justify-center shadow-lg shadow-sky-500/30 border border-sky-400 active:scale-90 transition-all cursor-pointer"
+            title="New Trade"
+          >
+            <Plus size={22} className="stroke-[2.5]" />
+          </button>
+
           <footer className="mt-8 py-4 border-t border-slate-800/60 text-center text-[11px] text-slate-500 font-mono">
             Amiir Journal · {t.devBy} <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@amiir_pr</a>
           </footer>
 
-          {/* LIGHTBOX WITH PINCH, DOUBLE-TAP & BUTTON ZOOM */}
+          {/* LIGHTBOX WITH PINCH & BUTTON ZOOM */}
           {lightbox && (
             <div
               onClick={() => { setLightbox(null); setZoomScale(1); }}
