@@ -1,0 +1,17 @@
+{
+  "name": "Amiir Journal",
+  "short_name": "AmiirJournal",
+  "description": "Professional Trading Ledger and Community",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06090e",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "profile.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
