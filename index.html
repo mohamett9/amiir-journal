@@ -230,9 +230,9 @@
         share: "Share",
         deleteConfirm: "Are you sure you want to delete this trade?",
         unlockPinPrompt: "Enter Creator Admin PIN:",
-        welcomeTitle: "Welcome",
-        welcomeSub: "",
-        connectSocials: 
+        welcomeTitle: "Welcome to Amiir Journal",
+        welcomeSub: "Institutional-grade execution journal, liquidity purge analytics & cloud ledger.",
+        connectSocials: "Official Social Channels",
       },
       so: {
         journal: "Diiwaanka",
@@ -1341,7 +1341,7 @@
                 <div className="terminal-card p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-sky-500/20 backdrop-blur-xl relative shadow-2xl">
                   <div className="text-sky-400 text-2xl font-serif leading-none absolute -top-3 left-6 bg-[#080E1E] px-2">“</div>
                   <p className="text-sm sm:text-base font-semibold tracking-wider leading-relaxed text-slate-100 font-sans small-caps">
-                    ᴡᴀɴᴋᴀ ᴡᴇʏɴ ɴɪɴᴋɪɪ ʜᴇʟɪ ᴋᴀʀᴏᴏᴡ ᴡᴀxᴀʀᴋᴀ ʜᴀᴡ ʟᴇᴇxᴀɴ
+                    "ᴡᴀɴᴋᴀ ᴡᴇʏɴ ɴɪɴᴋɪɪ ʜᴇʟɪ ᴋᴀʀᴏᴏᴡ, ᴡᴀxᴀʀᴋᴀ ʜᴀᴡ ʟᴇᴇxᴀɴ"
                   </p>
                   <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400">
                     <span>Amiir Trading Philosophy</span>
@@ -1354,12 +1354,13 @@
               <div className="relative z-10 pt-4 border-t border-slate-800/80 flex items-center justify-between flex-wrap gap-3 text-xs font-mono text-slate-400">
                 <div className="flex items-center gap-4 flex-wrap">
                   <span className="flex items-center gap-1.5 text-slate-300">
-                  
+                    <CheckCircle2 size={13} className="text-emerald-400" /> Session Purges
                   </span>
                   <span className="flex items-center gap-1.5 text-slate-300">
-                    
+                    <CheckCircle2 size={13} className="text-emerald-400" /> Verified P&L Receipts
+                  </span>
                   <span className="flex items-center gap-1.5 text-slate-300">
-                    <CheckCircle2 size={13} className="text-emerald-400" /> Realtime 
+                    <CheckCircle2 size={13} className="text-emerald-400" /> Realtime Sync
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500">v2.4 Pro</div>
@@ -1386,7 +1387,7 @@
               <div className="my-auto w-full max-w-sm mx-auto py-6">
                 
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[10px] font-mono font-bold tracking-wider uppercase mb-3">
-                  <Sparkles size={11} /> Ｕｇａａｓｏ
+                  <Sparkles size={11} /> Cloud Authentication
                 </div>
 
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-mono tracking-tight mb-2">
@@ -1394,7 +1395,7 @@
                 </h1>
                 
                 <p className="text-xs sm:text-sm text-slate-400 font-mono leading-relaxed mb-8">
-                  {t.welcomeSub || "Consistency Creates Results"}
+                  {t.welcomeSub || "Sign in to access your private ledger, session statistics, live balance, and verified execution logs."}
                 </p>
 
                 {/* Google Sign-In Button */}
@@ -1413,11 +1414,11 @@
                 </button>
 
                 <div className="mt-6 flex items-center justify-center gap-3 text-[11px] font-mono text-slate-500 text-center">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
+                  <span>SSL Encrypted</span>
+                  <span>•</span>
+                  <span>Google Auth</span>
+                  <span>•</span>
+                  <span>Private Firestore</span>
                 </div>
               </div>
 
@@ -1517,7 +1518,7 @@
                       <span className="font-extrabold text-sm sm:text-base tracking-tight text-white font-mono">
                         Amiir Journal
                       </span>
-                     \ {isAdmin && (
+                      {isAdmin && (
                         <span className="text-[9px] font-mono px-2 py-0.2 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 flex items-center gap-1 font-bold">
                           <ShieldCheck size={11} className="text-rose-400" /> Creator Admin
                         </span>
