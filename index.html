@@ -359,7 +359,7 @@
 
   <script type="text/babel" data-type="module">
     /* ══════════════════════════════════════════════════════════════════════
-       AMIIR JOURNAL — SINGLE-FILE BUNDLE  (v2.7 · standalone, no build step · React-context Light/Dark/System theme + guest login)
+       AMIIR JOURNAL — SINGLE-FILE BUNDLE  (v2.8 · standalone, no build step · React-context theme + guest login + accounts/journal upgrade)
        Flattened from the modular Vite project. Structure preserved as
        numbered sections below — jump to a section to edit that feature.
 
@@ -1272,6 +1272,7 @@ function AppProvider({ children }) {
       const [backtestSessions, setBacktestSessions] = useState([]);
       const [accounts, setAccounts] = useState([]);
       const [accountsCollapsed, setAccountsCollapsed] = useState(false);
+      const [planningCollapsed, setPlanningCollapsed] = useState(false);
       const [notes, setNotes] = useState([]);
       const [trashItems, setTrashItems] = useState([]);
       const [chatMessages, setChatMessages] = useState([]);
@@ -1360,7 +1361,7 @@ function AppProvider({ children }) {
       const [editingAccountId, setEditingAccountId] = useState(null);
       const [showAccModal, setShowAccModal] = useState(false);
       const [plannedAccounts, setPlannedAccounts] = useState([]);
-      const [planningForm, setPlanningForm] = useState({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
+      const [planningForm, setPlanningForm] = useState({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", logo: "", website: "", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
       const [showPlanningModal, setShowPlanningModal] = useState(false);
 
       // Notes
@@ -2032,13 +2033,14 @@ function AppProvider({ children }) {
         await addDoc(collection(db, "users", user.uid, "planned_accounts"), {
           ...planningForm,
           firmName: planningForm.firmName.trim(),
+          website: (planningForm.website || "").trim(),
           challengeSize: parseFloat(planningForm.challengeSize) || 0,
           dailyLossLimit: parseFloat(planningForm.dailyLossLimit) || 5,
           maxDrawdown: parseFloat(planningForm.maxDrawdown) || 10,
           profitTarget: parseFloat(planningForm.profitTarget) || 8,
           createdAt: new Date().toISOString()
         });
-        setPlanningForm({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
+        setPlanningForm({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", logo: "", website: "", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
         setShowPlanningModal(false);
       };
 
@@ -2267,6 +2269,7 @@ function AppProvider({ children }) {
     accountSearchQuery, setAccountSearchQuery,
     accountTypeFilter, setAccountTypeFilter,
     accountsCollapsed, setAccountsCollapsed,
+    planningCollapsed, setPlanningCollapsed,
     // calendar & sessions
     calMode, setCalMode, expandedSession, setExpandedSession,
     sessionsCollapsed, setSessionsCollapsed,
@@ -3135,7 +3138,7 @@ function Journal() {
           <p className={tx("text-sm text-slate-400 font-mono font-medium")}>{t.noTrades}</p>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-2">
 
           {/* Counter */}
           <div className={tx("flex items-center justify-end text-xs text-slate-400 font-mono px-1")}>
@@ -3152,29 +3155,29 @@ function Journal() {
             return (
               <div
                 key={tr.id}
-                className={tx(`terminal-card rounded-2xl border transition-all duration-200 overflow-hidden p-3.5 ${
+                className={tx(`terminal-card rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isExpanded ? "border-sky-500/50 shadow-lg shadow-sky-500/10" : "border-slate-800/80"
                 }`)}
               >
                 <div
                   onClick={() => setExpandedTradeId(isExpanded ? null : tr.id)}
-                  className={tx("px-4 py-3.5 flex items-center justify-between gap-3 select-none cursor-pointer hover:bg-slate-900/30")}
+                  className={tx("px-3 py-2.5 flex items-center justify-between gap-2.5 select-none cursor-pointer hover:bg-slate-900/30")}
                 >
-                  <div className="flex items-center gap-3.5 flex-wrap">
+                  <div className="flex items-center gap-2.5 flex-wrap">
 
                     {/* Trend Indicator */}
-                    <div className={tx(`w-9 h-9 rounded-xl flex items-center justify-center border font-bold ${
+                    <div className={tx(`w-8 h-8 rounded-lg flex items-center justify-center border font-bold ${
                       isWin 
                         ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
                         : isLoss 
                         ? "bg-rose-500/10 border-rose-500/30 text-rose-400" 
                         : "bg-slate-800 border-slate-700 text-slate-300"
                     }`)}>
-                      {isWin ? <TrendingUp size={16} /> : isLoss ? <TrendingDown size={16} /> : <span className="text-xs font-mono">BE</span>}
+                      {isWin ? <TrendingUp size={14} /> : isLoss ? <TrendingDown size={14} /> : <span className="text-xs font-mono">BE</span>}
                     </div>
 
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className={tx("font-extrabold text-sm sm:text-base font-mono text-white tracking-tight")}>{tr.symbol}</span>
+                      <span className={tx("font-extrabold text-sm font-mono text-white tracking-tight")}>{tr.symbol}</span>
 
                       <span className={tx(`text-[10px] uppercase font-mono px-2 py-0.5 rounded-md font-extrabold border ${
                         tr.direction === "buy" ? "bg-sky-500/15 text-sky-300 border-sky-400/30" : "bg-rose-500/15 text-rose-300 border-rose-400/30"
@@ -3192,15 +3195,15 @@ function Journal() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3.5 font-mono">
+                  <div className="flex items-center gap-2.5 font-mono">
                     {imgs.length > 0 && (
-                      <div className={tx("hidden sm:flex items-center gap-1.5 text-slate-400 text-xs bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800")}>
+                      <div className={tx("hidden sm:flex items-center gap-1 text-slate-400 text-[11px] bg-slate-900/80 px-2 py-0.5 rounded-lg border border-slate-800")}>
                         <ImageIcon size={12} className={tx("text-sky-400")} />
                         <span>{imgs.length}</span>
                       </div>
                     )}
 
-                    <div className={tx(`text-sm sm:text-base font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`)}>
+                    <div className={tx(`text-sm font-bold ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`)}>
                       {fmtR(tr.rMultiple || 0)}
                     </div>
 
@@ -3215,30 +3218,30 @@ function Journal() {
                     )}
 
                     <div className="text-slate-500 ml-1">
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </div>
                   </div>
                 </div>
 
                 {/* EXPANDED TRADE DETAILS */}
                 {isExpanded && (
-                  <div className={tx("px-5 pb-5 pt-3.5 border-t border-slate-800/90 bg-[#050914] space-y-3.5")}>
+                  <div className={tx("px-3 pb-3 pt-2.5 border-t border-slate-800/90 bg-[#050914] space-y-2.5")}>
 
                     {/* Metrics Bar */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center font-mono">
-                      <div className={tx("p-2.5 rounded-xl bg-slate-900/80 border border-slate-800")}>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
+                      <div className={tx("p-2 rounded-xl bg-slate-900/80 border border-slate-800")}>
                         <div className="text-[10px] text-slate-500 uppercase">{t.risk}</div>
                         <div className={tx("text-sm font-bold text-white mt-0.5")}>{tr.risk}%</div>
                       </div>
-                      <div className={tx("p-2.5 rounded-xl bg-slate-900/80 border border-slate-800")}>
+                      <div className={tx("p-2 rounded-xl bg-slate-900/80 border border-slate-800")}>
                         <div className="text-[10px] text-slate-500 uppercase">Reward Potential</div>
                         <div className={tx("text-sm font-bold text-white mt-0.5")}>{tr.reward}%</div>
                       </div>
-                      <div className={tx("p-2.5 rounded-xl bg-slate-900/80 border border-slate-800")}>
+                      <div className={tx("p-2 rounded-xl bg-slate-900/80 border border-slate-800")}>
                         <div className="text-[10px] text-slate-500 uppercase">{t.rrRatio}</div>
                         <div className={tx("text-sm font-bold text-sky-400 mt-0.5")}>1:{tr.rrRatio}</div>
                       </div>
-                      <div className={tx("p-2.5 rounded-xl bg-slate-900/80 border border-slate-800")}>
+                      <div className={tx("p-2 rounded-xl bg-slate-900/80 border border-slate-800")}>
                         <div className="text-[10px] text-slate-500 uppercase">Net Result</div>
                         <div className={tx(`text-sm font-bold mt-0.5 ${tr.rMultiple >= 0 ? "text-emerald-400" : "text-rose-400"}`)}>
                           {tr.pnlDollar ? fmtDollar(tr.pnlDollar) : fmtR(tr.rMultiple || 0)}
@@ -3254,7 +3257,7 @@ function Journal() {
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {tr.checklist.map((item, i) => (
-                            <span key={i} className={tx("px-2.5 py-1 rounded-md bg-sky-500/10 border border-sky-500/25 text-sky-300 font-mono text-[11px]")}>
+                            <span key={i} className={tx("px-2 py-0.5 rounded-md bg-sky-500/10 border border-sky-500/25 text-sky-300 font-mono text-[10px]")}>
                               ✓ {item}
                             </span>
                           ))}
@@ -3268,14 +3271,14 @@ function Journal() {
                         <div className={tx("text-[10px] uppercase font-mono text-slate-400 mb-1.5 flex items-center gap-1 font-semibold")}>
                           <ImageIcon size={11} className={tx("text-sky-400")} /> {t.chartsTitle}:
                         </div>
-                        <div className="flex gap-3 overflow-x-auto pb-1.5">
+                        <div className="flex gap-2 overflow-x-auto pb-1">
                           {imgs.map((imgSrc, idx) => (
                             <div key={idx} className="relative flex-shrink-0 group">
                               <img
                                 src={imgSrc}
                                 alt="trade chart"
                                 onClick={() => { setLightbox(imgSrc); setZoomScale(1); }}
-                                className={tx("h-28 rounded-xl border border-slate-700 object-cover cursor-zoom-in hover:border-sky-400 transition-all shadow-md")}
+                                className={tx("h-24 rounded-xl border border-slate-700 object-cover cursor-zoom-in hover:border-sky-400 transition-all shadow-md")}
                               />
                             </div>
                           ))}
@@ -3285,26 +3288,26 @@ function Journal() {
 
                     {/* Notes Box */}
                     {tr.notes && (
-                      <div className={tx("p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 leading-relaxed font-mono")}>
+                      <div className={tx("p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 leading-relaxed font-mono")}>
                         <div className={tx("text-[10px] font-mono uppercase text-sky-400 font-bold mb-1")}>{t.notesLabel}:</div>
                         <p className="whitespace-pre-wrap">{tr.notes}</p>
                       </div>
                     )}
 
                     {/* Card Actions Toolbar */}
-                    <div className={tx("flex items-center justify-between pt-2.5 border-t border-slate-800/80")}>
+                    <div className={tx("flex items-center justify-between pt-2 border-t border-slate-800/80")}>
                       <div className="flex items-center gap-2.5">
                         <button
                           type="button"
                           onClick={() => shareTrade(tr)}
-                          className={tx("flex items-center gap-1.5 text-xs font-mono font-medium text-sky-400 hover:text-sky-300 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer active:scale-95 transition-all")}
+                          className={tx("flex items-center gap-1.5 text-xs font-mono font-medium text-sky-400 hover:text-sky-300 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer active:scale-95 transition-all")}
                         >
                           <Share2 size={13} /> {t.share || "Share"}
                         </button>
                         <button
                           type="button"
                           onClick={() => downloadTradeReceipt(tr)}
-                          className={tx("flex items-center gap-1.5 text-xs font-mono font-medium text-emerald-400 hover:text-emerald-300 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer active:scale-95 transition-all")}
+                          className={tx("flex items-center gap-1.5 text-xs font-mono font-medium text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer active:scale-95 transition-all")}
                         >
                           <Download size={13} /> {t.receiptCard || "Receipt Card"}
                         </button>
@@ -3314,18 +3317,18 @@ function Journal() {
                         <button
                           type="button"
                           onClick={() => startEditTrade(tr, tab === "backtest" ? "backtest_trades" : "trades")}
-                          className={tx("p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-900 cursor-pointer transition-colors")}
+                          className={tx("p-1 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-900 cursor-pointer transition-colors")}
                           title="Edit Trade"
                         >
-                          <Edit3 size={15} />
+                          <Edit3 size={14} />
                         </button>
                         <button
                           type="button"
                           onClick={() => removeTrade(tr.id, tab === "backtest" ? "backtest_trades" : "trades")}
-                          className={tx("p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900 cursor-pointer transition-colors")}
+                          className={tx("p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900 cursor-pointer transition-colors")}
                           title="Delete Trade"
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
@@ -3336,7 +3339,7 @@ function Journal() {
           })}
 
           {filteredTrades.length > 8 && (
-            <div className="flex items-center justify-center pt-4 pb-1">
+            <div className="flex items-center justify-center pt-3 pb-1">
               <button
                 type="button"
                 onClick={() => setVisibleCount(prev => prev >= filteredTrades.length ? 8 : prev + 8)}
@@ -5524,14 +5527,23 @@ function Dashboard() {
        6d. COMPONENT — Accounts (TAB 3 · risk meters + planning)
        ══════════════════════════════════════════════════════════════════════ */
 
+// Badge colors shared by active + planned account cards (Challenge/Funded/Planned/Demo/Real).
+function accBadgeClass(type) {
+  if (type === "Funded") return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+  if (type === "Demo") return "bg-slate-500/15 text-slate-300 border-slate-500/30";
+  if (type === "Real") return "bg-violet-500/15 text-violet-300 border-violet-500/30";
+  if (type === "Planned") return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+  return "bg-sky-500/15 text-sky-300 border-sky-500/30";
+}
+
 function Accounts() {
-  const { t, accountSearchQuery, setAccountSearchQuery, accountTypeFilter, setAccountTypeFilter, filteredAccounts, accounts, trades, accountsCollapsed, setAccountsCollapsed, setAccountForm, setEditingAccountId, setShowAccModal, setShowPlanningModal, accountForm, editingAccountId, showAccModal, saveAccount, startEditAccount, moveToTrash, plannedAccounts, planningForm, setPlanningForm, showPlanningModal, savePlannedAccount, user, fmtR, fmtDollar } = useApp();
+  const { t, accountSearchQuery, setAccountSearchQuery, accountTypeFilter, setAccountTypeFilter, filteredAccounts, accounts, trades, accountsCollapsed, setAccountsCollapsed, planningCollapsed, setPlanningCollapsed, setAccountForm, setEditingAccountId, setShowAccModal, setShowPlanningModal, accountForm, editingAccountId, showAccModal, saveAccount, startEditAccount, moveToTrash, plannedAccounts, planningForm, setPlanningForm, showPlanningModal, savePlannedAccount, user, fmtR, fmtDollar } = useApp();
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-[260px]">
-          <Filter className={tx("w-4 h-4 text-sky-400")} />
-          <div className="relative flex-1"><Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" /><input value={accountSearchQuery} onChange={(e) => setAccountSearchQuery(e.target.value)} placeholder="Search accounts..." className={tx("w-full bg-[#050914] border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white font-mono focus:border-sky-400")} /></div>
+        <div className="relative flex-1 min-w-[220px]"><Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" /><input value={accountSearchQuery} onChange={(e) => setAccountSearchQuery(e.target.value)} placeholder="Search accounts..." className={tx("w-full bg-[#050914] border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white font-mono focus:border-sky-400")} /></div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span title="Filter accounts" className={tx("flex items-center justify-center w-9 h-9 rounded-xl bg-[#050914] border border-slate-800 text-sky-400")}><Filter size={13} /></span>
           <select value={accountTypeFilter} onChange={(e) => setAccountTypeFilter(e.target.value)} className={tx("bg-[#050914] text-xs px-3 py-2 rounded-xl border border-slate-800 text-slate-300 focus:border-sky-500 cursor-pointer font-mono")}><option value="all">All types</option><option value="Funded">Funded</option><option value="Challenge">Challenge</option><option value="Real">Real</option><option value="Demo">Demo</option></select>
         </div>
 
@@ -5558,7 +5570,7 @@ function Accounts() {
         </button>
       </div>
 
-      {!accountsCollapsed && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {!accountsCollapsed && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {(accounts || []).length === 0 ? (
           <div className="col-span-full py-16 text-center text-slate-500 terminal-card rounded-3xl text-xs font-mono">
             {t.noAccounts}
@@ -5579,11 +5591,11 @@ function Accounts() {
             const drawdownProgress = Math.min(100, drawdown / maxDrawdown * 100);
 
             return (
-              <div key={acc.id} className="terminal-card p-3.5 rounded-2xl relative group">
-                <div className="flex items-center justify-between mb-2.5">
+              <div key={acc.id} className="terminal-card p-3 rounded-2xl relative group">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    {acc.logo ? <img src={acc.logo} alt="" className={tx("w-8 h-8 rounded-lg object-cover border border-slate-700")} /> : <div className={tx("w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 font-bold font-mono")}>{(acc.name || "A")[0]}</div>}
-                    <span className={tx("text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/25")}>{acc.type}</span>
+                    {acc.logo ? <img src={acc.logo} alt="" className={tx("w-7 h-7 rounded-lg object-cover border border-slate-700")} /> : <div className={tx("w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 font-bold font-mono text-xs")}>{(acc.name || "A")[0]}</div>}
+                    <span className={tx(`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${accBadgeClass(acc.type)}`)}>{acc.type}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <button type="button" onClick={() => startEditAccount(acc)} className={tx("text-slate-400 hover:text-sky-400 p-1")}>
@@ -5595,15 +5607,15 @@ function Accounts() {
                   </div>
                 </div>
 
-                <h4 className={tx("font-extrabold text-white text-base font-mono tracking-tight")}>{acc.name}</h4>
-                <div className="flex items-center justify-between mt-2.5 text-[10px] font-mono">
+                <h4 className={tx("font-extrabold text-white text-sm font-mono tracking-tight")}>{acc.name}</h4>
+                <div className="flex items-center justify-between mt-1.5 text-[10px] font-mono">
                   <span className={tx("text-cyan-400 font-bold")}>{acc.phase || "Phase 1"}</span>
                   <span className="text-slate-500">Target {acc.profitTarget || 8}%</span>
                 </div>
 
-                <div className={tx("mt-2.5 bg-slate-900/60 p-3 rounded-xl border border-slate-800")}>
+                <div className={tx("mt-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800")}>
                   <div className="text-[10px] text-slate-500 font-mono uppercase">{t.liveBal}</div>
-                  <div className={tx("text-xl font-black text-white font-mono mt-0.5")}>
+                  <div className={tx("text-lg font-black text-white font-mono mt-0.5")}>
                     ${Math.round(currentBalance).toLocaleString()}
                   </div>
                   <div className={tx("text-[11px] text-slate-400 font-mono mt-0.5")}>
@@ -5611,9 +5623,9 @@ function Accounts() {
                   </div>
                 </div>
 
-                {acc.mt5Id && <div className="text-[11px] text-slate-500 font-mono mt-2.5">MT5 ID: {acc.mt5Id}</div>}
+                {acc.mt5Id && <div className="text-[11px] text-slate-500 font-mono mt-2">MT5 ID: {acc.mt5Id}</div>}
 
-                <div className="mt-3.5 space-y-2.5 font-mono">
+                <div className="mt-2.5 space-y-2 font-mono">
                   <div>
                     <div className="flex justify-between text-[9px] uppercase font-bold mb-1">
                       <span className="text-slate-500">Daily loss</span>
@@ -5630,7 +5642,7 @@ function Accounts() {
                   </div>
                 </div>
 
-                <div className={tx("mt-3.5 pt-2.5 border-t border-slate-800 flex items-center justify-between font-mono text-xs")}>
+                <div className={tx("mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between font-mono text-xs")}>
                   <span className={tx("text-slate-400")}>{accTrades.length} trades</span>
                   <div className="flex items-center gap-1.5 font-bold">
                     <span className={tx(netR >= 0 ? "text-emerald-400" : "text-rose-400")}>{fmtR(netR)}</span>
@@ -5649,29 +5661,74 @@ function Accounts() {
             <h3 className={tx("text-sm font-bold text-white font-mono flex items-center gap-2")}><Rocket size={16} className={tx("text-cyan-400")} /> Accounts Planning</h3>
             <p className="text-[10px] text-slate-500 font-mono mt-1">Future prop firm evaluations and rule checklists</p>
           </div>
-          <button type="button" onClick={() => setShowPlanningModal(true)} className="p-2 rounded-xl bg-cyan-500 text-slate-950 hover:bg-cyan-400 cursor-pointer" title="Add planned account"><Plus size={15} /></button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setPlanningCollapsed((value) => !value)} className={tx("p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white cursor-pointer")} title={planningCollapsed ? "Show planned accounts" : "Hide planned accounts"}>
+              <ChevronDown size={15} className={planningCollapsed ? "" : "rotate-180 transition-transform"} />
+            </button>
+            <button type="button" onClick={() => setShowPlanningModal(true)} className="p-2 rounded-xl bg-cyan-500 text-slate-950 hover:bg-cyan-400 cursor-pointer" title="Add planned account"><Plus size={15} /></button>
+          </div>
         </div>
-        {(plannedAccounts || []).length === 0 ? (
+        {!planningCollapsed && ((plannedAccounts || []).length === 0 ? (
           <div className={tx("rounded-2xl border border-dashed border-slate-800 p-5 text-center text-xs text-slate-500 font-mono")}>No planned evaluations yet.</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {(plannedAccounts || []).map((plan) => (
-              <div key={plan.id} className={tx("rounded-2xl bg-slate-900/50 border border-slate-800 p-4")}>
-                <div className="flex items-start justify-between gap-2">
-                  <div><div className={tx("text-sm font-bold text-white font-mono")}>{plan.firmName}</div><div className={tx("text-[10px] text-cyan-400 font-mono mt-1")}>${Number(plan.challengeSize || 0).toLocaleString()} challenge</div></div>
-                  <button type="button" onClick={() => deleteDoc(doc(db, "users", user.uid, "planned_accounts", plan.id))} className={tx("text-slate-500 hover:text-rose-400 p-1")} title="Remove plan"><Trash2 size={13} /></button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {(plannedAccounts || []).map((plan) => {
+              const planUrl = (plan.website || "").trim();
+              const planHref = planUrl ? (/^https?:\/\//i.test(planUrl) ? planUrl : "https://" + planUrl) : "";
+              const planHost = planUrl ? planUrl.replace(/^https?:\/\//i, "").replace(/\/$/, "").split("/")[0] : "";
+              const startIn = (() => {
+                if (!plan.plannedStartDate) return "Start TBD";
+                const ms = new Date(plan.plannedStartDate + "T00:00:00") - new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+                const d = Math.round(ms / 86400000);
+                if (d > 1) return `Starts in ${d} days`;
+                if (d === 1) return "Starts tomorrow";
+                if (d === 0) return "Starts today";
+                return `Started ${plan.plannedStartDate}`;
+              })();
+              const rulesOn = ["maxDailyTrades", "noOvernight", "newsRestriction"].filter((k) => plan.rules?.[k]);
+              return (
+              <div key={plan.id} className="terminal-card p-3 rounded-2xl relative group">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {plan.logo ? <img src={plan.logo} alt="" className={tx("w-7 h-7 rounded-lg object-cover border border-slate-700")} /> : <div className={tx("w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold font-mono text-xs")}>{(plan.firmName || "P")[0]}</div>}
+                    <span className={tx(`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${accBadgeClass("Planned")}`)}>Planned</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {planHref && <a href={planHref} target="_blank" rel="noreferrer" title={planHref} className={tx("text-slate-400 hover:text-cyan-300 p-1")}><ExternalLink size={14} /></a>}
+                    <button type="button" onClick={() => deleteDoc(doc(db, "users", user.uid, "planned_accounts", plan.id))} className={tx("text-slate-400 hover:text-rose-400 p-1")} title="Remove plan"><Trash2 size={14} /></button>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mt-3 text-[10px] font-mono"><span className="text-slate-500">Start <b className={tx("text-slate-300")}>{plan.plannedStartDate}</b></span><span className={tx("text-right text-cyan-300")}>{plan.phase}</span></div>
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {plan.rules?.maxDailyTrades && <span className={tx("px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[9px] font-mono")}>Daily cap</span>}
-                  {plan.rules?.noOvernight && <span className={tx("px-2 py-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9px] font-mono")}>No overnight</span>}
-                  {plan.rules?.newsRestriction && <span className={tx("px-2 py-1 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/20 text-[9px] font-mono")}>News rule</span>}
-                  <span className={tx("px-2 py-1 rounded-md bg-slate-800 text-slate-400 text-[9px] font-mono")}>DL {plan.dailyLossLimit}% · DD {plan.maxDrawdown}%</span>
+                <h4 className={tx("font-extrabold text-white text-sm font-mono tracking-tight truncate")}>{plan.firmName}</h4>
+                <div className="flex items-center justify-between mt-1.5 text-[10px] font-mono">
+                  <span className={tx("text-cyan-400 font-bold")}>{plan.phase || "Phase 1"}</span>
+                  <span className="text-slate-500">Target {plan.profitTarget || 8}%</span>
+                </div>
+                <div className={tx("mt-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800")}>
+                  <div className="text-[10px] text-slate-500 font-mono uppercase">Challenge Size</div>
+                  <div className={tx("text-lg font-black text-white font-mono mt-0.5")}>${Number(plan.challengeSize || 0).toLocaleString()}</div>
+                  {planHref && <a href={planHref} target="_blank" rel="noreferrer" className={tx("text-[11px] text-cyan-400 hover:text-cyan-300 font-mono mt-0.5 inline-flex items-center gap-1 truncate max-w-full")}>{planHost} <ExternalLink size={10} /></a>}
+                </div>
+                <div className="mt-2.5 grid grid-cols-3 gap-1.5 font-mono text-center">
+                  <div className={tx("rounded-lg bg-slate-900/60 border border-slate-800 py-1.5 px-1")}><div className="text-[9px] uppercase text-slate-500 font-bold">Daily Loss</div><div className={tx("text-xs font-black text-white mt-0.5")}>{plan.dailyLossLimit}%</div></div>
+                  <div className={tx("rounded-lg bg-slate-900/60 border border-slate-800 py-1.5 px-1")}><div className="text-[9px] uppercase text-slate-500 font-bold">Max DD</div><div className={tx("text-xs font-black text-white mt-0.5")}>{plan.maxDrawdown}%</div></div>
+                  <div className={tx("rounded-lg bg-slate-900/60 border border-slate-800 py-1.5 px-1")}><div className="text-[9px] uppercase text-slate-500 font-bold">Target</div><div className={tx("text-xs font-black text-white mt-0.5")}>{plan.profitTarget}%</div></div>
+                </div>
+                {rulesOn.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {plan.rules?.maxDailyTrades && <span className={tx("px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[9px] font-mono")}>Daily cap</span>}
+                    {plan.rules?.noOvernight && <span className={tx("px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9px] font-mono")}>No overnight</span>}
+                    {plan.rules?.newsRestriction && <span className={tx("px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/20 text-[9px] font-mono")}>News rule</span>}
+                  </div>
+                )}
+                <div className={tx("mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between font-mono text-[11px]")}>
+                  <span className={tx("text-slate-400")}>{startIn}</span>
+                  <span className={tx("text-slate-400 font-bold")}>{plan.plannedStartDate || ""}</span>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
-        )}
+        ))}
       </div>
 
       {showAccModal && (
@@ -5737,6 +5794,14 @@ function Accounts() {
               <input type="number" placeholder="Challenge size ($)" value={planningForm.challengeSize} onChange={(e) => setPlanningForm({ ...planningForm, challengeSize: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")} />
               <input type="date" value={planningForm.plannedStartDate} onChange={(e) => setPlanningForm({ ...planningForm, plannedStartDate: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")} />
               <select value={planningForm.phase} onChange={(e) => setPlanningForm({ ...planningForm, phase: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")}><option>Phase 1</option><option>Phase 2</option><option>Funded</option></select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <input placeholder="Prop firm website (e.g. https://ftmo.com)" value={planningForm.website || ""} onChange={(e) => setPlanningForm({ ...planningForm, website: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")} />
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold mb-1">Prop firm logo</label>
+                <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setPlanningForm({ ...planningForm, logo: reader.result }); reader.readAsDataURL(file); }} className={tx("block w-full text-[10px] text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-cyan-500/15 file:text-cyan-300 file:font-mono")} />
+                {planningForm.logo && <img src={planningForm.logo} alt="Firm logo preview" className="w-10 h-10 rounded-xl object-cover border border-cyan-500/30 mt-2" />}
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-2 mb-4"><input type="number" step="0.1" placeholder="Daily loss %" value={planningForm.dailyLossLimit} onChange={(e) => setPlanningForm({ ...planningForm, dailyLossLimit: e.target.value })} className={tx("bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono")} /><input type="number" step="0.1" placeholder="Max DD %" value={planningForm.maxDrawdown} onChange={(e) => setPlanningForm({ ...planningForm, maxDrawdown: e.target.value })} className={tx("bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono")} /><input type="number" step="0.1" placeholder="Target %" value={planningForm.profitTarget} onChange={(e) => setPlanningForm({ ...planningForm, profitTarget: e.target.value })} className={tx("bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono")} /></div>
             <div className={tx("rounded-2xl bg-slate-900/40 border border-slate-800 p-3.5 mb-4")}><div className={tx("text-[10px] uppercase tracking-wider text-cyan-400 font-bold font-mono mb-2")}>Rules checklist</div><div className={tx("grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-slate-300 font-mono")}><label className="flex items-center gap-2"><input type="checkbox" checked={planningForm.rules?.maxDailyTrades} onChange={(e) => setPlanningForm({ ...planningForm, rules: { ...(planningForm.rules || {}), maxDailyTrades: e.target.checked } })} /> Daily trade cap</label><label className="flex items-center gap-2"><input type="checkbox" checked={planningForm.rules?.noOvernight} onChange={(e) => setPlanningForm({ ...planningForm, rules: { ...(planningForm.rules || {}), noOvernight: e.target.checked } })} /> No overnight</label><label className="flex items-center gap-2"><input type="checkbox" checked={planningForm.rules?.newsRestriction} onChange={(e) => setPlanningForm({ ...planningForm, rules: { ...(planningForm.rules || {}), newsRestriction: e.target.checked } })} /> News restriction</label></div></div>
@@ -7107,5 +7172,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3a33d2fdf20f285',t:'MTc4OTI2MTQ3OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3a3536e5f448c19',t:'MTc4OTI2MjM4OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
