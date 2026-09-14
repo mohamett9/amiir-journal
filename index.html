@@ -439,9 +439,9 @@ const DICT = {
         filterDateRange: "Date Range",
         clearFilters: "Clear Filters",
         sessionAll: "All Sessions",
-        sessionAsian: "🇯🇵 Asian",
-        sessionLondon: "🇬🇧 London",
-        sessionNY: "🇺🇸 New York",
+        sessionAsian: "Asian",
+        sessionLondon: "London",
+        sessionNY: "New York",
         outcomeWin: "Win",
         outcomeLoss: "Loss",
         outcomeBE: "BE",
@@ -541,9 +541,9 @@ const DICT = {
         filterDateRange: "Taariikhda",
         clearFilters: "Nadiif Shaandhayn",
         sessionAll: "Dhammaan Session-yada",
-        sessionAsian: "🇯🇵 Asian",
-        sessionLondon: "🇬🇧 London",
-        sessionNY: "🇺🇸 New York",
+        sessionAsian: "Asian",
+        sessionLondon: "London",
+        sessionNY: "New York",
         outcomeWin: "Guul",
         outcomeLoss: "Khasaar",
         outcomeBE: "BE",
@@ -594,14 +594,16 @@ const DICT = {
        ══════════════════════════════════════════════════════════════════════ */
 
 const SESSIONS = [
-      { id: "asian", label: "Asian", flag: "🇯🇵", time: "8PM–9PM", liveHours: [20, 21] },
-      { id: "london", label: "London", flag: "🇬🇧", time: "2AM–3AM", liveHours: [2, 3] },
-      { id: "newyork", label: "New York", flag: "🇺🇸", time: "8AM–9AM", liveHours: [8, 9] },
+      { id: "asian", label: "Asian", time: "8PM–9PM", liveHours: [20, 21] },
+      { id: "london", label: "London", time: "2AM–3AM", liveHours: [2, 3] },
+      { id: "newyork", label: "New York", time: "8AM–9AM", liveHours: [8, 9] },
+      { id: "others", label: "Others", time: "6AM–10AM", liveHours: [6, 7, 8, 9, 10] },
     ];
 const PURGE_TIMES = {
       asian: ["8pm", "9pm"],
       london: ["2am", "3am"],
       newyork: ["8am", "9am"],
+      others: ["6am", "10am"],
     };
 const DEFAULT_CHECKLIST = [
       "IRL TO ERL",
@@ -632,9 +634,6 @@ const EMPTY_FORM = {
       sessionId: "",
       tags: [],
       mistakes: [],
-      entryPrice: "",
-      stopLoss: "",
-      takeProfit: "",
       entryTime: "",
       exitTime: "",
       duration: ""
@@ -1222,6 +1221,8 @@ function AppProvider({ children }) {
 
       // Checklist Customization
       const [checklistItems, setChecklistItems] = useState(DEFAULT_CHECKLIST);
+      const [tagItems, setTagItems] = useState(BT_TAG_SUGGESTIONS);
+      const [mistakeItems, setMistakeItems] = useState(BT_MISTAKE_SUGGESTIONS);
       const [showChecklistEditor, setShowChecklistEditor] = useState(false);
       const [newChecklistInput, setNewChecklistInput] = useState("");
 
@@ -1490,6 +1491,17 @@ function AppProvider({ children }) {
         return () => unsub();
       }, [user]);
 
+      // Custom tag/mistake suggestion listeners (E2E-safe: skipped without real auth)
+      useEffect(() => {
+        if (typeof db === "undefined" || !db || !user || !user.uid || user.isAnonymous) return;
+        const unsubs = [["trade_tags", setTagItems], ["trade_mistakes", setMistakeItems]].map(([key, setter]) =>
+          onSnapshot(doc(db, "users", user.uid, "settings", key), (snap) => {
+            if (snap.exists() && Array.isArray(snap.data().items)) setter(snap.data().items);
+          })
+        );
+        return () => unsubs.forEach((u) => u());
+      }, [user]);
+
       // Accounts Listener
       useEffect(() => {
         if (!user) return;
@@ -1637,6 +1649,49 @@ function AppProvider({ children }) {
         }
       };
 
+      const persistCustomList = async (key, items) => {
+        if (typeof db === "undefined" || !db || !user || !user.uid || user.isAnonymous) return;
+        try { await setDoc(doc(db, "users", user.uid, "settings", key), { items }); } catch (e) {}
+      };
+      const addCustomTag = async (raw) => {
+        const v = String(raw || "").trim();
+        if (!v || tagItems.includes(v)) return;
+        const updated = [...tagItems, v];
+        setTagItems(updated);
+        await persistCustomList("trade_tags", updated);
+      };
+      const removeCustomTag = async (item) => {
+        const updated = tagItems.filter((x) => x !== item);
+        setTagItems(updated);
+        await persistCustomList("trade_tags", updated);
+      };
+      const renameCustomTag = async (oldV, raw) => {
+        const v = String(raw || "").trim();
+        if (!v || v === oldV || tagItems.includes(v)) return;
+        const updated = tagItems.map((x) => (x === oldV ? v : x));
+        setTagItems(updated);
+        await persistCustomList("trade_tags", updated);
+      };
+      const addCustomMistake = async (raw) => {
+        const v = String(raw || "").trim();
+        if (!v || mistakeItems.includes(v)) return;
+        const updated = [...mistakeItems, v];
+        setMistakeItems(updated);
+        await persistCustomList("trade_mistakes", updated);
+      };
+      const removeCustomMistake = async (item) => {
+        const updated = mistakeItems.filter((x) => x !== item);
+        setMistakeItems(updated);
+        await persistCustomList("trade_mistakes", updated);
+      };
+      const renameCustomMistake = async (oldV, raw) => {
+        const v = String(raw || "").trim();
+        if (!v || v === oldV || mistakeItems.includes(v)) return;
+        const updated = mistakeItems.map((x) => (x === oldV ? v : x));
+        setMistakeItems(updated);
+        await persistCustomList("trade_mistakes", updated);
+      };
+
       const saveTrade = async () => {
         if (!form.symbol || !form.date) {
           setError("Symbol and Date required.");
@@ -1663,9 +1718,6 @@ function AppProvider({ children }) {
           sessionId: form.sessionId || null,
           tags: btCsv(form.tags),
           mistakes: btCsv(form.mistakes),
-          entryPrice: btNum(form.entryPrice),
-          stopLoss: btNum(form.stopLoss),
-          takeProfit: btNum(form.takeProfit),
           entryTime: form.entryTime || "",
           exitTime: form.exitTime || "",
           duration: form.duration || ""
@@ -1730,9 +1782,6 @@ function AppProvider({ children }) {
           sessionId: tr.sessionId || "",
           tags: tr.tags || [],
           mistakes: tr.mistakes || [],
-          entryPrice: tr.entryPrice != null ? String(tr.entryPrice) : "",
-          stopLoss: tr.stopLoss != null ? String(tr.stopLoss) : "",
-          takeProfit: tr.takeProfit != null ? String(tr.takeProfit) : "",
           entryTime: tr.entryTime || "",
           exitTime: tr.exitTime || "",
           duration: tr.duration || ""
@@ -2224,6 +2273,8 @@ function AppProvider({ children }) {
     commentInputs, setCommentInputs,
     // checklist
     checklistItems, showChecklistEditor, setShowChecklistEditor,
+    tagItems, mistakeItems, addCustomTag, removeCustomTag, renameCustomTag,
+    addCustomMistake, removeCustomMistake, renameCustomMistake,
     newChecklistInput, setNewChecklistInput,
     // navigation & form
     tab, setTab, showForm, setShowForm, editingId, setEditingId,
@@ -2291,8 +2342,12 @@ function AppProvider({ children }) {
        6a. COMPONENT — TradeForm (new/edit trade + checklist editor)
        ══════════════════════════════════════════════════════════════════════ */
 
-function ChipSelector({ label, values, onChange, suggestions, tone, inputPlaceholder, chipsLabel }) {
+function ChipSelector({ label, values, onChange, suggestions, tone, inputPlaceholder, chipsLabel, customKind, onAddCustom, onRemoveCustom, onRenameCustom }) {
   const [draft, setDraft] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [newItem, setNewItem] = useState("");
+  const [renaming, setRenaming] = useState(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const list = Array.isArray(values) ? values : [];
   const commit = (raw) => {
     const v = String(raw || "").replace(/,+/g, " ").trim();
@@ -2300,16 +2355,26 @@ function ChipSelector({ label, values, onChange, suggestions, tone, inputPlaceho
     onChange([...list, v]);
     setDraft("");
   };
-  const chipCls = tone === "amber"
+  const amber = tone === "amber";
+  const chipCls = amber
     ? "bg-amber-500/10 border-amber-500/25 text-amber-300"
     : "bg-cyan-500/10 border-cyan-500/25 text-cyan-300";
-  const suggCls = tone === "amber"
+  const suggCls = amber
     ? "bg-amber-500/10 border-amber-500/25 text-amber-300 hover:bg-amber-500/20"
     : "bg-cyan-500/10 border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/20";
-  const focusCls = tone === "amber" ? "focus:border-amber-400" : "focus:border-cyan-400";
+  const focusCls = amber ? "focus:border-amber-400" : "focus:border-cyan-400";
+  const manage = !!customKind && !!onAddCustom;
+  const saveRename = () => { if (renaming) onRenameCustom(renaming, renameDraft); setRenaming(null); setRenameDraft(""); };
   return (
     <div>
-      <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>{label}</label>
+      <div className="flex items-center justify-between mb-1">
+        <label className={tx("text-[10px] uppercase font-mono text-slate-400 block font-semibold")}>{label}</label>
+        {manage && (
+          <button type="button" onClick={() => setEditing((v) => !v)} title={`Manage ${customKind}s`} aria-label={`Manage ${customKind}s`} className={tx(amber ? "text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-mono cursor-pointer small-caps font-bold" : "text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono cursor-pointer small-caps font-bold")}>
+            <Settings size={11} /> Manage
+          </button>
+        )}
+      </div>
       {list.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2" role="group" aria-label={chipsLabel}>
           {list.map((t) => (
@@ -2330,12 +2395,36 @@ function ChipSelector({ label, values, onChange, suggestions, tone, inputPlaceho
           ))}
         </div>
       )}
+      {manage && editing && (
+        <div className={tx(amber ? "p-3 mt-2 rounded-xl bg-[#050914] border border-amber-500/30 space-y-2" : "p-3 mt-2 rounded-xl bg-[#050914] border border-cyan-500/30 space-y-2")}>
+          <div className="flex gap-2">
+            <input value={newItem} onChange={(e) => setNewItem(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onAddCustom(newItem); setNewItem(""); } }} placeholder={`Add custom ${customKind}...`} aria-label={`New custom ${customKind}`} className={tx(`flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono ${focusCls}`)} />
+            <button type="button" onClick={() => { onAddCustom(newItem); setNewItem(""); }} aria-label={`Add custom ${customKind}`} className={amber ? "px-3.5 py-1.5 bg-amber-500 text-slate-950 rounded-lg text-xs font-bold cursor-pointer font-mono hover:bg-amber-400" : "px-3.5 py-1.5 bg-cyan-500 text-slate-950 rounded-lg text-xs font-bold cursor-pointer font-mono hover:bg-cyan-400"}>
+              Add
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(suggestions || []).map((item) => renaming === item ? (
+              <span key={item} className={tx("inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700")}>
+                <input autoFocus value={renameDraft} onChange={(e) => setRenameDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveRename(); } }} aria-label={`Rename ${item}`} className={tx("w-24 bg-slate-900 border border-slate-600 rounded px-1.5 py-0.5 text-[10px] text-white font-mono focus:outline-none")} />
+                <button type="button" onClick={saveRename} aria-label={`Save rename ${item}`} className={tx("text-emerald-400 hover:text-emerald-300 font-bold text-xs px-0.5")}>✓</button>
+                <button type="button" onClick={() => setRenaming(null)} aria-label={`Cancel rename ${item}`} className={tx("text-slate-400 hover:text-slate-200 font-bold text-xs px-0.5")}>×</button>
+              </span>
+            ) : (
+              <span key={item} className={tx("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-mono")}>
+                {item}
+                <button type="button" onClick={() => { setRenaming(item); setRenameDraft(item); }} title={`Rename ${item}`} aria-label={`Rename ${item}`} className={tx("text-slate-400 hover:text-white font-bold ml-1")}><Edit3 size={10} /></button>
+                <button type="button" onClick={() => onRemoveCustom(item)} title={`Delete ${item}`} aria-label={`Delete ${item}`} className={tx("text-rose-400 hover:text-rose-300 font-bold")}>×</button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
 function TradeForm() {
-  const { t, editingId, error, form, setForm, accounts, backtestSessions, backtestTrades, setShowForm, setEditingId, saveTrade, checklistItems, showChecklistEditor, setShowChecklistEditor, newChecklistInput, setNewChecklistInput, addCustomChecklistItem, removeCustomChecklistItem, toggleChecklistItem, handleMultipleImages } = useApp();
+  const { t, editingId, error, form, setForm, accounts, backtestSessions, backtestTrades, setShowForm, setEditingId, saveTrade, checklistItems, showChecklistEditor, setShowChecklistEditor, newChecklistInput, setNewChecklistInput, addCustomChecklistItem, removeCustomChecklistItem, toggleChecklistItem, handleMultipleImages, tagItems, mistakeItems, addCustomTag, removeCustomTag, renameCustomTag, addCustomMistake, removeCustomMistake, renameCustomMistake } = useApp();
   const btKnownStrategies = useMemo(() => [...new Set((backtestTrades || []).map((x) => (x.strategy || "").trim()).filter(Boolean))].sort(), [backtestTrades]);
   return (
     <div className="terminal-card p-5 sm:p-7 rounded-3xl mb-8 border border-sky-500/40 shadow-2xl animate-in fade-in duration-200">
@@ -2372,7 +2461,7 @@ function TradeForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             <div>
               <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>Trade Category</label>
-              <select value={form.tradeType || "live"} onChange={(e) => setForm({ ...form, tradeType: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400 cursor-pointer font-mono")}>
+              <select aria-label="Trade category" value={form.tradeType || "live"} onChange={(e) => setForm({ ...form, tradeType: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400 cursor-pointer font-mono")}>
                 <option value="live">Live Trade</option><option value="backtest">Backtest</option>
               </select>
             </div>
@@ -2425,9 +2514,11 @@ function TradeForm() {
               </div>
             </div>
 
+            {(!form.tradeType || form.tradeType === "live") && (
             <div>
               <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>{t.accountLabel}</label>
               <select
+                aria-label="Trade account"
                 value={form.accountName}
                 onChange={(e) => setForm({ ...form, accountName: e.target.value })}
                 className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400 cursor-pointer font-mono")}
@@ -2438,6 +2529,7 @@ function TradeForm() {
                 ))}
               </select>
             </div>
+            )}
           </div>
         </div>
 
@@ -2450,7 +2542,7 @@ function TradeForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-3.5">
             <div>
               <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>{t.session}</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-2">
                 {SESSIONS.map((s) => (
                   <button
                     key={s.id}
@@ -2462,7 +2554,6 @@ function TradeForm() {
                         : "border-slate-800 bg-[#050914] text-slate-400 hover:border-slate-700"
                     }`)}
                   >
-                    <span>{s.flag}</span>
                     <span>{s.label}</span>
                   </button>
                 ))}
@@ -2590,25 +2681,13 @@ function TradeForm() {
                 <input value={form.setup || ""} onChange={(e) => setForm({ ...form, setup: e.target.value })} placeholder="e.g. MSS + FVG entry" className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono")} />
               </div>
               <div>
-                <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>Entry Price</label>
-                <input type="number" step="any" value={form.entryPrice || ""} onChange={(e) => setForm({ ...form, entryPrice: e.target.value })} placeholder="Optional" className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono")} />
-              </div>
-              <div>
-                <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>Stop Loss</label>
-                <input type="number" step="any" value={form.stopLoss || ""} onChange={(e) => setForm({ ...form, stopLoss: e.target.value })} placeholder="Optional" className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono")} />
-              </div>
-              <div>
-                <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>Take Profit</label>
-                <input type="number" step="any" value={form.takeProfit || ""} onChange={(e) => setForm({ ...form, takeProfit: e.target.value })} placeholder="Optional" className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono")} />
-              </div>
-              <div>
                 <label htmlFor="trade-duration" className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>Duration</label>
                 <input id="trade-duration" value={form.duration || ""} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="e.g. 45 mins, 2h" className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono")} />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
-              <ChipSelector label="Tags" values={form.tags} onChange={(v) => setForm({ ...form, tags: v })} suggestions={BT_TAG_SUGGESTIONS} tone="cyan" inputPlaceholder="Type + Enter to add" chipsLabel="Trade tags" />
-              <ChipSelector label="Mistakes" values={form.mistakes} onChange={(v) => setForm({ ...form, mistakes: v })} suggestions={BT_MISTAKE_SUGGESTIONS} tone="amber" inputPlaceholder="Type + Enter to add" chipsLabel="Trade mistakes" />
+              <ChipSelector label="Tags" values={form.tags} onChange={(v) => setForm({ ...form, tags: v })} suggestions={tagItems} tone="cyan" inputPlaceholder="Type + Enter to add" chipsLabel="Trade tags" customKind="tag" onAddCustom={addCustomTag} onRemoveCustom={removeCustomTag} onRenameCustom={renameCustomTag} />
+              <ChipSelector label="Mistakes" values={form.mistakes} onChange={(v) => setForm({ ...form, mistakes: v })} suggestions={mistakeItems} tone="amber" inputPlaceholder="Type + Enter to add" chipsLabel="Trade mistakes" customKind="mistake" onAddCustom={addCustomMistake} onRemoveCustom={removeCustomMistake} onRenameCustom={renameCustomMistake} />
             </div>
           </div>
         )}
@@ -2865,10 +2944,10 @@ function Journal() {
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {[
-                          { id: "all", label: "All" },
-                          { id: "asian", label: "🇯🇵" },
-                          { id: "london", label: "🇬🇧" },
-                          { id: "newyork", label: "🇺🇸" }
+                          { id: "all", label: "" },
+                          { id: "asian", label: "" },
+                          { id: "london", label: "" },
+                          { id: "newyork", label: "" }
                         ].map((s) => {
                           const isActive = filterSession === s.id;
                           const fullLabel = {
@@ -2889,7 +2968,7 @@ function Journal() {
                                   : "bg-[#050914] border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300"
                               }`)}
                             >
-                              <span className="mr-1">{s.label}</span>
+                              {s.label ? <span className="mr-1">{s.label}</span> : null}
                               <span className="opacity-90">{fullLabel}</span>
                             </button>
                           );
@@ -3203,7 +3282,7 @@ function Journal() {
                       </span>
 
                       <span className={tx("text-xs text-slate-400 font-mono")}>
-                        {tr.date} · {sessionInfo?.flag} {tr.purgeTime}
+                        {tr.date} · {tr.purgeTime}
                       </span>
                     </div>
                   </div>
@@ -4143,7 +4222,7 @@ function BTTradeModal({ tr, num, onClose, onOpenSession, isFav, onToggleFav }) {
                   <span className={tx(`text-[10px] uppercase px-2 py-0.5 rounded-md font-extrabold border ${tr.direction === "buy" ? "bg-sky-500/15 text-sky-300 border-sky-400/30" : "bg-rose-500/15 text-rose-300 border-rose-400/30"}`)}>{tr.direction}</span>
                   <span className="text-[11px] text-slate-500 font-bold tnum">Trade {num || ""}</span>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">{btFmtDayLong(String(tr.date || "").slice(0, 10))}{sessionInfo ? ` · ${sessionInfo.flag} ${sessionInfo.label}` : ""}{tr.purgeTime ? ` · ${tr.purgeTime}` : ""}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{btFmtDayLong(String(tr.date || "").slice(0, 10))}{sessionInfo ? ` · ${sessionInfo.label}` : ""}{tr.purgeTime ? ` · ${tr.purgeTime}` : ""}</div>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -4298,7 +4377,7 @@ function BTTradesTable({ list, onOpen, onZoom, onLog, emptyTitle, emptySub, aria
                   </td>
                   <td className="px-3 py-2.5"><span className={tx("text-xs font-extrabold text-white tracking-tight whitespace-nowrap")}>{tr.symbol || "—"}</span></td>
                   <td className="px-3 py-2.5"><span className={tx(`text-[10px] uppercase px-1.5 py-px rounded font-extrabold border whitespace-nowrap ${tr.direction === "sell" ? "bg-rose-500/15 text-rose-300 border-rose-400/30" : "bg-sky-500/15 text-sky-300 border-sky-400/30"}`)}>{tr.direction === "sell" ? "Sell" : "Buy"}</span></td>
-                  <td className="px-3 py-2.5 whitespace-nowrap"><span className="text-[11px] text-slate-400 font-semibold">{sInfo ? `${sInfo.flag} ${sInfo.label}` : "—"}{tr.purgeTime ? <span className={tx("text-cyan-300/90 font-mono")}> · {tr.purgeTime}</span> : null}</span></td>
+                  <td className="px-3 py-2.5 whitespace-nowrap"><span className="text-[11px] text-slate-400 font-semibold">{sInfo ? sInfo.label : "—"}{tr.purgeTime ? <span className={tx("text-cyan-300/90 font-mono")}> · {tr.purgeTime}</span> : null}</span></td>
                   <td className="px-3 py-2.5"><span className={tx(`text-[10px] px-1.5 py-px rounded font-extrabold border ${badge.cls}`)}>{badge.label}</span></td>
                   <td className="px-3 py-2.5"><span className="text-xs text-slate-300 font-bold font-mono whitespace-nowrap">1:{tr.rrRatio ?? "—"}</span></td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
@@ -5287,7 +5366,7 @@ function BacktestRoom() {
   const labSortCount = (a, b) => (b.n - a.n) || (b.r / b.n - a.r / a.n) || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0);
   const labSessionLabel = (id) => {
     const f = (SESSIONS || []).find((x) => x.id === id);
-    return f ? `${f.flag} ${f.label}` : (id || "No session");
+    return f ? f.label : (id || "No session");
   };
   const renderResearchTab = () => {
     const setups = labGroup(filtered, (t) => {
@@ -5982,7 +6061,6 @@ function Dashboard() {
                       >
                         <div className="flex items-center justify-between">
                           <div className={tx("text-[11px] sm:text-xs font-bold text-white flex items-center gap-1.5")}>
-                            <span className="text-[13px]">{s.flag}</span>
                             <span>{s.label}</span>
                             <span className="text-[9px] text-slate-500 font-normal">· {s.time}</span>
                           </div>
@@ -8039,5 +8117,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3ad154ee900e6b4',t:'MTc4OTM2NDcwMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3ad90d85e0bd981',t:'MTc4OTM2OTc2Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
