@@ -15,7 +15,7 @@
   <!-- Typography: Inter (UI + tabular numbers) & Sora (display) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -319,6 +319,10 @@
 <body class="selection:bg-sky-500/30 selection:text-sky-200">
   <div id="root"></div>
 
+  <script>
+/* qrcode-generator 1.4.4 (MIT, davidshimjs) — inlined for offline QR */
+var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(l=4*u+17),e(0,0),e(l-7,0),e(0,l-7),i(),o(),v(t,r),7<=u&&h(t),null==n&&(n=w(u,f,c)),d(n,r)}var u=t,f=y[r],g=null,l=0,n=null,c=[],s={},e=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||l<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||l<=r+n||(g[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},o=function(){for(var t=8;t<l-8;t+=1)null==g[t][6]&&(g[t][6]=t%2==0);for(var r=8;r<l-8;r+=1)null==g[6][r]&&(g[6][r]=r%2==0)},i=function(){for(var t=B.getPatternPosition(u),r=0;r<t.length;r+=1)for(var e=0;e<t.length;e+=1){var n=t[r],o=t[e];if(null==g[n][o])for(var i=-2;i<=2;i+=1)for(var a=-2;a<=2;a+=1)g[n+i][o+a]=-2==i||2==i||-2==a||2==a||0==i&&0==a}},h=function(t){for(var r=B.getBCHTypeNumber(u),e=0;e<18;e+=1){var n=!t&&1==(r>>e&1);g[Math.floor(e/3)][e%3+l-8-3]=n}for(e=0;e<18;e+=1){n=!t&&1==(r>>e&1);g[e%3+l-8-3][Math.floor(e/3)]=n}},v=function(t,r){for(var e=f<<3|r,n=B.getBCHTypeInfo(e),o=0;o<15;o+=1){var i=!t&&1==(n>>o&1);o<6?g[o][8]=i:o<8?g[o+1][8]=i:g[l-15+o][8]=i}for(o=0;o<15;o+=1){i=!t&&1==(n>>o&1);o<8?g[8][l-o-1]=i:o<9?g[8][15-o-1+1]=i:g[8][15-o-1]=i}g[l-8][8]=!t},d=function(t,r){for(var e=-1,n=l-1,o=7,i=0,a=B.getMaskFunction(r),u=l-1;0<u;u-=2)for(6==u&&(u-=1);;){for(var f=0;f<2;f+=1)if(null==g[n][u-f]){var c=!1;i<t.length&&(c=1==(t[i]>>>o&1)),a(n,u-f)&&(c=!c),g[n][u-f]=c,-1==(o-=1)&&(i+=1,o=7)}if((n+=e)<0||l<=n){n-=e,e=-e;break}}},w=function(t,r,e){for(var n=b.getRSBlocks(t,r),o=M(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=C(i[u],l.getLength()-1).mod(l);a[u]=new Array(l.getLength()-1);for(g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=0<=s?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};s.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=x(t);break;case"Alphanumeric":e=m(t);break;case"Byte":e=L(t);break;case"Kanji":e=D(t);break;default:throw"mode:"+r}c.push(e),n=null},s.isDark=function(t,r){if(t<0||l<=t||r<0||l<=r)throw t+","+r;return g[t][r]},s.getModuleCount=function(){return l},s.make=function(){if(u<1){for(var t=1;t<40;t++){for(var r=b.getRSBlocks(t,f),e=M(),n=0;n<c.length;n++){var o=c[n];e.put(o.getMode(),4),e.put(o.getLength(),B.getLengthInBits(o.getMode(),t)),o.write(e)}var i=0;for(n=0;n<r.length;n++)i+=r[n].dataCount;if(e.getLengthInBits()<=8*i)break}u=t}a(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){a(!0,e);var n=B.getLostPoint(s);(0==e||n<t)&&(t=n,r=e)}return r}())},s.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<s.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<s.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=s.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},s.createSvgTag=function(t,r,e,n){var o={};"object"==typeof t&&(t=(o=t).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,f,c=s.getModuleCount()*t+2*r,g="";for(f="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",g+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',g+=o.scalable?"":' width="'+c+'px" height="'+c+'px"',g+=' viewBox="0 0 '+c+" "+c+'" ',g+=' preserveAspectRatio="xMinYMin meet"',g+=n.text||e.text?' role="img" aria-labelledby="'+p([n.id,e.id].join(" ").trim())+'"':"",g+=">",g+=n.text?'<title id="'+p(n.id)+'">'+p(n.text)+"</title>":"",g+=e.text?'<description id="'+p(e.id)+'">'+p(e.text)+"</description>":"",g+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',g+='<path d="',a=0;a<s.getModuleCount();a+=1)for(u=a*t+r,i=0;i<s.getModuleCount();i+=1)s.isDark(a,i)&&(g+="M"+(i*t+r)+","+u+f);return g+='" stroke="transparent" fill="black"/>',g+="</svg>"},s.createDataURL=function(o,t){o=o||2,t=void 0===t?4*o:t;var r=s.getModuleCount()*o+2*t,i=t,a=r-t;return I(r,r,function(t,r){if(i<=t&&t<a&&i<=r&&r<a){var e=Math.floor((t-i)/o),n=Math.floor((r-i)/o);return s.isDark(n,e)?0:1}return 1})},s.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=s.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=s.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=p(e),o+='"'),o+="/>"};var p=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return s.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*s.getModuleCount()+2*t,u=t,f=a-t,c={"██":"█","█ ":"▀"," █":"▄","  ":" "},g={"██":"▀","█ ":"▀"," █":" ","  ":" "},l="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<f&&u<=r&&r<f&&s.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<f&&u<=r+1&&r+1<f&&s.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",l+=t<1&&f<=r+1?g[i]:c[i];l+="\n"}return a%2&&0<t?l.substring(0,l.length-a-1)+Array(1+a).join("▀"):l.substring(0,l.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=s.getModuleCount()*t+2*r,u=r,f=a-r,c=Array(t+1).join("██"),g=Array(t+1).join("  "),l="",h="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),h="",n=0;n<a;n+=1)i=1,u<=n&&n<f&&u<=e&&e<f&&s.isDark(o,Math.floor((n-u)/t))&&(i=0),h+=i?c:g;for(o=0;o<t;o+=1)l+=h+"\n"}return l.substring(0,l.length-1)},s.renderTo2dContext=function(t,r){r=r||2;for(var e=s.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=s.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},s}i.stringToBytes=(i.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,i.createStringToBytes=function(u,f){var i=function(){function t(){var t=r.read();if(-1==t)throw"eof";return t}for(var r=S(u),e=0,n={};;){var o=r.read();if(-1==o)break;var i=t(),a=t()<<8|t();n[String.fromCharCode(o<<8|i)]=a,e+=1}if(e!=f)throw e+" != "+f;return n}(),a="?".charCodeAt(0);return function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);if(n<128)r.push(n);else{var o=i[t.charAt(e)];"number"==typeof o?(255&o)==o?r.push(o):(r.push(o>>>8),r.push(255&o)):r.push(a)}}return r}};var r,t,a=1,u=2,o=4,f=8,y={L:1,M:0,Q:3,H:2},e=0,n=1,c=2,g=3,l=4,h=5,s=6,v=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],(t={}).getBCHTypeInfo=function(t){for(var r=t<<10;0<=d(r)-d(1335);)r^=1335<<d(r)-d(1335);return 21522^(t<<10|r)},t.getBCHTypeNumber=function(t){for(var r=t<<12;0<=d(r)-d(7973);)r^=7973<<d(r)-d(7973);return t<<12|r},t.getPatternPosition=function(t){return r[t-1]},t.getMaskFunction=function(t){switch(t){case e:return function(t,r){return(t+r)%2==0};case n:return function(t,r){return t%2==0};case c:return function(t,r){return r%3==0};case g:return function(t,r){return(t+r)%3==0};case l:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case h:return function(t,r){return t*r%2+t*r%3==0};case s:return function(t,r){return(t*r%2+t*r%3)%2==0};case v:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},t.getErrorCorrectPolynomial=function(t){for(var r=C([1],0),e=0;e<t;e+=1)r=r.multiply(C([1,w.gexp(e)],0));return r},t.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case o:case f:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case o:return 16;case f:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case o:return 16;case f:return 12;default:throw"mode:"+t}}},t.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);5<i&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},t);function d(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r}var w=function(){for(var r=new Array(256),e=new Array(256),t=0;t<8;t+=1)r[t]=1<<t;for(t=8;t<256;t+=1)r[t]=r[t-4]^r[t-5]^r[t-6]^r[t-8];for(t=0;t<255;t+=1)e[r[t]]=t;var n={glog:function(t){if(t<1)throw"glog("+t+")";return e[t]},gexp:function(t){for(;t<0;)t+=255;for(;256<=t;)t-=255;return r[t]}};return n}();function C(n,o){if(void 0===n.length)throw n.length+"/"+o;var r=function(){for(var t=0;t<n.length&&0==n[t];)t+=1;for(var r=new Array(n.length-t+o),e=0;e<n.length-t;e+=1)r[e]=n[e+t];return r}(),i={getAt:function(t){return r[t]},getLength:function(){return r.length},multiply:function(t){for(var r=new Array(i.getLength()+t.getLength()-1),e=0;e<i.getLength();e+=1)for(var n=0;n<t.getLength();n+=1)r[e+n]^=w.gexp(w.glog(i.getAt(e))+w.glog(t.getAt(n)));return C(r,0)},mod:function(t){if(i.getLength()-t.getLength()<0)return i;for(var r=w.glog(i.getAt(0))-w.glog(t.getAt(0)),e=new Array(i.getLength()),n=0;n<i.getLength();n+=1)e[n]=i.getAt(n);for(n=0;n<t.getLength();n+=1)e[n]^=w.gexp(w.glog(t.getAt(n))+r);return C(e,0).mod(t)}};return i}function p(){var e=[],o={writeByte:function(t){e.push(255&t)},writeShort:function(t){o.writeByte(t),o.writeByte(t>>>8)},writeBytes:function(t,r,e){r=r||0,e=e||t.length;for(var n=0;n<e;n+=1)o.writeByte(t[n+r])},writeString:function(t){for(var r=0;r<t.length;r+=1)o.writeByte(t.charCodeAt(r))},toByteArray:function(){return e},toString:function(){var t="";t+="[";for(var r=0;r<e.length;r+=1)0<r&&(t+=","),t+=e[r];return t+="]"}};return o}var k,A,b=(k=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],(A={}).getRSBlocks=function(t,r){var e=function(t,r){switch(r){case y.L:return k[4*(t-1)+0];case y.M:return k[4*(t-1)+1];case y.Q:return k[4*(t-1)+2];case y.H:return k[4*(t-1)+3];default:return}}(t,r);if(void 0===e)throw"bad rs block @ typeNumber:"+t+"/errorCorrectionLevel:"+r;for(var n,o,i=e.length/3,a=[],u=0;u<i;u+=1)for(var f=e[3*u+0],c=e[3*u+1],g=e[3*u+2],l=0;l<f;l+=1)a.push((n=g,o=void 0,(o={}).totalCount=c,o.dataCount=n,o));return a},A),M=function(){var e=[],n=0,o={getBuffer:function(){return e},getAt:function(t){var r=Math.floor(t/8);return 1==(e[r]>>>7-t%8&1)},put:function(t,r){for(var e=0;e<r;e+=1)o.putBit(1==(t>>>r-e-1&1))},getLengthInBits:function(){return n},putBit:function(t){var r=Math.floor(n/8);e.length<=r&&e.push(0),t&&(e[r]|=128>>>n%8),n+=1}};return o},x=function(t){var r=a,n=t,e={getMode:function(){return r},getLength:function(t){return n.length},write:function(t){for(var r=n,e=0;e+2<r.length;)t.put(o(r.substring(e,e+3)),10),e+=3;e<r.length&&(r.length-e==1?t.put(o(r.substring(e,e+1)),4):r.length-e==2&&t.put(o(r.substring(e,e+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return e},m=function(t){var r=u,n=t,e={getMode:function(){return r},getLength:function(t){return n.length},write:function(t){for(var r=n,e=0;e+1<r.length;)t.put(45*o(r.charAt(e))+o(r.charAt(e+1)),11),e+=2;e<r.length&&t.put(o(r.charAt(e)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return e},L=function(t){var r=o,e=i.stringToBytes(t),n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=0;r<e.length;r+=1)t.put(e[r],8)}};return n},D=function(t){var r=f,e=i.stringToBytesFuncs.SJIS;if(!e)throw"sjis not supported.";!function(){var t=e("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=e(t),n={getMode:function(){return r},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return n},S=function(t){var e=t,n=0,o=0,i=0,r={read:function(){for(;i<8;){if(n>=e.length){if(0==i)return-1;throw"unexpected end of file./"+i}var t=e.charAt(n);if(n+=1,"="==t)return i=0,-1;t.match(/^\s$/)||(o=o<<6|a(t.charCodeAt(0)),i+=6)}var r=o>>>i-8&255;return i-=8,r}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return r},I=function(t,r,e){for(var n=function(t,r){var n=t,o=r,l=new Array(t*r),e={setPixel:function(t,r,e){l[r*n+t]=e},write:function(t){t.writeString("GIF87a"),t.writeShort(n),t.writeShort(o),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(n),t.writeShort(o),t.writeByte(0);var r=i(2);t.writeByte(2);for(var e=0;255<r.length-e;)t.writeByte(255),t.writeBytes(r,e,255),e+=255;t.writeByte(r.length-e),t.writeBytes(r,e,r.length-e),t.writeByte(0),t.writeString(";")}},i=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,o=h(),i=0;i<r;i+=1)o.add(String.fromCharCode(i));o.add(String.fromCharCode(r)),o.add(String.fromCharCode(e));var a=p(),u=function(t){var e=t,n=0,o=0,r={write:function(t,r){if(t>>>r!=0)throw"length over";for(;8<=n+r;)e.writeByte(255&(t<<n|o)),r-=8-n,t>>>=8-n,n=o=0;o|=t<<n,n+=r},flush:function(){0<n&&e.writeByte(o)}};return r}(a);u.write(r,n);var f=0,c=String.fromCharCode(l[f]);for(f+=1;f<l.length;){var g=String.fromCharCode(l[f]);f+=1,o.contains(c+g)?c+=g:(u.write(o.indexOf(c),n),o.size()<4095&&(o.size()==1<<n&&(n+=1),o.add(c+g)),c=g)}return u.write(o.indexOf(c),n),u.write(e,n),u.flush(),a.toByteArray()},h=function(){var r={},e=0,n={add:function(t){if(n.contains(t))throw"dup key:"+t;r[t]=e,e+=1},size:function(){return e},indexOf:function(t){return r[t]},contains:function(t){return void 0!==r[t]}};return n};return e}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=p();n.write(a);for(var u=function(){function e(t){a+=String.fromCharCode(r(63&t))}var n=0,o=0,i=0,a="",t={},r=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return t.writeByte=function(t){for(n=n<<8|255&t,o+=8,i+=1;6<=o;)e(n>>>o-6),o-=6},t.flush=function(){if(0<o&&(e(n<<6-o),o=n=0),i%3!=0)for(var t=3-i%3,r=0;r<t;r+=1)a+="="},t.toString=function(){return a},t}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return i}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||57344<=n?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});
+</script>
   <script type="text/babel" data-type="module">
     /* ══════════════════════════════════════════════════════════════════════
        AMIIR JOURNAL — SINGLE-FILE BUNDLE  (v4.7 · standalone, no build step · research lab)
@@ -670,169 +674,290 @@ function resizeImage(dataUrl, maxWidth = 900) {
       });
     }
 
-    // High-Resolution Pro Trade Receipt Generator (Canvas)
-function downloadTradeReceipt(tr) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 840;
-      canvas.height = 480;
-      const ctx = canvas.getContext("2d");
-
-      const outcome = (tr.outcome || "win").toLowerCase();
-      const isWin = outcome === "win";
-      const isLoss = outcome === "loss";
-      const isBE = outcome === "be";
-
-      const themeColor = isWin ? "#10B981" : isBE ? "#F59E0B" : "#F43F5E";
-      const themeBg = isWin ? "rgba(16, 185, 129, 0.15)" : isBE ? "rgba(245, 158, 11, 0.15)" : "rgba(244, 63, 94, 0.15)";
-      const statusText = isWin ? "PROFITABLE EXECUTION" : isBE ? "BREAKEVEN EXECUTION" : "LOSS RECORDED";
-
-      // Background Gradient
-      const bgGrad = ctx.createLinearGradient(0, 0, 840, 480);
-      bgGrad.addColorStop(0, "#080E1C");
-      bgGrad.addColorStop(0.6, "#040711");
-      bgGrad.addColorStop(1, "#020409");
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, 840, 480);
-
-      // Outer Border with corner brackets
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.2)";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(20, 20, 800, 440);
-
-      // Accent Corner Highlights
-      ctx.strokeStyle = "#38BDF8";
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(20, 45); ctx.lineTo(20, 20); ctx.lineTo(45, 20); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(795, 20); ctx.lineTo(820, 20); ctx.lineTo(820, 45); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(20, 435); ctx.lineTo(20, 460); ctx.lineTo(45, 460); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(795, 460); ctx.lineTo(820, 460); ctx.lineTo(820, 435); ctx.stroke();
-
-      // Top Header Branding
-      ctx.fillStyle = "#38BDF8";
-      ctx.font = "bold 20px 'JetBrains Mono', monospace";
-      ctx.fillText("AMIIR JOURNAL", 48, 62);
-
-      ctx.fillStyle = "#64748B";
-      ctx.font = "bold 10px 'JetBrains Mono', monospace";
-      ctx.fillText("PRO LEDGER · VERIFIED TRADE EXECUTION", 225, 60);
-
-      // Outcome Pill Badge
-      ctx.fillStyle = themeBg;
-      ctx.strokeStyle = themeColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(580, 40, 215, 34, 8);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = themeColor;
-      ctx.font = "bold 11px 'JetBrains Mono', monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(statusText, 687, 62);
-      ctx.textAlign = "left";
-
-      // Subtle Divider
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.beginPath();
-      ctx.moveTo(48, 92);
-      ctx.lineTo(795, 92);
-      ctx.stroke();
-
-      // Big Bold Symbol & Direction
-      ctx.font = "800 42px 'Plus Jakarta Sans', sans-serif";
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText(`${tr.symbol} · ${tr.direction.toUpperCase()}`, 48, 150);
-
-      // P&L Big Number
-      const pnlStr = tr.pnlDollar
-        ? (tr.pnlDollar >= 0 ? `+$${Number(tr.pnlDollar).toLocaleString()}` : `-$${Math.abs(Number(tr.pnlDollar)).toLocaleString()}`)
-        : `${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}%`;
-
-      ctx.font = "bold 44px 'JetBrains Mono', monospace";
-      ctx.fillStyle = themeColor;
-      ctx.fillText(pnlStr, 48, 208);
-
-      if (tr.pnlDollar && tr.rMultiple !== undefined) {
-        ctx.font = "bold 14px 'JetBrains Mono', monospace";
-        ctx.fillStyle = "#94A3B8";
-        ctx.fillText(`Net Return: ${tr.rMultiple >= 0 ? "+" : ""}${tr.rMultiple}R`, 48, 234);
-      }
-
-      // 4 Metric Capsules
-      const drawCapsule = (label, val, x, y, w) => {
-        ctx.fillStyle = "#0B1428";
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.16)";
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.roundRect(x, y, w, 50, 8);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = "#64748B";
-        ctx.font = "bold 9px 'JetBrains Mono', monospace";
-        ctx.fillText(label.toUpperCase(), x + 14, y + 20);
-
-        ctx.fillStyle = "#F1F5F9";
-        ctx.font = "bold 13px 'JetBrains Mono', monospace";
-        ctx.fillText(val, x + 14, y + 39);
-      };
-
-      const capY = 252;
-      drawCapsule("Date", tr.date || "Today", 48, capY, 130);
-      drawCapsule("Session & Purge", `${tr.session.toUpperCase()} · ${tr.purgeTime || "Entry"}`, 188, capY, 175);
-      drawCapsule("Risk / Reward", `1:${tr.rrRatio || "3"} (${tr.risk || 1}% Risk)`, 373, capY, 160);
-      drawCapsule("Trading Account", tr.accountName || "Primary Account", 543, capY, 160);
-
-      // Notes & Confluence Quote Container
-      ctx.fillStyle = "#070E1E";
-      ctx.strokeStyle = themeColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(48, 320, 600, 78, 8);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = "#38BDF8";
-      ctx.font = "bold 10px 'JetBrains Mono', monospace";
-      ctx.fillText("EXECUTION LOG & THESIS", 64, 342);
-
-      ctx.fillStyle = "#CBD5E1";
-      ctx.font = "italic 13px 'Plus Jakarta Sans', sans-serif";
-      const noteContent = tr.notes 
-        ? (tr.notes.length > 82 ? tr.notes.substring(0, 80) + "..." : tr.notes)
-        : (tr.checklist && tr.checklist.length > 0 ? `Confluences: ${tr.checklist.join(" · ")}` : "ICT Institutional Model · Disciplined Risk");
-      ctx.fillText(`"${noteContent}"`, 64, 372);
-
-      // Verification Graphic Block (Cyber QR simulation)
-      const qrX = 665, qrY = 320, qrW = 135, qrH = 78;
-      ctx.fillStyle = "#070E1E";
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.28)";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.roundRect(qrX, qrY, qrW, qrH, 8);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = "#38BDF8";
-      ctx.font = "bold 9px 'JetBrains Mono', monospace";
-      ctx.fillText("CRYPTOGRAPHIC", qrX + 16, qrY + 28);
-      ctx.fillText("VERIFIED LEDGER", qrX + 16, qrY + 44);
-
-      ctx.fillStyle = themeColor;
-      ctx.font = "bold 11px 'JetBrains Mono', monospace";
-      ctx.fillText("VALIDATED ✓", qrX + 16, qrY + 63);
-
-      ctx.font = "11px 'JetBrains Mono', monospace";
-      ctx.fillStyle = "#475569";
-      ctx.fillText("amiir-journal.vercel.app · Powered by @amiir_pr", 48, 442);
-
-      const link = document.createElement("a");
-      link.download = `${tr.symbol || "trade"}-${tr.date || "log"}-receipt.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+    // ── Premium trade card (1600×900 canvas) + preview modal ──
+    function tradeCardId(tr) {
+      const d = String(tr.date || "").replace(/-/g, "").slice(2, 8) || "000000";
+      const id = String(tr.id || "x");
+      let h = 5381;
+      for (let i = 0; i < id.length; i++) h = ((h << 5) + h + id.charCodeAt(i)) >>> 0;
+      return "AM-" + d + "-" + h.toString(36).toUpperCase().padStart(3, "0").slice(-3);
     }
 
-    /* ══════════════════════════════════════════════════════════════════════
+    function drawTradeCard(canvas, tr) {
+      const W = 1600, H = 900, M = 56;
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      const o = String(tr.outcome || "win").toLowerCase();
+      const isWin = o === "win", isLoss = o === "loss";
+      const theme = isWin ? "#10B981" : isLoss ? "#FB7185" : "#00C8FF";
+      const status = isWin ? "PROFIT RECORDED" : isLoss ? "LOSS RECORDED" : "BREAKEVEN";
+      const MONO = '"JetBrains Mono","SFMono-Regular",Consolas,monospace';
+      const DISP = 'Sora,Inter,"Segoe UI",sans-serif';
+      const BODY = 'Inter,"Segoe UI",sans-serif';
+      const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
+      const ell = (txt, maxW) => {
+        if (ctx.measureText(txt).width <= maxW) return txt;
+        let t = txt;
+        while (t.length > 4 && ctx.measureText(t + "\u2026").width > maxW) t = t.slice(0, -1);
+        return t + "\u2026";
+      };
+      const sym = String(tr.symbol || "\u2014").toUpperCase();
+      const dir = String(tr.direction || "").toUpperCase();
+      const sesInfo = SESSIONS.find((x) => x.id === String(tr.session || "").toLowerCase());
+      const sesName = (sesInfo ? sesInfo.label : String(tr.session || "")).toUpperCase();
+      const pg = String(tr.purgeTime || "").toUpperCase();
+      let dateFmt = String(tr.date || "").toUpperCase();
+      {
+        const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(tr.date || "");
+        if (m) dateFmt = `${m[3]} ${["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][+m[2] - 1]} ${m[1]}`;
+      }
+
+      // bg
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, "#080F1D"); bg.addColorStop(0.55, "#060B16"); bg.addColorStop(1, "#050912");
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      const glow = ctx.createRadialGradient(300, 750, 40, 300, 750, 700);
+      glow.addColorStop(0, "rgba(0,200,255,0.06)"); glow.addColorStop(1, "rgba(0,200,255,0)");
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = "rgba(0,200,255,0.22)"; ctx.lineWidth = 1.5;
+      rr(28, 28, W - 56, H - 56, 18); ctx.stroke();
+      ctx.strokeStyle = "#00C8FF"; ctx.lineWidth = 4; ctx.lineCap = "round";
+      [[28, 28, 1, 1], [W - 28, 28, -1, 1], [28, H - 28, 1, -1], [W - 28, H - 28, -1, -1]].forEach(([x, y, dx, dy]) => {
+        ctx.beginPath(); ctx.moveTo(x + 26 * dx, y); ctx.lineTo(x, y); ctx.lineTo(x, y + 26 * dy); ctx.stroke();
+      });
+      ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+
+      // cyan band
+      const band = ctx.createLinearGradient(650, 0, W, 205);
+      band.addColorStop(0, "#00C8FF"); band.addColorStop(1, "#00A0E0");
+      ctx.fillStyle = band;
+      ctx.beginPath(); ctx.moveTo(770, 0); ctx.lineTo(W, 0); ctx.lineTo(W, 205); ctx.lineTo(650, 205); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "#0077B6"; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(650, 205); ctx.lineTo(W, 205); ctx.stroke();
+      // status pill on band
+      ctx.font = "800 15px " + MONO;
+      const pw = ctx.measureText(status).width + 52;
+      const pillX = W - M - pw, pillY = 74;
+      rr(pillX, pillY, pw, 46, 23); ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.fill();
+      ctx.fillStyle = "#050912"; ctx.textAlign = "center";
+      ctx.fillText(status, pillX + pw / 2, pillY + 30);
+      ctx.textAlign = "left";
+      // band text
+      const bandMax = pillX - 24 - 900;
+      let symSize = 66;
+      ctx.font = "800 " + symSize + "px " + DISP;
+      while (ctx.measureText(sym).width > bandMax && symSize > 30) { symSize -= 4; ctx.font = "800 " + symSize + "px " + DISP; }
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillText(sym, 900, 102);
+      ctx.fillStyle = "rgba(255,255,255,0.92)"; ctx.font = "600 21px " + MONO;
+      ctx.fillText(ell([dir, sesName, dateFmt].filter(Boolean).join(" \u00B7 "), bandMax + 120), 902, 158);
+
+      // brand mark
+      const hx = 92, hy = 78, hr = 27;
+      ctx.strokeStyle = "#00C8FF"; ctx.lineWidth = 3.5; ctx.lineJoin = "round";
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const an = Math.PI / 6 + i * Math.PI / 3;
+        const vx = hx + hr * Math.cos(an), vy = hy + hr * Math.sin(an);
+        if (i === 0) ctx.moveTo(vx, vy); else ctx.lineTo(vx, vy);
+      }
+      ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = "#00C8FF"; ctx.font = "800 28px " + DISP; ctx.textAlign = "center";
+      ctx.fillText("A", hx, hy + 10);
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#F5F7FA"; ctx.font = "800 30px " + DISP;
+      ctx.fillText("AMIIR JOURNAL", 138, 92);
+      ctx.fillStyle = "#8B9BB4"; ctx.font = "500 13px " + MONO;
+      ctx.fillText("PRO LEDGER \u00B7 VERIFIED TRADE EXECUTION", 140, 118);
+      ctx.strokeStyle = "rgba(245,247,250,0.09)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(90, 150); ctx.lineTo(600, 150); ctx.stroke();
+
+      // hero (right)
+      const dd = tr.pnlDollar;
+      const rVal = Number(tr.rMultiple);
+      let pnlStr;
+      if (dd != null && dd !== "") {
+        const n = Number(dd);
+        pnlStr = (n < 0 ? "-$" : "+$") + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else if (!isNaN(rVal)) {
+        pnlStr = (rVal < 0 ? "" : "+") + (+rVal.toFixed(2)) + "R";
+      } else pnlStr = "\u2014";
+      ctx.fillStyle = "#52627A"; ctx.font = "700 13px " + MONO;
+      ctx.fillText("NET RESULT", 1060, 282);
+      let pnlSize = 84;
+      ctx.font = "800 " + pnlSize + "px " + MONO;
+      while (ctx.measureText(pnlStr).width > 440 && pnlSize > 36) { pnlSize -= 6; ctx.font = "800 " + pnlSize + "px " + MONO; }
+      ctx.fillStyle = theme;
+      ctx.fillText(pnlStr, 1058, 382);
+      if (!isNaN(rVal) && dd != null && dd !== "") {
+        ctx.font = "500 24px " + MONO; ctx.fillStyle = "#8B9BB4";
+        ctx.fillText((rVal < 0 ? "" : "+") + (+rVal.toFixed(2)) + "R", 1060, 428);
+      }
+
+      // icon-chip detail rows
+      const P = (pts, close) => { ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); if (close) ctx.closePath(); ctx.stroke(); };
+      const GLYPHS = {
+        cal: (cx, cy) => { ctx.strokeRect(cx - 9, cy - 7, 18, 15); P([[cx - 9, cy - 2], [cx + 9, cy - 2]]); P([[cx - 5, cy - 11], [cx - 5, cy - 5]]); P([[cx + 5, cy - 11], [cx + 5, cy - 5]]); },
+        clock: (cx, cy) => { ctx.beginPath(); ctx.arc(cx, cy, 9, 0, 7); ctx.stroke(); P([[cx, cy], [cx, cy - 6]]); P([[cx, cy], [cx + 4.5, cy + 2]]); },
+        person: (cx, cy) => { ctx.beginPath(); ctx.arc(cx, cy - 5, 4, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(cx, cy + 14, 8, Math.PI, 0); ctx.closePath(); ctx.fill(); },
+        swap: (cx, cy) => { P([[cx - 5, cy + 8], [cx - 5, cy - 4]]); P([[cx - 8.5, cy - 0.5], [cx - 5, cy - 4], [cx - 1.5, cy - 0.5]]); P([[cx + 5, cy - 8], [cx + 5, cy + 4]]); P([[cx + 1.5, cy + 0.5], [cx + 5, cy + 4], [cx + 8.5, cy + 0.5]]); },
+        entry: (cx, cy) => { P([[cx - 9, cy], [cx + 4, cy]]); P([[cx, cy - 4], [cx + 5, cy], [cx, cy + 4]]); P([[cx + 9, cy - 7], [cx + 9, cy + 7]]); },
+        shield: (cx, cy) => { ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx + 8, cy - 6); ctx.lineTo(cx + 8, cy + 1); ctx.quadraticCurveTo(cx + 8, cy + 7, cx, cy + 11); ctx.quadraticCurveTo(cx - 8, cy + 7, cx - 8, cy + 1); ctx.lineTo(cx - 8, cy - 6); ctx.closePath(); ctx.stroke(); },
+        target: (cx, cy) => { ctx.beginPath(); ctx.arc(cx, cy, 9, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, 7); ctx.fill(); },
+        cube: (cx, cy) => { P([[cx, cy - 9], [cx + 8, cy - 4.5], [cx + 8, cy + 4.5], [cx, cy + 9], [cx - 8, cy + 4.5], [cx - 8, cy - 4.5]], true); P([[cx, cy - 9], [cx, cy + 9]]); P([[cx - 8, cy - 4.5], [cx, cy], [cx + 8, cy - 4.5]]); }
+      };
+      const chipRow = (x, y, w, g, label, val) => {
+        rr(x, y + 5, 46, 46, 12); ctx.fillStyle = "#00C8FF"; ctx.fill();
+        ctx.strokeStyle = "#FFFFFF"; ctx.fillStyle = "#FFFFFF"; ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+        (GLYPHS[g] || GLYPHS.cube)(x + 23, y + 28);
+        ctx.fillStyle = "#52627A"; ctx.font = "700 11px " + MONO;
+        ctx.fillText(label, x + 60, y + 20);
+        let vs = 19;
+        ctx.font = "700 " + vs + "px " + MONO;
+        while (vs > 14 && ctx.measureText(val).width > w - 66) { vs -= 1; ctx.font = "700 " + vs + "px " + MONO; }
+        ctx.fillStyle = "#F1F5F9";
+        ctx.fillText(ell(val, w - 66), x + 60, y + 44);
+      };
+      const rows = [];
+      const push = (g, label, val) => { if (val != null && String(val).trim() !== "") rows.push([g, label, String(val)]); };
+      push("cal", "DATE", tr.date || "");
+      push("clock", "SESSION & PURGE", sesName ? (pg ? sesName + " \u00B7 " + pg : sesName) : "");
+      {
+        const rrR = tr.rrRatio != null && tr.rrRatio !== "" ? "1:" + tr.rrRatio : "";
+        const rk = tr.risk != null && tr.risk !== "" ? tr.risk + "%" : "";
+        push("swap", "RISK / REWARD", [rrR, rk].filter(Boolean).join(" \u00B7 "));
+      }
+      push("person", "ACCOUNT", tr.accountName || "");
+      const fmtPx = (v) => (v == null || v === "" ? "" : (isNaN(Number(v)) ? String(v) : Number(v).toLocaleString("en-US", { maximumFractionDigits: 5 })));
+      push("entry", "ENTRY", fmtPx(tr.entryPrice));
+      push("shield", "STOP LOSS", fmtPx(tr.stopLoss));
+      push("target", "TAKE PROFIT", fmtPx(tr.takeProfit));
+      push("clock", "TIMEFRAME", String(tr.timeframe || "").toUpperCase());
+      push("cube", "MODEL", String(tr.strategy || "").toUpperCase());
+      push("cube", "SETUP", String(tr.setup || "").toUpperCase());
+      rows.slice(0, 10).forEach(([g, label, val], i) => {
+        chipRow(90 + (i % 2) * 455, 215 + Math.floor(i / 2) * 68, 440, g, label, val);
+      });
+
+      // QR bottom-left
+      ctx.fillStyle = "#00C8FF"; ctx.font = "700 13px " + MONO;
+      ctx.fillText("SCAN TO VIEW TRADE", 90, 592);
+      rr(90, 606, 170, 170, 14); ctx.fillStyle = "#FFFFFF"; ctx.fill();
+      ctx.strokeStyle = "#00C8FF"; ctx.lineWidth = 3; ctx.stroke();
+      try {
+        const qr = qrcode(0, "M");
+        const qrPayload = "https://amiir-journal.vercel.app/?trade=" + encodeURIComponent(String(tr.id || ""));
+        try { canvas.dataset.qr = qrPayload; } catch (e) {}
+        qr.addData(qrPayload);
+        qr.make();
+        const n = qr.getModuleCount();
+        const qs = 150, qx = 100, qy = 616, cell = qs / n;
+        ctx.fillStyle = "#050912";
+        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+          if (qr.isDark(r, c)) ctx.fillRect(qx + Math.floor(c * cell), qy + Math.floor(r * cell), Math.ceil(cell), Math.ceil(cell));
+        }
+      } catch (e) {
+        ctx.fillStyle = "#050912"; ctx.font = "700 13px " + MONO; ctx.textAlign = "center";
+        ctx.fillText("QR N/A", 175, 696);
+        ctx.textAlign = "left";
+      }
+
+      // thesis
+      rr(290, 575, 720, 225, 14); ctx.fillStyle = "#070E1E"; ctx.fill();
+      ctx.strokeStyle = "rgba(0,200,255,0.16)"; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.fillStyle = "#00C8FF"; ctx.font = "700 14px " + MONO;
+      ctx.fillText("EXECUTION LOG & THESIS", 312, 609);
+      {
+        const note = String(tr.notes || "").trim()
+          || ((tr.checklist && tr.checklist.length) ? "Confluences: " + tr.checklist.join(" \u00B7 ") : "");
+        if (!note) {
+          ctx.fillStyle = "#52627A"; ctx.font = "italic 500 19px " + BODY;
+          ctx.fillText("No execution notes recorded.", 312, 645);
+        } else {
+          ctx.fillStyle = "#CBD5E1"; ctx.font = "italic 500 20px " + BODY;
+          const words = note.replace(/\s+/g, " ").split(" ");
+          const lines = []; let line = "";
+          const maxW = 676;
+          words.forEach((w) => {
+            const t = line ? line + " " + w : w;
+            if (ctx.measureText(t).width > maxW) { if (line) lines.push(line); line = w; } else line = t;
+          });
+          if (line) lines.push(line);
+          const shown = lines.slice(0, 5);
+          if (lines.length > 5) {
+            let last = shown[4];
+            while (last.length && ctx.measureText(last + " \u2026").width > maxW) last = last.slice(0, -1);
+            shown[4] = last + " \u2026";
+          }
+          shown.forEach((ln, i) => ctx.fillText(ln, 312, 645 + i * 28));
+        }
+      }
+
+      // ledger panel bottom-right
+      rr(1060, 575, 494, 225, 14); ctx.fillStyle = "#0A1322"; ctx.fill();
+      ctx.strokeStyle = "rgba(0,200,255,0.2)"; ctx.lineWidth = 1.2; ctx.stroke();
+      const lrow = (label, val, valColor, y) => {
+        ctx.fillStyle = "#52627A"; ctx.font = "700 12px " + MONO;
+        ctx.fillText(label, 1090, y);
+        ctx.fillStyle = valColor; ctx.font = "700 19px " + MONO;
+        ctx.fillText(val, 1090, y + 28);
+      };
+      lrow("AMIIR LEDGER", "RECORDED \u2713", "#10B981", 613);
+      lrow("RECORD DATE", dateFmt, "#F1F5F9", 681);
+      lrow("TRADE ID", tradeCardId(tr), "#8B9BB4", 749);
+
+      // footer
+      ctx.fillStyle = "#52627A"; ctx.font = "500 14px " + MONO;
+      ctx.fillText("AMIIR JOURNAL \u00B7 VERIFIED TRADE RECORD", M, 842);
+      ctx.fillStyle = "#8B9BB4"; ctx.textAlign = "right";
+      ctx.fillText("TRADE ID: " + tradeCardId(tr), W - M, 842);
+      ctx.textAlign = "left";
+    }
+
+    function downloadTradeCard(tr) {
+      const canvas = document.createElement("canvas");
+      drawTradeCard(canvas, tr);
+      const a = document.createElement("a");
+      a.download = `amiir-trade-${String(tr.symbol || "trade").replace(/[^A-Za-z0-9]+/g, "-")}-${tr.date || "log"}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    }
+
+    function TradeCardModal({ tr, onClose }) {
+      const canvasRef = useRef(null);
+      useEffect(() => {
+        let alive = true;
+        const paint = () => { try { if (canvasRef.current && tr) { drawTradeCard(canvasRef.current, tr); window.__cardErr = ""; } } catch (e) { window.__cardErr = String((e && e.message) || e); } };
+        paint();
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (alive) paint(); });
+        return () => { alive = false; };
+      }, [tr]);
+      useEffect(() => {
+        const h = (e) => { if (e.key === "Escape" && onClose) onClose(); };
+        window.addEventListener("keydown", h);
+        document.body.style.overflow = "hidden";
+        return () => { window.removeEventListener("keydown", h); document.body.style.overflow = ""; };
+      }, [onClose]);
+      if (!tr) return null;
+      return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Trade card preview">
+          <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
+          <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto bg-[#080F1D] border border-cyan-500/25 rounded-3xl shadow-2xl">
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-800/70 sticky top-0 bg-[#080F1D]/95 backdrop-blur z-10">
+              <div className="text-xs font-mono font-bold text-slate-300 tracking-wide">TRADE CARD · {(tr.symbol || "").toUpperCase()} · {tr.date || ""}</div>
+              <button type="button" onClick={onClose} aria-label="Close preview" className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-colors cursor-pointer"><X size={16} /></button>
+            </div>
+            <canvas ref={canvasRef} width="1600" height="900" className="w-full h-auto block" />
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-t border-slate-800/70 flex-wrap">
+              <div className="text-[11px] font-mono text-slate-500">1600 × 900 · PNG · {tradeCardId(tr)}</div>
+              <button type="button" onClick={() => downloadTradeCard(tr)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition-colors cursor-pointer"><Download size={14} /> Download PNG</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+/* ══════════════════════════════════════════════════════════════════════
        5. APP STATE — Context provider (state, effects, Firestore listeners, handlers, memos, AI-mentor engine)
        ══════════════════════════════════════════════════════════════════════ */
 
@@ -1228,6 +1353,27 @@ function AppProvider({ children }) {
 
       // Tabs & Navigation
       const [tab, setTab] = useState("journal");
+      const [deepTradeId, setDeepTradeId] = useState(null);
+      const deepRef = useRef(false);
+      useEffect(() => {
+        if (deepRef.current) return;
+        let qid = null;
+        try { qid = new URLSearchParams(window.location.search).get("trade"); } catch (e) {}
+        if (!qid) return;
+        const live = (trades || []).find((t) => String(t.id) === String(qid));
+        const bt = !live ? (backtestTrades || []).find((t) => String(t.id) === String(qid)) : null;
+        if (!live && !bt) return;
+        deepRef.current = true;
+        try { window.history.replaceState({}, "", window.location.pathname + window.location.hash); } catch (e) {}
+        if (live) {
+          setTab("journal");
+          setExpandedTradeId(live.id);
+          setTimeout(() => { try { const el = document.getElementById("trade-card-" + live.id); if (el) el.scrollIntoView({ block: "center" }); } catch (e) {} }, 700);
+        } else {
+          setTab("backtest");
+          setDeepTradeId(bt.id);
+        }
+      }, [trades, backtestTrades]);
       const [showProfileMenu, setShowProfileMenu] = useState(false);
       const [customAvatar, setCustomAvatar] = useState(() => localStorage.getItem("amiir_custom_avatar") || "");
       const [showForm, setShowForm] = useState(false);
@@ -1248,7 +1394,7 @@ function AppProvider({ children }) {
       const [filterSession, setFilterSession] = useState("all");
       const [filterAccount, setFilterAccount] = useState("all");
       const [filterOutcome, setFilterOutcome] = useState("all");
-      const [visibleCount, setVisibleCount] = useState(8);
+      const [visibleCount, setVisibleCount] = useState(3);
       const [filterStartDate, setFilterStartDate] = useState("");
       const [filterEndDate, setFilterEndDate] = useState("");
       const [accountSearchQuery, setAccountSearchQuery] = useState("");
@@ -2277,7 +2423,7 @@ function AppProvider({ children }) {
     addCustomMistake, removeCustomMistake, renameCustomMistake,
     newChecklistInput, setNewChecklistInput,
     // navigation & form
-    tab, setTab, showForm, setShowForm, editingId, setEditingId,
+    tab, setTab, deepTradeId, setDeepTradeId, showForm, setShowForm, editingId, setEditingId,
     editingCollection, setEditingCollection,
     backtestListOpen, setBacktestListOpen,
     expandedTradeId, setExpandedTradeId,
@@ -2829,8 +2975,407 @@ function TradeForm() {
        6b. COMPONENT — Journal + Backtest (TAB 1 · search/filters + trades feed)
        ══════════════════════════════════════════════════════════════════════ */
 
+function LiveDrilldown({ trades }) {
+  const { setLightbox, setZoomScale } = useApp();
+  const toneOf = (v) => (v > 0 ? "up" : v < 0 ? "down" : null);
+  const [drill, setDrill] = useState({});
+  const [calOpen, setCalOpen] = useState(false);
+  const [curveMode, setCurveMode] = useState("R");
+
+  const base = useMemo(() => (trades || []).filter((tr) => (tr.tradeType || "live") === "live"), [trades]);
+  const years = useMemo(() => {
+    const st = new Set();
+    base.forEach((tr) => {
+      const m = /^(\d{4})-\d{2}-\d{2}/.exec(tr.date || "");
+      if (m) st.add(+m[1]);
+    });
+    return [...st].sort((a, b) => b - a);
+  }, [base]);
+  const tradeKeys = useMemo(() => new Set(base.map((t) => String(t.date || "").slice(0, 10))), [base]);
+  const filtered = useMemo(() => base.filter((tr) => btPeriodMatch(String(tr.date || "").slice(0, 10), drill)), [base, drill]);
+  const stats = useMemo(() => btStats(filtered), [filtered]);
+  const dayMap = useMemo(() => {
+    const map = {};
+    base.forEach((tr) => {
+      const k = String(tr.date || "").slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+      if (!map[k]) map[k] = [];
+      map[k].push(tr);
+    });
+    return map;
+  }, [base]);
+  const calWeeks = useMemo(
+    () => (drill.year != null && drill.month != null ? btMonthWeeks(drill.year, drill.month) : []),
+    [drill.year, drill.month]
+  );
+
+  const go = (patch) => setDrill((d) => ({ ...d, ...patch }));
+  const goYear = (y) => go({ year: y, quarter: null, month: null, day: null });
+  const goQuarter = (q) => go({ quarter: q, month: null, day: null });
+  const goMonth = (m) => go({ quarter: Math.floor(m / 3), month: m, day: null });
+  const goDay = (key) => {
+    const d = btParse(key);
+    if (!d) return;
+    go({ year: d.getFullYear(), quarter: Math.floor(d.getMonth() / 3), month: d.getMonth(), day: key });
+  };
+  const depth = drill.day ? 5 : drill.month != null ? 3 : drill.quarter != null ? 2 : drill.year != null ? 1 : 0;
+  const crumbs = useMemo(() => {
+    const c = [{ label: "Journal", depth: -1, key: "all" }];
+    if (drill.year != null) c.push({ label: String(drill.year), depth: 1, key: btScopeKey({ year: drill.year }) });
+    if (drill.quarter != null) c.push({ label: "Q" + (drill.quarter + 1), depth: 2, key: btScopeKey({ year: drill.year, quarter: drill.quarter }) });
+    if (drill.month != null) c.push({ label: MONTH_NAMES[drill.month], depth: 3, key: btScopeKey({ year: drill.year, quarter: drill.quarter, month: drill.month }) });
+    if (drill.day) c.push({ label: btFmtDay(drill.day), depth: 5, key: btScopeKey({ year: drill.year, quarter: drill.quarter, month: drill.month, day: drill.day }) });
+    return c;
+  }, [drill]);
+  const jumpTo = (targetDepth) => {
+    if (targetDepth === -1) return setDrill({});
+    setDrill((d) => ({
+      year: targetDepth >= 1 ? d.year : null,
+      quarter: targetDepth >= 2 ? d.quarter : null,
+      month: targetDepth >= 3 ? d.month : null,
+      day: targetDepth >= 5 ? d.day : null
+    }));
+  };
+  const zoom = (src) => { setLightbox(src); setZoomScale(1); };
+  const equityCard = (list, title) => (
+    <div className="terminal-card rounded-2xl p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+        <div className={tx("text-[11px] font-bold uppercase tracking-wider text-slate-400")}>{title || "Growth curve"}</div>
+        <div className={tx("flex items-center rounded-xl bg-[#050914] border border-slate-800 p-0.5")}>
+          {(["R", "$"]).map((m) => (
+            <button
+              key={m} type="button" onClick={() => setCurveMode(m)}
+              className={tx(`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${curveMode === m ? "bg-cyan-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-white"}`)}
+            >{m}</button>
+          ))}
+        </div>
+      </div>
+      <BTEquityCurve trades={list} mode={curveMode} />
+    </div>
+  );
+
+  const renderYears = () => (
+    <div>
+      <div className="mb-3"><BTSectionHead icon={<CalendarRange size={15} className={tx("text-cyan-400")} />} title="Years" sub={years.length ? "Pick a year to drill into quarters, months and days" : "Live trades will appear here by year"} right={(
+        <div className="relative">
+          <button type="button" onClick={() => setCalOpen((o) => !o)} title="Jump to date" aria-label="Jump to date" aria-expanded={calOpen} className={tx(`p-2 rounded-xl border transition-colors cursor-pointer ${calOpen ? "border-cyan-400/60 text-cyan-300 bg-cyan-500/10" : "border-slate-700/70 text-slate-400 hover:text-cyan-300 hover:border-cyan-400/40"}`)}><Calendar size={16} /></button>
+          {calOpen && (
+            <div className="absolute right-0 top-full mt-2 z-50">
+              <BTDateJump tradeKeys={tradeKeys} onPick={(key) => { setCalOpen(false); goDay(key); }} />
+            </div>
+          )}
+        </div>
+      )} /></div>
+      {calOpen && <div className="fixed inset-0 z-40" onClick={() => setCalOpen(false)} />}
+      {years.length === 0 ? (
+        <BTEmpty title="No live trades yet" sub="Log your first live trade and year-by-year drill-down will build automatically." />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          {years.map((y) => (
+            <BTPeriodCard
+              key={y} title={String(y)} sub="January – December"
+              status={btPeriodStatus(`${y}-01-01`, `${y}-12-31`)}
+              list={base.filter((t) => String(t.date || "").slice(0, 4) === String(y))}
+              onClick={() => goYear(y)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderYear = () => {
+    const y = drill.year;
+    const inYear = (t) => String(t.date || "").slice(0, 4) === String(y);
+    const inQuarter = (t, q) => {
+      if (!inYear(t)) return false;
+      const m = +String(t.date || "").slice(5, 7) - 1;
+      if (isNaN(m) || m < 0 || m > 11) return false;
+      return Math.floor(m / 3) === q;
+    };
+    const monthBars = Array.from({ length: 12 }, (_, m) => {
+      const st = btPeriodStats(base, { year: y, quarter: Math.floor(m / 3), month: m });
+      return { label: BT_MSHORT[m], v: Math.round(st.netR * 100) / 100 };
+    });
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => goYear(y - 1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Previous year"><ChevronLeft size={18} /></button>
+            <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>{y}</h2>
+            <button type="button" onClick={() => goYear(y + 1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Next year"><ChevronRight size={18} /></button>
+          </div>
+          <BTPeriodPill status={btPeriodStatus(`${y}-01-01`, `${y}-12-31`)} />
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5"><div role="region" aria-label="Dashboard" className="min-w-0 space-y-5 xl:col-span-4">
+        <BTKpiRow s={stats} cols="grid-cols-2" />
+        <BTKpiRow2 s={stats} cols="grid-cols-2" />
+        <div className="grid grid-cols-1 gap-5">
+          <div>{equityCard(filtered, `Growth curve · ${y}`)}</div>
+          <div className="terminal-card rounded-2xl p-4 sm:p-5">
+            <div className={tx("text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3")}>Net R by month</div>
+            <BTBars items={monthBars} />
+          </div>
+        </div>
+        </div><div className="min-w-0 space-y-5 xl:col-span-8">
+        <div>
+          <div className="mb-3"><BTSectionHead icon={<CalendarRange size={15} className={tx("text-cyan-400")} />} title="Quarters" sub={`Four quarters in ${y}`} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {[0, 1, 2, 3].map((q) => {
+              const qr = btQuarterRange(y, q);
+              const rows = base.filter((t) => inQuarter(t, q));
+              return (
+                <BTPeriodCard
+                  key={q} title={`Q${q + 1}`} sub={`${BT_MSHORT[q * 3]} – ${BT_MSHORT[q * 3 + 2]}`}
+                  status={btPeriodStatus(qr.start, qr.end)} list={rows} onClick={() => goQuarter(q)} dim={rows.length === 0}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <div className="mb-3"><BTSectionHead icon={<BarChart3 size={15} className={tx("text-cyan-400")} />} title="Trades" sub={`${filtered.length} execution${filtered.length === 1 ? "" : "s"} in ${y} · newest first`} /></div>
+          <BTTradesTable list={filtered} onZoom={zoom} emptyTitle={`No trades in ${y}`} emptySub="Live trades logged for this year will show up here automatically." />
+        </div>
+        </div></div>
+      </div>
+    );
+  };
+
+  const renderQuarter = () => {
+    const { year: y, quarter: q } = drill;
+    const qr = btQuarterRange(y, q);
+    const stepQuarter = (n) => {
+      const t = y * 4 + q + n;
+      go({ year: Math.floor(t / 4), quarter: ((t % 4) + 4) % 4, month: null, day: null });
+    };
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => stepQuarter(-1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Previous quarter"><ChevronLeft size={18} /></button>
+            <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>Q{q + 1} <span className="text-slate-500">{y}</span></h2>
+            <button type="button" onClick={() => stepQuarter(1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Next quarter"><ChevronRight size={18} /></button>
+          </div>
+          <BTPeriodPill status={btPeriodStatus(qr.start, qr.end)} />
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5"><div role="region" aria-label="Dashboard" className="min-w-0 space-y-5 xl:col-span-4">
+        <BTKpiRow s={stats} cols="grid-cols-2" />
+        <BTKpiRow2 s={stats} cols="grid-cols-2" />
+        {equityCard(filtered, `Growth curve · Q${q + 1} ${y}`)}
+        </div><div className="min-w-0 space-y-5 xl:col-span-8">
+        <div>
+          <div className="mb-3"><BTSectionHead icon={<CalendarRange size={15} className={tx("text-cyan-400")} />} title="Months" sub={`Three months in Q${q + 1}`} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {BT_Q_MONTHS[q].map((m) => {
+              const key = `${y}-${btPad(m + 1)}`;
+              const rows = base.filter((t) => String(t.date || "").slice(0, 7) === key);
+              const daysIn = new Date(y, m + 1, 0).getDate();
+              return (
+                <BTPeriodCard
+                  key={m} title={MONTH_NAMES[m]} sub={`${daysIn} days`}
+                  status={btPeriodStatus(`${key}-01`, `${key}-${daysIn}`)} list={rows} onClick={() => goMonth(m)} dim={rows.length === 0}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <div className="mb-3"><BTSectionHead icon={<BarChart3 size={15} className={tx("text-cyan-400")} />} title="Trades" sub={`${filtered.length} execution${filtered.length === 1 ? "" : "s"} · newest first`} /></div>
+          <BTTradesTable list={filtered} onZoom={zoom} emptyTitle={`No trades in Q${q + 1} ${y}`} emptySub="Live trades logged for this quarter will show up here automatically." />
+        </div>
+        </div></div>
+      </div>
+    );
+  };
+
+  const renderMonth = () => {
+    const { year: y, month: m } = drill;
+    const key = `${y}-${btPad(m + 1)}`;
+    const daysIn = new Date(y, m + 1, 0).getDate();
+    const today = btTodayKey();
+    const prevMonth = () => {
+      const nm = m === 0 ? 11 : m - 1, ny = m === 0 ? y - 1 : y;
+      setDrill({ year: ny, quarter: Math.floor(nm / 3), month: nm, day: null });
+    };
+    const nextMonth = () => {
+      const nm = m === 11 ? 0 : m + 1, ny = m === 11 ? y + 1 : y;
+      setDrill({ year: ny, quarter: Math.floor(nm / 3), month: nm, day: null });
+    };
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={prevMonth} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")}><ChevronLeft size={18} /></button>
+            <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>{MONTH_NAMES[m]} <span className="text-slate-500">{y}</span></h2>
+            <button type="button" onClick={nextMonth} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")}><ChevronRight size={18} /></button>
+          </div>
+          <BTPeriodPill status={btPeriodStatus(`${key}-01`, `${key}-${String(daysIn).padStart(2, "0")}`)} />
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5"><div role="region" aria-label="Dashboard" className="min-w-0 space-y-5 xl:col-span-4">
+        <BTKpiRow s={stats} cols="grid-cols-2" />
+        </div><div className="min-w-0 space-y-5 xl:col-span-8">
+        <div className="terminal-card rounded-2xl overflow-hidden">
+          <div className={tx("px-4 sm:px-5 py-3.5 border-b border-slate-800/70 flex items-center justify-between gap-2 flex-wrap")}>
+            <span className={tx("text-[11px] font-bold uppercase tracking-wider text-slate-400")}>Calendar · tap a day to open it</span>
+            <div className="flex items-center gap-3 text-[10px] text-slate-500 font-semibold">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400/80"></span>Profit</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-400/80"></span>Loss</span>
+              <span className="flex items-center gap-1"><span className={tx("w-2 h-2 rounded-full bg-slate-600")}></span>No trades</span>
+            </div>
+          </div>
+          <div className="p-3.5 sm:p-5">
+            <div className="overflow-x-auto no-scrollbar">
+              <div className="min-w-[620px]">
+                <div className="grid grid-cols-7 gap-1.5 flex-1 text-center mb-1.5">
+                  {BT_WD.map((d) => <div key={d} className="text-[10px] font-bold text-slate-500 uppercase py-1 tracking-wider">{d}</div>)}
+                </div>
+                <div className="space-y-1.5">
+                  {calWeeks.map((wk, wi) => (
+                    <div key={`${wk.isoY}-${wk.isoW}`} className="grid grid-cols-7 gap-1.5 flex-1">
+                      {wk.days.map((dd, i) => {
+                        const k = btKey(dd);
+                        const inMon = dd.getMonth() === m;
+                        const rows = dayMap[k] || [];
+                        const r = rows.reduce((a, t) => a + (Number(t.rMultiple) || 0), 0);
+                        const isFuture = k > today;
+                        const has = rows.length > 0;
+                        const journaled = rows.some((t) => (t.notes && t.notes.trim()) || (t.images || []).length > 0);
+                        return (
+                          <div
+                            key={i}
+                            data-day={k}
+                            onClick={isFuture ? undefined : () => goDay(k)}
+                            className={tx(`min-h-[64px] sm:min-h-[70px] rounded-xl p-2 flex flex-col justify-between border transition-all overflow-hidden ${isFuture ? "" : "cursor-pointer hover:brightness-125"} ${!inMon ? "opacity-35" : ""} ${!has ? "bg-[#060B18] border-slate-800/60" : r > 0 ? "bg-emerald-950/50 border-emerald-500/40" : r < 0 ? "bg-rose-950/50 border-rose-500/40" : "bg-slate-800/50 border-slate-700/60"}`)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className={tx(`text-[10px] font-bold ${inMon ? "text-slate-400" : "text-slate-600"}`)}>{dd.getDate()}</span>
+                              {journaled && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80" title="Journaled" />}
+                            </div>
+                            {has ? (
+                              <div className="text-center">
+                                <div className={tx(`text-[13px] font-extrabold tnum ${r > 0 ? "text-emerald-300" : r < 0 ? "text-rose-300" : "text-slate-300"}`)}>{btFmtR(r)}</div>
+                                <div className="text-[9px] text-slate-500 font-semibold">{rows.length} trade{rows.length === 1 ? "" : "s"}</div>
+                              </div>
+                            ) : (
+                              <div className="text-center text-[9px] text-slate-700">—</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div className="mb-3"><BTSectionHead icon={<BarChart3 size={15} className={tx("text-cyan-400")} />} title="Trades" sub={`${filtered.length} execution${filtered.length === 1 ? "" : "s"} · newest first`} /></div>
+          <BTTradesTable list={filtered} onZoom={zoom} emptyTitle={`No trades in ${MONTH_NAMES[m]} ${y}`} emptySub="Live trades logged for this month will show up here automatically." />
+        </div>
+        </div></div>
+      </div>
+    );
+  };
+
+  const renderDay = () => {
+    const k = drill.day;
+    const dd = btParse(k);
+    const today = btTodayKey();
+    const stepDay = (n) => { const d = btParse(k); if (d) goDay(btKey(btAddDays(d, n))); };
+    const marketsTraded = [...new Set(filtered.map((t) => t.symbol).filter(Boolean))];
+    const stratsUsed = [...new Set(filtered.map((t) => (t.strategy || "").trim()).filter(Boolean))];
+    const daySesh = (() => {
+      const buckets = {};
+      filtered.forEach((t) => {
+        const sid = t.session || "others";
+        (buckets[sid] = buckets[sid] || []).push(t);
+      });
+      return Object.keys(buckets).map((sid) => {
+        const ts = buckets[sid];
+        const info = SESSIONS.find((x) => x.id === sid);
+        return { id: sid, name: info ? info.label : sid, n: ts.length, netR: ts.reduce((a, t) => a + (Number(t.rMultiple) || 0), 0) };
+      });
+    })();
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => stepDay(-1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Previous day"><ChevronLeft size={18} /></button>
+            <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>{btFmtDay(k)}</h2>
+            <button type="button" onClick={() => stepDay(1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Next day"><ChevronRight size={18} /></button>
+          </div>
+          <span className="text-sm text-slate-500 font-semibold">{dd ? `${BT_WD[(dd.getDay() + 6) % 7]}, ${MONTH_NAMES[dd.getMonth()]} ${dd.getDate()}, ${dd.getFullYear()}` : ""}</span>
+          <BTPeriodPill status={btPeriodStatus(k, k)} />
+        </div>
+        {filtered.length === 0 ? (
+          <BTEmpty title={k > today ? "This day hasn't happened yet" : "No trades on this day"} sub="Live trades logged for this date will show up here automatically." />
+        ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5"><div role="region" aria-label="Dashboard" className="min-w-0 space-y-5 xl:col-span-4">
+        <div className="grid grid-cols-2 gap-3">
+          <BTKpi label="Day result" value={btFmtR(stats.netR)} sub={btFmtMoney(stats.netDollar)} tone={toneOf(stats.netR)} />
+          <BTKpi label="Trades" value={stats.total} sub={`${stats.winRate}% win rate`} />
+          <BTKpi label="Markets" value={marketsTraded.length || "—"} sub={marketsTraded.slice(0, 3).join(" · ") || "—"} />
+          <BTKpi label="Strategies" value={stratsUsed.length || "—"} sub={stratsUsed.slice(0, 3).join(" · ") || "—"} />
+        </div>
+        </div><div className="min-w-0 space-y-5 xl:col-span-8">
+          <div>
+            <div className="mb-3"><BTSectionHead icon={<Layers size={15} className={tx("text-cyan-400")} />} title="Sessions" sub="Grouped by trading session" /></div>
+            <div role="group" aria-label="Day sessions" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+              {daySesh.map((g) => (
+                <div key={g.id} className={tx("terminal-card rounded-2xl p-4")}>
+                  <div className={tx("text-sm font-extrabold text-white truncate")}>{g.name}</div>
+                  <div className="text-[11px] text-slate-500 font-bold mt-1">{g.n} trade{g.n === 1 ? "" : "s"} this day</div>
+                  <div className={tx(`text-base font-extrabold tnum mt-0.5 ${g.netR >= 0 ? "text-emerald-400" : "text-rose-400"}`)}>{btFmtR(g.netR)}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mb-3"><BTSectionHead icon={<BarChart3 size={15} className={tx("text-cyan-400")} />} title="Trades" sub={`${filtered.length} execution${filtered.length === 1 ? "" : "s"} · newest first`} /></div>
+            <BTTradesTable list={filtered} onZoom={zoom} emptyTitle="No trades on this day" emptySub="Live trades logged for this date will show up here automatically." />
+          </div>
+        </div></div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-5" aria-label="Live years drill-down">
+      {depth > 0 && (
+        <div className="flex items-center gap-1 flex-wrap" aria-label="Live location">
+          {crumbs.map((c, i) => {
+            const isLast = i === crumbs.length - 1;
+            const showOnMobile = i === 0 || i >= crumbs.length - 2;
+            const needEllipsis = i === crumbs.length - 2 && crumbs.length > 3;
+            return (
+              <span key={c.key} className={`${showOnMobile ? "flex" : "hidden sm:flex"} items-center gap-1`}>
+                {i > 0 && <ChevronRight size={13} className="text-slate-700" />}
+                {needEllipsis && (<><span className="sm:hidden text-slate-600 font-bold text-xs">…</span><ChevronRight size={13} className="text-slate-700 sm:hidden" /></>)}
+                <button
+                  type="button" onClick={() => jumpTo(c.depth)}
+                  className={tx(`text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer font-semibold ${isLast ? "text-white bg-cyan-500/10 border border-cyan-500/30 font-bold" : "text-slate-400 hover:text-cyan-200 hover:bg-slate-900/70"}`)}
+                >{c.label}</button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <div key={JSON.stringify(drill) + curveMode}>
+        {depth === 0 && renderYears()}
+        {depth === 1 && renderYear()}
+        {depth === 2 && renderQuarter()}
+        {depth === 3 && renderMonth()}
+        {depth === 5 && renderDay()}
+      </div>
+    </div>
+  );
+}
+
 function Journal() {
   const { tab, t, backtestListOpen, setBacktestListOpen, searchQuery, setSearchQuery, hasActiveFilters, filteredTrades, trades, clearAllFilters, showFiltersPopover, setShowFiltersPopover, filtersPopoverRef, filterSession, setFilterSession, filterAccount, setFilterAccount, filterOutcome, setFilterOutcome, filterStartDate, setFilterStartDate, filterEndDate, setFilterEndDate, accounts, loading, visibleCount, setVisibleCount, expandedTradeId, setExpandedTradeId, shareTrade, startEditTrade, removeTrade, setLightbox, setZoomScale, fmtR, fmtDollar } = useApp();
+  const [cardTrade, setCardTrade] = useState(null);
+  const feedTrades = useMemo(() => btSortChrono(filteredTrades).reverse(), [filteredTrades]);
   if (tab === "backtest") return <BacktestRoom />;
   return (
     <div className="space-y-4">
@@ -3230,14 +3775,14 @@ function Journal() {
           <p className={tx("text-sm text-slate-400 font-mono font-medium")}>{t.noTrades}</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2" aria-label="Journal trades feed">
 
           {/* Counter */}
           <div className={tx("flex items-center justify-end text-xs text-slate-400 font-mono px-1")}>
             <span>{Math.min(visibleCount, filteredTrades.length)} of {filteredTrades.length}</span>
           </div>
 
-          {filteredTrades.slice(0, visibleCount).map((tr) => {
+          {feedTrades.slice(0, visibleCount).map((tr) => {
             const isExpanded = expandedTradeId === tr.id;
             const sessionInfo = SESSIONS.find((s) => s.id === tr.session);
             const imgs = tr.images || (tr.image ? [tr.image] : []);
@@ -3247,6 +3792,7 @@ function Journal() {
             return (
               <div
                 key={tr.id}
+                id={`trade-card-${tr.id}`}
                 className={tx(`terminal-card rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isExpanded ? "border-sky-500/50 shadow-lg shadow-sky-500/10" : "border-slate-800/80"
                 }`)}
@@ -3398,7 +3944,7 @@ function Journal() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => downloadTradeReceipt(tr)}
+                          onClick={() => setCardTrade(tr)}
                           className={tx("flex items-center gap-1.5 text-xs font-mono font-medium text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer active:scale-95 transition-all")}
                         >
                           <Download size={13} /> {t.receiptCard || "Receipt Card"}
@@ -3430,12 +3976,12 @@ function Journal() {
             );
           })}
 
-          {filteredTrades.length > 8 && (
-            <div className="flex items-center justify-center pt-3 pb-1">
+          {feedTrades.length > 3 && (
+            <div className="flex items-center justify-start pt-3 pb-1">
               <button
                 type="button"
-                onClick={() => setVisibleCount(prev => prev >= filteredTrades.length ? 8 : prev + 8)}
-                className={tx("px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/40 text-xs tracking-wider text-sky-400 transition-all cursor-pointer font-bold active:scale-95 font-mono")}
+                onClick={() => setVisibleCount(prev => prev >= feedTrades.length ? 3 : feedTrades.length)}
+                className={tx("px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/40 text-[11px] tracking-wider text-sky-400 transition-all cursor-pointer font-bold active:scale-95 font-mono")}
               >
                 {visibleCount >= filteredTrades.length ? t.showLess : t.seeMore}
               </button>
@@ -3443,6 +3989,8 @@ function Journal() {
           )}
         </div>
       ))}
+      {tab !== "backtest" && <LiveDrilldown trades={filteredTrades} />}
+      {cardTrade && <TradeCardModal tr={cardTrade} onClose={() => setCardTrade(null)} />}
     </div>
   );
 }
@@ -4189,6 +4737,7 @@ function BTHighlights({ list, seshById }) {
 
 /* ── Trade detail modal ── */
 function BTTradeModal({ tr, num, onClose, onOpenSession, isFav, onToggleFav }) {
+  const [showCard, setShowCard] = useState(false);
   const { startEditTrade, removeTrade, setLightbox, setZoomScale, backtestSessions } = useApp();
   if (!tr) return null;
   const o = String(tr.outcome || "").toLowerCase();
@@ -4314,7 +4863,8 @@ function BTTradeModal({ tr, num, onClose, onOpenSession, isFav, onToggleFav }) {
             {linked && (
               <button type="button" onClick={() => { onOpenSession(linked.id); }} className={tx("px-3.5 py-2.5 rounded-xl text-xs font-bold border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 transition-colors cursor-pointer")}>Open session</button>
             )}
-            <button type="button" onClick={() => downloadTradeReceipt(tr)} className={tx("px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-700 text-slate-300 hover:border-slate-500 transition-colors cursor-pointer flex items-center gap-1.5")}><Download size={13} /> Receipt</button>
+            <button type="button" onClick={() => setShowCard(true)} className={tx("px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-700 text-slate-300 hover:border-slate-500 transition-colors cursor-pointer flex items-center gap-1.5")}><Download size={13} /> Receipt</button>
+            {showCard && <TradeCardModal tr={tr} onClose={() => setShowCard(false)} />}
             <div className="flex-1" />
             <button type="button" onClick={() => { onClose(); startEditTrade(tr, "backtest_trades"); }} className={tx("px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-700 text-slate-200 hover:border-cyan-400/50 hover:text-cyan-200 transition-colors cursor-pointer flex items-center gap-1.5")}><Edit3 size={13} /> Edit</button>
             <button type="button" onClick={() => { removeTrade(tr.id, "backtest_trades"); onClose(); }} className={tx("px-3.5 py-2.5 rounded-xl text-xs font-bold bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 transition-colors cursor-pointer flex items-center gap-1.5")}><Trash2 size={13} /> Delete</button>
@@ -4521,7 +5071,7 @@ function BacktestRoom() {
   const {
     backtestTrades, backtestSessions, saveBacktestSession, deleteBacktestSession,
     setShowForm, setForm, setEditingId, setEditingCollection,
-    setLightbox, setZoomScale, user
+    setLightbox, setZoomScale, user, deepTradeId, setDeepTradeId
   } = useApp();
 
   const [drill, setDrill] = useState({});
@@ -4533,10 +5083,16 @@ function BacktestRoom() {
   const [curveMode, setCurveMode] = useState("R");
   const [seshModal, setSeshModal] = useState(null); // null | { id?: string }
   const [tradeModal, setTradeModal] = useState(null); // trade object | null
+  useEffect(() => {
+    if (!deepTradeId) return;
+    const hit = (backtestTrades || []).find((t) => String(t.id) === String(deepTradeId));
+    if (hit) { setTradeModal(hit); setDeepTradeId(null); }
+  }, [deepTradeId, backtestTrades]);
   const [researchSel, setResearchSel] = useState(null); // { type, value, label } | null
   const [seshShowAll, setSeshShowAll] = useState(false);
   const [showYearAdd, setShowYearAdd] = useState(false);
   const [customYear, setCustomYear] = useState("");
+  const [yearErr, setYearErr] = useState("");
 
   const seshById = useMemo(() => {
     const m = {};
@@ -5635,9 +6191,10 @@ function BacktestRoom() {
                 );
               })}
               {showYearAdd ? (
-                <span className="flex items-center gap-1 shrink-0">
-                  <input value={customYear} onChange={(e) => setCustomYear(e.target.value.split("").filter((c) => "0123456789".includes(c)).join("").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter") { const v = parseInt(customYear, 10); if (v >= 1000 && v <= 9999) { setShowYearAdd(false); setCustomYear(""); goYear(v); } } }} placeholder="YYYY" inputMode="numeric" aria-label="Custom year" className={tx("w-16 bg-[#050914] border border-cyan-500/50 rounded-full px-3 py-1.5 text-[11px] text-white font-mono focus:outline-none text-center")} />
-                  <button type="button" onClick={() => { setShowYearAdd(false); setCustomYear(""); }} title="Cancel" className={tx("p-1.5 rounded-full text-slate-500 hover:text-white")}><X size={13} /></button>
+                <span className="flex items-center gap-1 shrink-0 relative">
+                  <input value={customYear} onChange={(e) => { setCustomYear(e.target.value.split("").filter((c) => "0123456789".includes(c)).join("").slice(0, 4)); setYearErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") { const v = parseInt(customYear, 10); if (v >= 2000 && v <= 2050) { setShowYearAdd(false); setCustomYear(""); setYearErr(""); goYear(v); } else { setYearErr("Enter a year between 2000 and 2050"); } } }} placeholder="YYYY" inputMode="numeric" aria-label="Custom year" aria-invalid={!!yearErr} className={tx(`w-16 bg-[#050914] border rounded-full px-3 py-1.5 text-[11px] text-white font-mono focus:outline-none text-center ${yearErr ? "border-rose-500/70" : "border-cyan-500/50"}`)} />
+                  <button type="button" onClick={() => { setShowYearAdd(false); setCustomYear(""); setYearErr(""); }} title="Cancel" className={tx("p-1.5 rounded-full text-slate-500 hover:text-white")}><X size={13} /></button>
+                  {yearErr && <span role="alert" className="whitespace-nowrap text-[10px] font-mono font-bold text-rose-400 ml-1 shrink-0">{yearErr}</span>}
                 </span>
               ) : (
                 <button type="button" onClick={() => setShowYearAdd(true)} title="Add a custom year" className={tx("px-3 py-1.5 rounded-full text-[11px] font-mono font-bold border border-dashed border-slate-700 text-slate-500 hover:text-cyan-300 hover:border-cyan-500/50 transition-all cursor-pointer whitespace-nowrap shrink-0")}>+ Year</button>
@@ -7449,6 +8006,8 @@ function Community() {
 }
 
     /* ══════════════════════════════════════════════════════════════════════
+const LOGIN_AVATAR_FALLBACK = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2300C8FF'/><stop offset='1' stop-color='%2310B981'/></linearGradient></defs><rect width='256' height='256' fill='%23080F1D'/><circle cx='128' cy='128' r='118' fill='none' stroke='url(%23g)' stroke-width='10'/><text x='128' y='170' font-family='Arial,sans-serif' font-size='120' font-weight='800' fill='%23F5F7FA' text-anchor='middle'>A</text></svg>";
+
        6k. COMPONENT — LoginPage (split-screen sign-in)
        ══════════════════════════════════════════════════════════════════════ */
 
@@ -7579,11 +8138,13 @@ function LoginPage() {
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
               <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-sky-400 to-emerald-400 opacity-75 blur-[2px] animate-pulse"></div>
               <img
-                src="profile.jpg"
+                src="./profile.jpg"
                 alt="Amiir"
                 onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300";
+                  const el = e.target;
+                  const stage = el.dataset.fbk || "0";
+                  if (stage === "0") { el.dataset.fbk = "1"; el.src = "public/profile.jpg"; }
+                  else { el.dataset.fbk = "2"; el.onerror = null; el.src = LOGIN_AVATAR_FALLBACK; }
                 }}
                 className="relative w-full h-full rounded-full object-cover border-2 border-[#040816] shadow-2xl"
               />
@@ -8117,5 +8678,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3ad90d85e0bd981',t:'MTc4OTM2OTc2Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3aeb6907a99e189',t:'MTc4OTM4MTc5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
