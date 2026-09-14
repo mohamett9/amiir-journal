@@ -321,7 +321,7 @@
 
   <script type="text/babel" data-type="module">
     /* ══════════════════════════════════════════════════════════════════════
-       AMIIR JOURNAL — SINGLE-FILE BUNDLE  (v4.4 · standalone, no build step · unbounded years + range filter + side-by-side levels)
+       AMIIR JOURNAL — SINGLE-FILE BUNDLE  (v4.7 · standalone, no build step · research lab)
        Flattened from the modular Vite project. Structure preserved as
        numbered sections below — jump to a section to edit that feature.
 
@@ -343,7 +343,7 @@
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
       LogOut, User, Globe, MessageSquare, BookOpen, Send, CheckSquare, Wallet,
-      Clock, Award, Settings, Star, Share2, Download, ZoomIn, ZoomOut, RotateCcw,
+      Clock, Award, Settings, Star, FlaskConical, Share2, Download, ZoomIn, ZoomOut, RotateCcw,
       Sparkles, MessageCircle, ShieldCheck, Activity, Users, Radio, Pin, Search, Bot,
       Filter, Check, ExternalLink, Flame, Rocket, Heart, ArrowUpRight, ArrowDownRight,
       SlidersHorizontal, RefreshCw, BarChart2, BarChart3, Target, Layers, Calendar, CalendarRange, CheckCircle2, Instagram, Facebook, Moon, Sun
@@ -1290,12 +1290,12 @@ function AppProvider({ children }) {
       const [expandedSession, setExpandedSession] = useState(null);
 
       // Accounts
-      const [accountForm, setAccountForm] = useState({ name: "", type: "Funded", initialBalance: "100000", mt5Id: "", logo: "", website: "", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", phase: "Phase 1" });
+      const [accountForm, setAccountForm] = useState({ name: "", type: "Funded", initialBalance: "100000", mt5Id: "", logo: "", website: "", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", phase: "Phase 1", note: "", amountPaid: "" });
       const [editingAccountId, setEditingAccountId] = useState(null);
       const [editingPlanId, setEditingPlanId] = useState(null);
       const [showAccModal, setShowAccModal] = useState(false);
       const [plannedAccounts, setPlannedAccounts] = useState([]);
-      const [planningForm, setPlanningForm] = useState({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", logo: "", website: "", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
+      const [planningForm, setPlanningForm] = useState({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", logo: "", website: "", note: "", amountPaid: "", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
       const [showPlanningModal, setShowPlanningModal] = useState(false);
 
       // Notes
@@ -1934,6 +1934,8 @@ function AppProvider({ children }) {
               mt5Id: accountForm.mt5Id.trim(),
               logo: accountForm.logo || "",
               website: (accountForm.website || "").trim(),
+              note: (accountForm.note || "").trim(),
+              amountPaid: parseFloat(accountForm.amountPaid) || 0,
               ...rules
             });
           } else {
@@ -1944,11 +1946,13 @@ function AppProvider({ children }) {
               mt5Id: accountForm.mt5Id.trim(),
               logo: accountForm.logo || "",
               website: (accountForm.website || "").trim(),
+              note: (accountForm.note || "").trim(),
+              amountPaid: parseFloat(accountForm.amountPaid) || 0,
               ...rules,
               createdAt: new Date().toISOString()
             });
           }
-          setAccountForm({ name: "", type: "Funded", initialBalance: "100000", mt5Id: "", logo: "", website: "", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", phase: "Phase 1" });
+          setAccountForm({ name: "", type: "Funded", initialBalance: "100000", mt5Id: "", logo: "", website: "", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", phase: "Phase 1", note: "", amountPaid: "" });
           setEditingAccountId(null);
           setShowAccModal(false);
         } catch (e) {
@@ -1967,7 +1971,9 @@ function AppProvider({ children }) {
           dailyLossLimit: acc.dailyLossLimit?.toString() || "5",
           maxDrawdown: acc.maxDrawdown?.toString() || "10",
           profitTarget: acc.profitTarget?.toString() || "8",
-          phase: acc.phase || "Phase 1"
+          phase: acc.phase || "Phase 1",
+          note: acc.note || "",
+          amountPaid: acc.amountPaid != null && acc.amountPaid !== "" ? String(acc.amountPaid) : ""
         });
         setEditingAccountId(acc.id);
         setShowAccModal(true);
@@ -1982,7 +1988,8 @@ function AppProvider({ children }) {
           challengeSize: parseFloat(planningForm.challengeSize) || 0,
           dailyLossLimit: parseFloat(planningForm.dailyLossLimit) || 5,
           maxDrawdown: parseFloat(planningForm.maxDrawdown) || 10,
-          profitTarget: parseFloat(planningForm.profitTarget) || 8
+          profitTarget: parseFloat(planningForm.profitTarget) || 8,
+          amountPaid: parseFloat(planningForm.amountPaid) || 0
         };
         try {
           if (editingPlanId) {
@@ -1990,7 +1997,7 @@ function AppProvider({ children }) {
           } else {
             await addDoc(collection(db, "users", user.uid, "planned_accounts"), { ...payload, createdAt: new Date().toISOString() });
           }
-          setPlanningForm({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", logo: "", website: "", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
+          setPlanningForm({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", logo: "", website: "", note: "", amountPaid: "", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
           setEditingPlanId(null);
           setShowPlanningModal(false);
         } catch (e) {
@@ -2003,6 +2010,8 @@ function AppProvider({ children }) {
           firmName: plan.firmName || "",
           challengeSize: plan.challengeSize != null ? plan.challengeSize.toString() : "100000",
           plannedStartDate: plan.plannedStartDate || "",
+          note: plan.note || "",
+          amountPaid: plan.amountPaid != null && plan.amountPaid !== "" ? String(plan.amountPaid) : "",
           phase: plan.phase || "Phase 1",
           dailyLossLimit: plan.dailyLossLimit?.toString() || "5",
           maxDrawdown: plan.maxDrawdown?.toString() || "10",
@@ -3442,6 +3451,7 @@ function btWeekRange(year, mon, w){ // w: 0-based calendar-row idx -> {start, en
   return { start: btKey(wk.days[0]), end: btKey(wk.days[6]), label: "W"+(w+1) };
 }
 function btFmtDay(key){ const d = btParse(key); if(!d) return key||""; return BT_MSHORT[d.getMonth()]+" "+d.getDate(); }
+function btFmtDayYear(key){ const d = btParse(key); if(!d) return key||""; return BT_MSHORT[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear(); }
 function btFmtDayLong(key){ const d = btParse(key); if(!d) return key||""; return BT_WD[(d.getDay()+6)%7]+", "+BT_MONTHS[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear(); }
 function btFmtRange(a,b){
   const d1=btParse(a), d2=btParse(b); if(!d1||!d2) return "";
@@ -3649,6 +3659,8 @@ function BTDateJump({ tradeKeys, onPick }) {
   const today = btTodayKey();
   const t = btParse(today) || new Date();
   const [cursor, setCursor] = useState({ y: t.getFullYear(), m: t.getMonth() });
+  const [view, setView] = useState("days");
+  const [winStart, setWinStart] = useState(t.getFullYear() - 6);
   const dim = new Date(cursor.y, cursor.m + 1, 0).getDate();
   const offset = (new Date(cursor.y, cursor.m, 1).getDay() + 6) % 7;
   const cells = [];
@@ -3658,35 +3670,66 @@ function BTDateJump({ tradeKeys, onPick }) {
     const nd = new Date(cursor.y, cursor.m + n, 1);
     setCursor({ y: nd.getFullYear(), m: nd.getMonth() });
   };
+  const openYears = () => { setWinStart(cursor.y - 6); setView("years"); };
+  const headBtn = "text-sm font-extrabold text-white font-display px-1.5 py-0.5 rounded-lg hover:text-cyan-200 hover:bg-slate-800/70 cursor-pointer transition-colors";
+  const chevBtn = "p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors";
+  const pickBtn = (on) => `py-2 rounded-xl text-xs font-bold font-mono transition-colors cursor-pointer border ${on ? "bg-cyan-500/20 text-cyan-200 border-cyan-400/50" : "text-slate-300 hover:bg-slate-800/70 border-transparent"}`;
+  const chevL = view === "days" ? () => step(-1) : view === "months" ? () => setCursor((c) => ({ y: c.y - 1, m: c.m })) : () => setWinStart((w) => w - 12);
+  const chevR = view === "days" ? () => step(1) : view === "months" ? () => setCursor((c) => ({ y: c.y + 1, m: c.m })) : () => setWinStart((w) => w + 12);
+  const chevName = view === "days" ? "month" : view === "months" ? "year" : "12 years";
   return (
     <div role="dialog" aria-label="Jump to date" className={tx("terminal-card rounded-2xl p-4 w-[288px] shadow-2xl")}>
       <div className="flex items-center justify-between mb-3">
-        <button type="button" onClick={() => step(-1)} title="Previous month" aria-label="Previous month" className={tx("p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")}><ChevronLeft size={16} /></button>
-        <div className={tx("text-sm font-extrabold text-white font-display")}>{MONTH_NAMES[cursor.m]} {cursor.y}</div>
-        <button type="button" onClick={() => step(1)} title="Next month" aria-label="Next month" className={tx("p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")}><ChevronRight size={16} /></button>
+        <button type="button" onClick={chevL} title={`Previous ${chevName}`} aria-label={`Previous ${chevName}`} className={tx(chevBtn)}><ChevronLeft size={16} /></button>
+        {view === "days" ? (
+          <div className="flex items-center gap-0.5">
+            <button type="button" onClick={() => setView("months")} title="Choose month" aria-label="Choose month" className={tx(headBtn)}>{MONTH_NAMES[cursor.m]}</button>
+            <button type="button" onClick={openYears} title="Choose year" aria-label="Choose year" className={tx(headBtn)}>{cursor.y}</button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setView("days")} title="Back to calendar" aria-label="Back to calendar" className={tx(headBtn)}>{view === "months" ? cursor.y : `${winStart} – ${winStart + 11}`}</button>
+        )}
+        <button type="button" onClick={chevR} title={`Next ${chevName}`} aria-label={`Next ${chevName}`} className={tx(chevBtn)}><ChevronRight size={16} /></button>
       </div>
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {BT_WD.map((w) => (<div key={w} className="text-center text-[9px] uppercase font-bold text-slate-500">{w[0]}</div>))}
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {cells.map((d, i) => {
-          if (!d) return <div key={"b" + i} />;
-          const key = `${cursor.y}-${btPad(cursor.m + 1)}-${btPad(d)}`;
-          const isToday = key === today;
-          const hasTrades = tradeKeys.has(key);
-          return (
-            <button key={key} type="button" onClick={() => onPick(key)} title={key} className={tx(`relative aspect-square rounded-lg text-xs font-bold font-mono transition-colors cursor-pointer ${isToday ? "bg-cyan-500/20 text-cyan-200 border border-cyan-400/50" : "text-slate-300 hover:bg-slate-800/70 border border-transparent"}`)}>
-              {d}
-              {hasTrades && <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400" />}
-            </button>
-          );
-        })}
-      </div>
-      <button type="button" onClick={() => onPick(today)} className={tx("mt-3 w-full py-2 rounded-xl text-xs font-bold bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 transition-colors cursor-pointer")}>Today</button>
+      {view === "days" && (
+        <div>
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {BT_WD.map((w) => (<div key={w} className="text-center text-[9px] uppercase font-bold text-slate-500">{w[0]}</div>))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {cells.map((d, i) => {
+              if (!d) return <div key={"b" + i} />;
+              const key = `${cursor.y}-${btPad(cursor.m + 1)}-${btPad(d)}`;
+              const isToday = key === today;
+              const hasTrades = tradeKeys.has(key);
+              return (
+                <button key={key} type="button" onClick={() => onPick(key)} title={key} className={tx(`relative aspect-square rounded-lg text-xs font-bold font-mono transition-colors cursor-pointer ${isToday ? "bg-cyan-500/20 text-cyan-200 border border-cyan-400/50" : "text-slate-300 hover:bg-slate-800/70 border border-transparent"}`)}>
+                  {d}
+                  {hasTrades && <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400" />}
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" onClick={() => onPick(today)} className={tx("mt-3 w-full py-2 rounded-xl text-xs font-bold bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 transition-colors cursor-pointer")}>Today</button>
+        </div>
+      )}
+      {view === "months" && (
+        <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Month picker">
+          {BT_MSHORT.map((ms, i) => (
+            <button key={ms} type="button" onClick={() => { setCursor((c) => ({ y: c.y, m: i })); setView("days"); }} className={tx(pickBtn(i === cursor.m))}>{ms}</button>
+          ))}
+        </div>
+      )}
+      {view === "years" && (
+        <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Year picker">
+          {Array.from({ length: 12 }, (_, i) => winStart + i).map((y) => (
+            <button key={y} type="button" onClick={() => { setCursor((c) => ({ y, m: c.m })); setView("days"); }} className={tx(pickBtn(y === cursor.y))}>{y}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
 function BTSectionHead({ icon, title, sub, right }) {
   return (
     <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -4066,7 +4109,7 @@ function BTHighlights({ list, seshById }) {
 }
 
 /* ── Trade detail modal ── */
-function BTTradeModal({ tr, num, onClose, onOpenSession }) {
+function BTTradeModal({ tr, num, onClose, onOpenSession, isFav, onToggleFav }) {
   const { startEditTrade, removeTrade, setLightbox, setZoomScale, backtestSessions } = useApp();
   if (!tr) return null;
   const o = String(tr.outcome || "").toLowerCase();
@@ -4103,7 +4146,10 @@ function BTTradeModal({ tr, num, onClose, onOpenSession }) {
                 <div className="text-[11px] text-slate-500 mt-0.5">{btFmtDayLong(String(tr.date || "").slice(0, 10))}{sessionInfo ? ` · ${sessionInfo.flag} ${sessionInfo.label}` : ""}{tr.purgeTime ? ` · ${tr.purgeTime}` : ""}</div>
               </div>
             </div>
-            <button type="button" onClick={onClose} className={tx("p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0")}><X size={16} /></button>
+            <div className="flex items-center gap-1 shrink-0">
+              <BTFavStar active={isFav} onToggle={onToggleFav} label={tr.symbol} />
+              <button type="button" onClick={onClose} title="Close" aria-label="Close" className={tx("p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors")}><X size={16} /></button>
+            </div>
           </div>
           <div className="flex items-center gap-2.5 mt-3 flex-wrap">
             <span className={tx(`text-2xl font-extrabold tnum ${r >= 0 ? "text-emerald-400" : "text-rose-400"}`)}>{btFmtR(r)}</span>
@@ -4209,17 +4255,16 @@ function btOutcomeBadge(o) {
   return { label: "BE", cls: "bg-slate-500/15 text-slate-300 border-slate-500/30" };
 }
 
-function BTTradesTable({ list, onOpen, onZoom, onLog, emptyTitle, emptySub }) {
+function BTTradesTable({ list, onOpen, onZoom, onLog, emptyTitle, emptySub, ariaLabel }) {
   if (!list || list.length === 0) {
     return <BTEmpty title={emptyTitle || "No trades here yet"} sub={emptySub || "Trades in this period will appear here automatically."} action={onLog ? <button type="button" onClick={onLog} className="px-4 py-2.5 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition-colors cursor-pointer">Log a backtest trade</button> : null} />;
   }
   const rows = btSortChrono(list).slice().reverse();
-  const todayY = String(new Date().getFullYear());
   const th = "px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap";
   return (
     <div className="terminal-card rounded-2xl overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1020px] border-collapse text-left">
+        <table aria-label={ariaLabel} className="w-full min-w-[1020px] border-collapse text-left">
           <thead>
             <tr className={tx("border-b border-slate-800/70 bg-slate-900/40")}>
               <th className={th}>Date</th>
@@ -4247,8 +4292,8 @@ function BTTradesTable({ list, onOpen, onZoom, onLog, emptyTitle, emptySub }) {
               return (
                 <tr key={tr.id} onClick={() => onOpen && onOpen(tr)} className={tx("border-b border-slate-800/50 last:border-0 hover:bg-cyan-500/5 transition-colors cursor-pointer")}>
                   <td className="px-3 py-2.5 whitespace-nowrap">
-                    <span className={tx("text-xs font-bold text-slate-200 font-mono")}>{btFmtDay(dk)}</span>
-                    {dk.slice(0, 4) !== todayY && <span className="text-[10px] text-slate-500 font-mono"> &apos;{dk.slice(2, 4)}</span>}
+                    <span className={tx("text-xs font-bold text-slate-200 font-mono whitespace-nowrap")}>{btFmtDayYear(dk)}</span>
+                    
                     {tr.entryTime ? <span className="text-[10px] text-slate-500 font-mono"> · {tr.entryTime}</span> : null}
                   </td>
                   <td className="px-3 py-2.5"><span className={tx("text-xs font-extrabold text-white tracking-tight whitespace-nowrap")}>{tr.symbol || "—"}</span></td>
@@ -4282,12 +4327,122 @@ function BTTradesTable({ list, onOpen, onZoom, onLog, emptyTitle, emptySub }) {
   );
 }
 
+const BT_RECENT_KEY = "amiir_bt_recent";
+const BT_RECENT_MAX = 8;
+function btNormDrill(d) {
+  d = d || {};
+  return { year: d.year ?? null, quarter: d.quarter ?? null, month: d.month ?? null, week: d.week ?? null, day: d.day || null, sessionId: d.sessionId || null };
+}
+function btReadRecent() {
+  try {
+    const a = JSON.parse(localStorage.getItem(BT_RECENT_KEY) || "[]");
+    return Array.isArray(a) ? a.filter((e) => e && e.drill).slice(0, BT_RECENT_MAX) : [];
+  } catch (e) { return []; }
+}
+function btWriteRecent(a) {
+  try { localStorage.setItem(BT_RECENT_KEY, JSON.stringify(a)); } catch (e) {}
+}
+function btAgo(ts) {
+  const s = Math.max(1, Math.floor((Date.now() - (ts || Date.now())) / 1000));
+  if (s < 60) return s + "s ago";
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + "m ago";
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + "h ago";
+  return Math.floor(h / 24) + "d ago";
+}
+function btRecentLabel(d, seshById) {
+  const parts = [];
+  if (d.year != null) parts.push(String(d.year));
+  if (d.quarter != null) parts.push("Q" + (d.quarter + 1));
+  if (d.month != null) parts.push(MONTH_NAMES[d.month]);
+  if (d.week != null) parts.push("W" + (d.week + 1));
+  if (d.day) parts.push(btFmtDay(d.day));
+  if (d.sessionId) {
+    if (d.sessionId !== BT_UNGROUPED && !(seshById || {})[d.sessionId]) return null;
+    parts.push(d.sessionId === BT_UNGROUPED ? "Ungrouped" : seshById[d.sessionId].name);
+  }
+  return parts.join(" \u203A ");
+}
+
+const BT_FAV_KEY = "amiir_bt_favs";
+function btReadFavs() {
+  try {
+    const a = JSON.parse(localStorage.getItem(BT_FAV_KEY) || "[]");
+    return Array.isArray(a) ? a.filter((f) => f && f.key && (f.kind === "trade" ? f.tradeId : f.drill)) : [];
+  } catch (e) { return []; }
+}
+function btWriteFavs(a) {
+  try { localStorage.setItem(BT_FAV_KEY, JSON.stringify(a)); } catch (e) {}
+}
+function btPushFavs(next, user) {
+  try {
+    if (typeof db === "undefined" || !db || !user || !user.uid || user.isAnonymous) return;
+    setDoc(doc(db, "users", user.uid, "settings", "backtest"), { btFavs: next }, { merge: true }).catch(() => {});
+  } catch (e) {}
+}
+function btFavTradeLabel(id, trades) {
+  const t = (trades || []).find((x) => x && x.id === id);
+  if (!t) return null;
+  return `${t.symbol || "Trade"} · ${btFmtDay(String(t.date || "").slice(0, 10))}`;
+}
+function BTFavStar({ active, onToggle, label }) {
+  return (
+    <button type="button" onClick={(e) => { e.stopPropagation(); onToggle(); }} title={active ? "Remove from favorites" : "Add to favorites"} aria-label={(active ? "Remove from favorites: " : "Add to favorites: ") + label} aria-pressed={!!active} className={tx(`p-2 rounded-lg transition-colors cursor-pointer shrink-0 ${active ? "text-amber-300 hover:text-amber-200" : "text-slate-600 hover:text-amber-300"}`)}>
+      <Star size={16} className={active ? "fill-amber-300 text-amber-300" : ""} />
+    </button>
+  );
+}
+
+function BTLabTable({ title, icon, sub, nameCol, countLabel, rows, selType, sel, onPick, ranked }) {
+  const th = "px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap";
+  return (
+    <div className="terminal-card rounded-2xl overflow-hidden">
+      <div className={tx("px-4 py-3 border-b border-slate-800/70 flex items-center gap-2")}>
+        {icon}
+        <div className={tx("text-sm font-bold text-white font-display tracking-tight")}>{title}</div>
+        {sub && <div className="text-[11px] text-slate-500 ml-auto shrink-0">{sub}</div>}
+      </div>
+      <div className="overflow-x-auto">
+        <table aria-label={nameCol} className="w-full min-w-[440px] border-collapse text-left">
+          <thead>
+            <tr className={tx("border-b border-slate-800/70 bg-slate-900/40")}>
+              <th className={th}>{nameCol}</th>
+              <th className={th}>{countLabel}</th>
+              <th className={th}>Win rate</th>
+              <th className={th}>Avg R</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((g, i) => {
+              const active = sel && sel.type === selType && sel.value === g.key;
+              const avg = g.r / g.n;
+              return (
+                <tr key={g.key || ("row" + i)} onClick={() => onPick(active ? null : { type: selType, value: g.key, label: g.label })} title={`Show trades: ${g.label}`} className={`border-b border-slate-800/40 last:border-0 cursor-pointer transition-colors ${active ? "bg-cyan-500/10" : "hover:bg-slate-800/40"}`}>
+                  <td className="px-3 py-2.5 text-xs font-bold text-slate-200 whitespace-nowrap">
+                    {g.label}
+                    {ranked && rows.length > 1 && i === 0 && <span className="ml-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">BEST</span>}
+                    {ranked && rows.length > 1 && i === rows.length - 1 && <span className="ml-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">WEAKEST</span>}
+                  </td>
+                  <td className="px-3 py-2.5 text-xs tnum text-slate-300 font-bold">{g.n}</td>
+                  <td className="px-3 py-2.5 text-xs tnum text-slate-300 font-bold">{Math.round((g.w / g.n) * 100)}%</td>
+                  <td className={`px-3 py-2.5 text-xs tnum font-extrabold ${avg > 0 ? "text-emerald-400" : avg < 0 ? "text-rose-400" : "text-slate-300"}`}>{btFmtR(avg)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main room ── */
 function BacktestRoom() {
   const {
     backtestTrades, backtestSessions, saveBacktestSession, deleteBacktestSession,
     setShowForm, setForm, setEditingId, setEditingCollection,
-    setLightbox, setZoomScale
+    setLightbox, setZoomScale, user
   } = useApp();
 
   const [drill, setDrill] = useState({});
@@ -4299,6 +4454,7 @@ function BacktestRoom() {
   const [curveMode, setCurveMode] = useState("R");
   const [seshModal, setSeshModal] = useState(null); // null | { id?: string }
   const [tradeModal, setTradeModal] = useState(null); // trade object | null
+  const [researchSel, setResearchSel] = useState(null); // { type, value, label } | null
   const [seshShowAll, setSeshShowAll] = useState(false);
   const [showYearAdd, setShowYearAdd] = useState(false);
   const [customYear, setCustomYear] = useState("");
@@ -4327,6 +4483,74 @@ function BacktestRoom() {
     return n;
   }, [filters, query]);
   const clearFilters = () => { setFilters({ ...BT_EMPTY_FILTERS }); setQuery(""); };
+  const [recent, setRecent] = useState(() => btReadRecent());
+  useEffect(() => {
+    const d = btNormDrill(drill);
+    const hasLoc = d.year != null || d.quarter != null || d.month != null || d.week != null || d.day || d.sessionId;
+    if (!hasLoc) return;
+    setRecent((prev) => {
+      const key = JSON.stringify(d);
+      const entry = { drill: d, filters: { ...BT_EMPTY_FILTERS, ...filters }, query: query || "", ts: Date.now() };
+      const next = [entry, ...prev.filter((e) => JSON.stringify(btNormDrill(e.drill)) !== key)].slice(0, BT_RECENT_MAX);
+      btWriteRecent(next);
+      return next;
+    });
+  }, [drill, filters, query]);
+  const openRecent = (e) => {
+    if (!e || !e.drill) return;
+    setSeshShowAll(false);
+    setRoomTab("browse");
+    setFilters({ ...BT_EMPTY_FILTERS, ...(e.filters || {}) });
+    setQuery(e.query || "");
+    setDrill({ ...btNormDrill(e.drill) });
+  };
+  const clearRecent = () => { setRecent([]); btWriteRecent([]); };
+  const [favs, setFavs] = useState(() => btReadFavs());
+  const favKeys = useMemo(() => new Set(favs.map((f) => f.key)), [favs]);
+  const isFav = (key) => favKeys.has(key);
+  const writeFavs = (next) => { setFavs(next); btWriteFavs(next); btPushFavs(next, user); };
+  const toggleFavPeriod = (d) => {
+    const nd = btNormDrill(d || drill);
+    const key = "p:" + JSON.stringify(nd);
+    writeFavs(favKeys.has(key) ? favs.filter((f) => f.key !== key) : [...favs, { key, kind: "period", drill: nd, ts: Date.now() }]);
+  };
+  const toggleFavTrade = (tr) => {
+    if (!tr || !tr.id) return;
+    const key = "t:" + tr.id;
+    writeFavs(favKeys.has(key) ? favs.filter((f) => f.key !== key) : [...favs, { key, kind: "trade", tradeId: tr.id, ts: Date.now() }]);
+  };
+  const periodFavKey = "p:" + JSON.stringify(btNormDrill(drill));
+  const togglePeriodFav = () => toggleFavPeriod(drill);
+  const openFav = (f) => {
+    if (!f) return;
+    if (f.kind === "trade") {
+      const tr = (backtestTrades || []).find((t) => t.id === f.tradeId);
+      if (tr) setTradeModal(tr);
+      return;
+    }
+    setSeshShowAll(false);
+    setRoomTab("browse");
+    setDrill({ ...btNormDrill(f.drill) });
+  };
+  useEffect(() => {
+    let unsub = null;
+    try {
+      if (typeof db === "undefined" || !db || !user || !user.uid || user.isAnonymous) return;
+      unsub = onSnapshot(doc(db, "users", user.uid, "settings", "backtest"), (snap) => {
+        const remote = snap.exists() ? snap.data().btFavs : null;
+        if (!Array.isArray(remote)) return;
+        setFavs((prev) => {
+          const keys = new Set(prev.map((f) => f.key));
+          const add = remote.filter((f) => f && f.key && !keys.has(f.key));
+          if (!add.length) return prev;
+          const merged = [...prev, ...add];
+          btWriteFavs(merged);
+          return merged;
+        });
+      }, () => {});
+    } catch (e) {}
+    return () => { try { unsub && unsub(); } catch (e) {} };
+  }, [user]);
 
   // Layers: all trades → base (filters+search) → filtered (date scope + session scope)
   const base = useMemo(() => {
@@ -4538,6 +4762,29 @@ function BacktestRoom() {
           </div>
         )}
       </div>
+      {recent.length > 0 && (
+        <div className="terminal-card rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <Clock size={14} className={tx("text-cyan-400")} />
+              <div className={tx("text-sm font-bold text-white font-display tracking-tight")}>Recent</div>
+            </div>
+            <button type="button" onClick={clearRecent} className="text-[10px] font-bold text-slate-500 hover:text-rose-300 transition-colors cursor-pointer">Clear</button>
+          </div>
+          <div role="group" aria-label="Recent history" className="flex flex-col gap-0.5">
+            {recent.map((e, i) => {
+              const rlabel = btRecentLabel(btNormDrill(e.drill), seshById);
+              if (!rlabel) return null;
+              return (
+                <button key={i} type="button" onClick={() => openRecent(e)} title={`Open ${rlabel}`} className={tx("flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-left hover:bg-slate-800/60 transition-colors cursor-pointer group")}>
+                  <span className="text-xs font-bold text-slate-300 group-hover:text-cyan-200 truncate">{rlabel}</span>
+                  <span className="text-[10px] text-slate-600 font-mono shrink-0">{btAgo(e.ts)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {renderEquityCard(filtered)}
     </div>
   );
@@ -4561,6 +4808,7 @@ function BacktestRoom() {
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => goYear(y - 1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Previous year"><ChevronLeft size={18} /></button>
             <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>{y}</h2>
+            <BTFavStar active={isFav(periodFavKey)} onToggle={togglePeriodFav} label={String(y)} />
             <button type="button" onClick={() => goYear(y + 1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Next year"><ChevronRight size={18} /></button>
           </div>
           <BTPeriodPill status={btPeriodStatus(`${y}-01-01`, `${y}-12-31`)} />
@@ -4615,6 +4863,7 @@ function BacktestRoom() {
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => stepQuarter(-1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Previous quarter"><ChevronLeft size={18} /></button>
             <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>Q{q + 1} <span className="text-slate-500">{y}</span></h2>
+            <BTFavStar active={isFav(periodFavKey)} onToggle={togglePeriodFav} label={`Q${q + 1} ${y}`} />
             <button type="button" onClick={() => stepQuarter(1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Next quarter"><ChevronRight size={18} /></button>
           </div>
           <BTPeriodPill status={btPeriodStatus(qr.start, qr.end)} />
@@ -4668,6 +4917,7 @@ function BacktestRoom() {
           <div className="flex items-center gap-1">
             <button type="button" onClick={prevMonth} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")}><ChevronLeft size={18} /></button>
             <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>{MONTH_NAMES[m]} <span className="text-slate-500">{y}</span></h2>
+            <BTFavStar active={isFav(periodFavKey)} onToggle={togglePeriodFav} label={`${MONTH_NAMES[m]} ${y}`} />
             <button type="button" onClick={nextMonth} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")}><ChevronRight size={18} /></button>
           </div>
           <BTPeriodPill status={btPeriodStatus(`${key}-01`, `${key}-${String(daysIn).padStart(2, "0")}`)} />
@@ -4789,6 +5039,7 @@ function BacktestRoom() {
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => stepWeek(-1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Previous week"><ChevronLeft size={18} /></button>
             <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>Week {wi + 1} <span className="text-slate-500">{btFmtDay(startK)} – {btFmtDay(endK)}</span></h2>
+            <BTFavStar active={isFav(periodFavKey)} onToggle={togglePeriodFav} label={`Week ${wi + 1}`} />
             <button type="button" onClick={() => stepWeek(1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Next week"><ChevronRight size={18} /></button>
           </div>
           <BTPeriodPill status={btPeriodStatus(startK, endK)} />
@@ -4872,6 +5123,7 @@ function BacktestRoom() {
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => stepDay(-1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Previous day"><ChevronLeft size={18} /></button>
             <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>{btFmtDay(k)}</h2>
+            <BTFavStar active={isFav(periodFavKey)} onToggle={togglePeriodFav} label={btFmtDay(k)} />
             <button type="button" onClick={() => stepDay(1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Next day"><ChevronRight size={18} /></button>
           </div>
           <span className="text-sm text-slate-500 font-semibold">{dd ? `${BT_WD[(dd.getDay() + 6) % 7]}, ${MONTH_NAMES[dd.getMonth()]} ${dd.getDate()}, ${dd.getFullYear()}` : ""}</span>
@@ -4936,6 +5188,7 @@ function BacktestRoom() {
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h2 className={tx("text-xl sm:text-2xl font-extrabold text-white font-display tracking-tight")}>{sesh ? sesh.name : "Ungrouped trades"}</h2>
+                <BTFavStar active={isFav(periodFavKey)} onToggle={togglePeriodFav} label={sesh ? sesh.name : "Ungrouped"} />
                 {sesh && <BTSessionPill status={sesh.status} />}
               </div>
               <div className="text-xs text-slate-500 mt-1">
@@ -5012,6 +5265,71 @@ function BacktestRoom() {
           <BTTradesTable list={visibleTrades} onOpen={(tr) => setTradeModal(tr)} onZoom={(src) => { setLightbox(src); setZoomScale(1); }} onLog={logTrade} emptyTitle="No trades here yet" emptySub="Trades linked to this session will appear here automatically." />
         </div>
         </div></div>
+      </div>
+    );
+  };
+
+  // ── Research Lab: pattern breakdowns over the current view ──
+  const labGroup = (rows, keyFn) => {
+    const m = {};
+    rows.forEach((t) => {
+      const ks = keyFn(t);
+      (Array.isArray(ks) ? ks : [ks]).forEach((k) => {
+        const g = (m[k.key] = m[k.key] || { key: k.key, label: k.label, n: 0, w: 0, r: 0 });
+        g.n++;
+        if (String(t.outcome || "").toLowerCase() === "win") g.w++;
+        g.r += Number(t.rMultiple) || 0;
+      });
+    });
+    return Object.values(m);
+  };
+  const labSortPerf = (a, b) => (b.r / b.n - a.r / a.n) || (b.n - a.n) || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0);
+  const labSortCount = (a, b) => (b.n - a.n) || (b.r / b.n - a.r / a.n) || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0);
+  const labSessionLabel = (id) => {
+    const f = (SESSIONS || []).find((x) => x.id === id);
+    return f ? `${f.flag} ${f.label}` : (id || "No session");
+  };
+  const renderResearchTab = () => {
+    const setups = labGroup(filtered, (t) => {
+      const v = String(t.setup || "").trim();
+      return { key: v, label: v || "No setup logged" };
+    }).sort(labSortPerf);
+    const mistakes = labGroup(filtered, (t) => (t.mistakes || []).map((x) => ({ key: x, label: x }))).sort(labSortCount);
+    const markets = labGroup(filtered, (t) => ({ key: t.symbol || "", label: t.symbol || "—" })).sort(labSortPerf);
+    const sessions = labGroup(filtered, (t) => ({ key: t.session || "", label: labSessionLabel(t.session || "") })).sort(labSortPerf);
+    const matches = !researchSel ? [] : filtered.filter((t) => {
+      const v = researchSel.value;
+      if (researchSel.type === "setup") return String(t.setup || "").trim() === v;
+      if (researchSel.type === "mistake") return (t.mistakes || []).includes(v);
+      if (researchSel.type === "market") return (t.symbol || "") === v;
+      return (t.session || "") === v;
+    });
+    return (
+      <div className="space-y-5">
+        <BTSectionHead icon={<FlaskConical size={15} className={tx("text-cyan-400")} />} title="Research Lab" sub={`Patterns in the current view · ${contextLabel}`} />
+        {filtered.length === 0 ? (
+          <BTEmpty title="No trades in this view" sub="Widen the date range or clear filters to research more trades." />
+        ) : (
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <BTLabTable title="Best setups" icon={<Target size={15} className={tx("text-cyan-400")} />} sub="Tap a row to filter" nameCol="Setup" countLabel="Trades" rows={setups} selType="setup" sel={researchSel} onPick={setResearchSel} ranked />
+              <BTLabTable title="Mistake analysis" icon={<Flame size={15} className={tx("text-cyan-400")} />} sub="Tap a row to filter" nameCol="Mistake" countLabel="Times" rows={mistakes} selType="mistake" sel={researchSel} onPick={setResearchSel} />
+              <BTLabTable title="Sessions" icon={<Globe size={15} className={tx("text-cyan-400")} />} sub="Best vs weakest" nameCol="Session" countLabel="Trades" rows={sessions} selType="session" sel={researchSel} onPick={setResearchSel} ranked />
+              <BTLabTable title="Markets" icon={<BarChart3 size={15} className={tx("text-cyan-400")} />} sub="Best vs weakest" nameCol="Market" countLabel="Trades" rows={markets} selType="market" sel={researchSel} onPick={setResearchSel} ranked />
+            </div>
+            {researchSel && (
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
+                  <BTSectionHead icon={<Filter size={15} className={tx("text-cyan-400")} />} title="Matching trades" sub={`${matches.length} trade${matches.length === 1 ? "" : "s"} · ${researchSel.label}`} />
+                  <button type="button" onClick={() => setResearchSel(null)} className={tx("px-3 py-1.5 rounded-lg bg-slate-900/70 border border-slate-800 text-[11px] font-bold text-slate-300 hover:border-cyan-400/40 hover:text-cyan-200 cursor-pointer transition-colors")}>Clear selection</button>
+                </div>
+                <div>
+                  <BTTradesTable list={matches} onOpen={(tr) => setTradeModal(tr)} onZoom={(src) => { setLightbox(src); setZoomScale(1); }} onLog={logTrade} emptyTitle="No trades match" emptySub="Try another row." ariaLabel="Research results" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -5191,7 +5509,7 @@ function BacktestRoom() {
 
         {/* Room tabs */}
         <div className="flex items-center gap-1.5 mt-4 overflow-x-auto no-scrollbar">
-          {[["browse", "Browse", CalendarRange], ["sessions", `Sessions (${(backtestSessions || []).length})`, Layers], ["strategies", "Strategies", Target], ["analytics", "Analytics", BarChart2]].map(([id, label, Icon]) => (
+          {[["browse", "Browse", CalendarRange], ["sessions", `Sessions (${(backtestSessions || []).length})`, Layers], ["strategies", "Strategies", Target], ["analytics", "Analytics", BarChart2], ["research", "Research", FlaskConical]].map(([id, label, Icon]) => (
             <button
               key={id} type="button"
               onClick={() => setRoomTab(id)}
@@ -5205,6 +5523,23 @@ function BacktestRoom() {
             <button type="button" onClick={resetRoom} className={tx("flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-400 hover:text-rose-300 transition-colors cursor-pointer whitespace-nowrap")}><RefreshCw size={12} /> Reset view</button>
           )}
         </div>
+
+        {favs.length > 0 && (
+          <div className={tx("mt-4 pt-4 border-t border-slate-800/70")}>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Pinned favorites">
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold mr-0.5 shrink-0">Pinned:</span>
+              {favs.map((f) => {
+                const flabel = f.kind === "trade" ? btFavTradeLabel(f.tradeId, backtestTrades) : btRecentLabel(btNormDrill(f.drill), seshById);
+                if (!flabel) return null;
+                return (
+                  <button key={f.key} type="button" onClick={() => openFav(f)} title={`Open ${flabel}`} className={tx("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-mono font-bold border border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20 transition-all cursor-pointer whitespace-nowrap shrink-0")}>
+                    <Star size={11} className="fill-amber-300 text-amber-300" />{flabel}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Year selector */}
         {roomTab === "browse" && (
@@ -5329,6 +5664,7 @@ function BacktestRoom() {
         {roomTab === "sessions" && renderSessionsTab()}
         {roomTab === "strategies" && renderStrategiesTab()}
         {roomTab === "analytics" && renderAnalyticsTab()}
+        {roomTab === "research" && renderResearchTab()}
         {roomTab === "browse" && !drill.sessionId && depth === 0 && renderOverview()}
         {roomTab === "browse" && !drill.sessionId && depth === 1 && renderYear()}
         {roomTab === "browse" && !drill.sessionId && depth === 2 && renderQuarter()}
@@ -5349,7 +5685,7 @@ function BacktestRoom() {
         />
       )}
       {tradeModal && (
-        <BTTradeModal tr={tradeModal} num={tradeNums[tradeModal.id]} onClose={() => setTradeModal(null)} onOpenSession={openSessionFromModal} />
+        <BTTradeModal tr={tradeModal} num={tradeNums[tradeModal.id]} onClose={() => setTradeModal(null)} onOpenSession={openSessionFromModal} isFav={tradeModal ? isFav("t:" + tradeModal.id) : false} onToggleFav={() => tradeModal && toggleFavTrade(tradeModal)} />
       )}
     </div>
   );
@@ -5831,35 +6167,194 @@ function fmtPlanDate(key) {
   return `${BT_WD[(d.getDay() + 6) % 7]}, ${BT_MSHORT[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
+const ACCT_CUSTOM_KEY = "amiir_acct_custom";
+const ACCT_PHASES = ["Phase 1", "Phase 2", "Funded"];
+const ACCT_SIZES = [["5000", "5K"], ["10000", "10K"], ["25000", "25K"], ["50000", "50K"], ["100000", "100K"], ["200000", "200K"]];
+function loadAcctCustom() {
+  try {
+    const o = JSON.parse(localStorage.getItem(ACCT_CUSTOM_KEY) || "{}");
+    return {
+      phases: Array.isArray(o.phases) ? o.phases.filter((x) => typeof x === "string" && x.trim()).slice(0, 20) : [],
+      sizes: Array.isArray(o.sizes) ? o.sizes.map(Number).filter((x) => Number.isFinite(x) && x > 0).slice(0, 20) : []
+    };
+  } catch (e) { return { phases: [], sizes: [] }; }
+}
+function saveAcctCustom(phases, sizes) {
+  try { localStorage.setItem(ACCT_CUSTOM_KEY, JSON.stringify({ phases, sizes })); } catch (e) {}
+}
+function fmtSizeLabel(v) {
+  const n = Number(v);
+  if (Number.isFinite(n) && n >= 1000 && n % 1000 === 0) return (n / 1000) + "K";
+  return String(v);
+}
+function AcctPhaseField({ value, onChange, customs, onAdd, onRemove, accent }) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const cyan = accent === "cyan";
+  const commit = () => { const v = draft.trim(); if (v) onAdd(v); setDraft(""); setAdding(false); };
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <select value={value} onChange={(e) => onChange(e.target.value)} aria-label="Account phase" className={tx(cyan ? "flex-1 bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400" : "flex-1 bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")}>
+          {ACCT_PHASES.concat(customs).map((p) => (<option key={p}>{p}</option>))}
+        </select>
+        <button type="button" onClick={() => { setDraft(""); setAdding(!adding); }} title="Add custom phase" aria-label="Add custom phase" className={tx(cyan ? "shrink-0 p-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-cyan-300 hover:border-cyan-500/40 cursor-pointer transition-colors" : "shrink-0 p-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-sky-300 hover:border-sky-500/40 cursor-pointer transition-colors")}><Plus size={14} /></button>
+      </div>
+      {adding && (
+        <div className="flex items-center gap-2">
+          <input autoFocus placeholder="Custom phase (e.g. 1-Step)" aria-label="Custom phase name" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") commit(); }} className={tx(cyan ? "flex-1 bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400" : "flex-1 bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")} />
+          <button type="button" onClick={commit} className={cyan ? "px-3.5 py-2.5 rounded-xl bg-cyan-500 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer font-mono" : "px-3.5 py-2.5 rounded-xl bg-sky-500 text-xs font-bold text-slate-950 hover:bg-sky-400 cursor-pointer font-mono"}>Add</button>
+        </div>
+      )}
+      {!adding && customs.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {customs.map((p) => (
+            <span key={p} className={tx("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#050914] text-slate-400 border border-slate-800")}>{p}<button type="button" onClick={() => onRemove(p)} title={`Remove ${p}`} aria-label={`Remove custom phase ${p}`} className="text-slate-500 hover:text-rose-300 cursor-pointer font-bold">×</button></span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+function AcctSizeChips({ groupLabel, value, onPick, customs, onAdd, onRemove, accent }) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const cyan = accent === "cyan";
+  const commit = () => { const n = Math.round(Number(draft)); if (Number.isFinite(n) && n > 0) onAdd(n); setDraft(""); setAdding(false); };
+  const chipCls = (on) => cyan
+    ? `px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border transition-all cursor-pointer ${on ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" : "bg-[#050914] text-slate-400 border-slate-800 hover:text-white hover:border-slate-600"}`
+    : `px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border transition-all cursor-pointer ${on ? "bg-sky-500/20 text-sky-300 border-sky-500/40" : "bg-[#050914] text-slate-400 border-slate-800 hover:text-white hover:border-slate-600"}`;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label={groupLabel}>
+          <span className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold mr-0.5">Size:</span>
+          {ACCT_SIZES.map(([v, label]) => (
+            <button key={label} type="button" onClick={() => onPick(v)} className={tx(chipCls(String(value ?? "") === v))}>{label}</button>
+          ))}
+          {customs.map((sn) => (
+            <span key={sn} className="inline-flex items-center gap-0.5">
+              <button type="button" onClick={() => onPick(String(sn))} title={`Set size ${sn}`} className={tx(chipCls(String(value ?? "") === String(sn)))}>{fmtSizeLabel(sn)}</button>
+              <button type="button" onClick={() => onRemove(sn)} title={`Remove ${fmtSizeLabel(sn)}`} aria-label={`Remove custom size ${sn}`} className={tx("px-1 py-1 rounded-full text-[10px] font-mono font-bold text-slate-500 hover:text-rose-300 cursor-pointer")}>×</button>
+            </span>
+          ))}
+        </div>
+        <button type="button" onClick={() => { setDraft(""); setAdding(!adding); }} title="Add custom size" aria-label="Add custom size" className={tx(cyan ? "p-1.5 rounded-full border border-slate-800 text-slate-400 hover:text-cyan-300 hover:border-cyan-500/40 cursor-pointer transition-colors" : "p-1.5 rounded-full border border-slate-800 text-slate-400 hover:text-sky-300 hover:border-sky-500/40 cursor-pointer transition-colors")}><Plus size={12} /></button>
+      </div>
+      {adding && (
+        <div className="flex items-center gap-2">
+          <input autoFocus type="number" min="1" step="1" placeholder="Custom size ($)" aria-label="Custom size amount" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") commit(); }} className={tx(cyan ? "flex-1 bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400" : "flex-1 bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")} />
+          <button type="button" onClick={commit} className={cyan ? "px-3.5 py-2.5 rounded-xl bg-cyan-500 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer font-mono" : "px-3.5 py-2.5 rounded-xl bg-sky-500 text-xs font-bold text-slate-950 hover:bg-sky-400 cursor-pointer font-mono"}>Add</button>
+        </div>
+      )}
+    </div>
+  );
+}
 function Accounts() {
   const { t, accountSearchQuery, setAccountSearchQuery, accountTypeFilter, setAccountTypeFilter, filteredAccounts, accounts, trades, accountsCollapsed, setAccountsCollapsed, planningCollapsed, setPlanningCollapsed, setAccountForm, setEditingAccountId, setShowAccModal, setShowPlanningModal, accountForm, editingAccountId, showAccModal, saveAccount, startEditAccount, moveToTrash, plannedAccounts, planningForm, setPlanningForm, showPlanningModal, savePlannedAccount, startEditPlan, editingPlanId, setEditingPlanId, user, fmtR, fmtDollar } = useApp();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const openAddAccount = () => {
-    setAccountForm({ name: "", type: "Funded", initialBalance: "100000", mt5Id: "", logo: "", website: "", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", phase: "Phase 1" });
+    setAccountForm({ name: "", type: "Funded", initialBalance: "100000", mt5Id: "", logo: "", website: "", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", phase: "Phase 1", note: "", amountPaid: "" });
     setEditingAccountId(null);
     setShowAddMenu(false);
     setShowAccModal(true);
   };
   const openAddPlan = () => {
-    setPlanningForm({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", logo: "", website: "", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
+    setPlanningForm({ firmName: "", challengeSize: "100000", plannedStartDate: "", phase: "Phase 1", dailyLossLimit: "5", maxDrawdown: "10", profitTarget: "8", logo: "", website: "", note: "", amountPaid: "", rules: { maxDailyTrades: false, noOvernight: false, newsRestriction: false } });
     setEditingPlanId(null);
     setShowAddMenu(false);
     setShowPlanningModal(true);
   };
   const [sizeFilter, setSizeFilter] = useState(null);
+  const [showTypePopover, setShowTypePopover] = useState(false);
+  const typePopoverRef = useRef(null);
+  useEffect(() => {
+    if (!showTypePopover) return;
+    const onDown = (e) => { if (typePopoverRef.current && !typePopoverRef.current.contains(e.target)) setShowTypePopover(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [showTypePopover]);
+  const acctHasFilter = accountSearchQuery !== "" || accountTypeFilter !== "all" || sizeFilter != null;
+  const clearAcctFilters = () => { setAccountSearchQuery(""); setAccountTypeFilter("all"); setSizeFilter(null); };
+  const [acctCustom, setAcctCustom] = useState(loadAcctCustom);
+  const customPhases = acctCustom.phases;
+  const customSizes = acctCustom.sizes;
+  const setCustomBoth = (phases, sizes) => { setAcctCustom({ phases, sizes }); saveAcctCustom(phases, sizes); };
+  const addCustomPhase = (v) => {
+    const t = String(v || "").trim();
+    if (!t) return;
+    if (ACCT_PHASES.concat(customPhases).some((p) => p.toLowerCase() === t.toLowerCase())) return;
+    setCustomBoth([...customPhases, t], customSizes);
+  };
+  const removeCustomPhase = (v) => {
+    setCustomBoth(customPhases.filter((p) => p !== v), customSizes);
+    if (accountForm.phase === v) setAccountForm({ ...accountForm, phase: "Phase 1" });
+    if (planningForm.phase === v) setPlanningForm({ ...planningForm, phase: "Phase 1" });
+  };
+  const addCustomSize = (n) => {
+    if (!Number.isFinite(n) || n <= 0) return;
+    if (ACCT_SIZES.some(([v]) => Number(v) === n) || customSizes.includes(n)) return;
+    setCustomBoth(customPhases, [...customSizes, n].sort((a, b) => a - b));
+  };
+  const removeCustomSize = (n) => setCustomBoth(customPhases, customSizes.filter((x) => x !== n));
   const sizeOk = (v) => sizeFilter == null || Number(v) === sizeFilter;
   const visibleActive = (filteredAccounts || []).filter((acc) => sizeOk(acc.initialBalance));
   const visiblePlanned = (plannedAccounts || []).filter((p) => sizeOk(p.challengeSize) && (accountTypeFilter === "all" || accountTypeFilter === "Plan"));
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[220px]"><Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" /><input value={accountSearchQuery} onChange={(e) => setAccountSearchQuery(e.target.value)} placeholder="Search accounts..." className={tx("w-full bg-[#050914] border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white font-mono focus:border-sky-400")} /></div>
-        <div title="Filter accounts" className="relative flex-shrink-0">
-          <Filter size={13} className={tx("absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 pointer-events-none")} />
-          <select value={accountTypeFilter} onChange={(e) => setAccountTypeFilter(e.target.value)} className={tx("appearance-none bg-[#050914] border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-300 cursor-pointer font-mono focus:outline-none focus:border-sky-500")}><option value="all">All types</option><option value="Funded">Funded</option><option value="Challenge">Challenge</option><option value="Real">Real</option><option value="Demo">Demo</option><option value="Plan">Plan</option></select>
-          <ChevronDown size={13} className={tx("absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none")} />
+      <div className="flex items-start gap-3 flex-wrap">
+        <div className="terminal-card p-3 sm:p-4 rounded-2xl flex-1 min-w-[280px]">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="relative flex-1 min-w-0">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input value={accountSearchQuery} onChange={(e) => setAccountSearchQuery(e.target.value)} placeholder="Search accounts..." className={tx("w-full bg-[#050914] border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white font-mono focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400/40 transition-all placeholder:text-slate-600")} />
+              {accountSearchQuery && (
+                <button type="button" onClick={() => setAccountSearchQuery("")} title="Clear search" aria-label="Clear account search" className={tx("absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 transition-colors")}><X size={12} /></button>
+              )}
+            </div>
+            {acctHasFilter && (
+              <div className={tx("hidden sm:flex items-center px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[10px] font-mono text-slate-400 font-semibold whitespace-nowrap")}>
+                {visibleActive.length + visiblePlanned.length} / {(accounts || []).length + (plannedAccounts || []).length}
+              </div>
+            )}
+            <button type="button" onClick={clearAcctFilters} disabled={!acctHasFilter} title="Clear filters" aria-label="Clear account filters" className={tx(`flex items-center justify-center p-2.5 rounded-xl transition-all cursor-pointer ${acctHasFilter ? "bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 hover:border-rose-500/50" : "bg-slate-900/40 border border-slate-800 text-slate-700 cursor-not-allowed"}`)}><RefreshCw size={14} /></button>
+            <div title="Filter accounts" className="relative flex-shrink-0" ref={typePopoverRef}>
+              <button type="button" onClick={() => setShowTypePopover((v) => !v)} aria-label="Filter accounts by type" className={tx(`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer whitespace-nowrap ${showTypePopover || accountTypeFilter !== "all" ? "bg-sky-500/15 border border-sky-500/40 text-sky-300 shadow-sm shadow-sky-500/5" : "bg-[#050914] border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white"}`)}>
+                <Filter className="w-4 h-4" strokeWidth={2.2} />
+                <span className="hidden sm:inline small-caps tracking-wider">Filters</span>
+                {accountTypeFilter !== "all" && <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-sm shadow-sky-400/50 animate-pulse"></span>}
+              </button>
+              {showTypePopover && (
+                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[240px]">
+                  <div className={tx("absolute -top-1.5 right-5 w-3 h-3 bg-[#080E1E] border-l border-t border-slate-700/80 rotate-45")}></div>
+                  <div role="menu" aria-label="Account type options" className={tx("relative rounded-xl border border-slate-700/70 bg-[#080E1E] shadow-xl shadow-black/50 overflow-hidden backdrop-blur-sm")}>
+                    <div className={tx("flex items-center justify-between px-3 py-2.5 border-b border-slate-800/70")}>
+                      <div className="flex items-center gap-1.5">
+                        <SlidersHorizontal size={12} className={tx("text-sky-400")} strokeWidth={2.2} />
+                        <h4 className={tx("text-[10px] font-mono font-bold text-slate-200 uppercase tracking-[0.08em]")}>Account type</h4>
+                      </div>
+                      <button type="button" onClick={() => setShowTypePopover(false)} aria-label="Close filter menu" className={tx("p-1 rounded-md text-slate-500 hover:text-slate-200 hover:bg-slate-800/80 transition-colors")}><X size={11} /></button>
+                    </div>
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="flex items-center gap-1 text-[9px] font-mono font-semibold uppercase text-slate-500 tracking-[0.08em]"><Wallet size={9} className={tx("text-sky-400")} />Show</label>
+                        {accountTypeFilter !== "all" && <button type="button" onClick={() => setAccountTypeFilter("all")} className={tx("text-[8px] font-mono text-sky-400 hover:text-sky-300 font-bold uppercase tracking-wider")}>Reset</button>}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {[["all", "All"], ["Funded", "Funded"], ["Challenge", "Challenge"], ["Real", "Real"], ["Demo", "Demo"], ["Plan", "Plan"]].map(([id, label]) => {
+                          const on = accountTypeFilter === id;
+                          return (
+                            <button key={id} type="button" role="menuitemradio" aria-checked={on} onClick={() => { setAccountTypeFilter(id); setShowTypePopover(false); }} className={tx(`px-2 py-1 rounded-md text-[10px] font-mono font-semibold border transition-all cursor-pointer ${on ? "bg-sky-500/20 border-sky-500/50 text-sky-300" : "bg-[#050914] border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300"}`)}>{label}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-
         <div className="relative flex-shrink-0">
           <button
             type="button"
@@ -5888,7 +6383,7 @@ function Accounts() {
 
       <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter by account size">
         <span className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold mr-0.5">Size:</span>
-        {[{ v: null, label: "All" }, { v: 5000, label: "5K" }, { v: 10000, label: "10K" }, { v: 25000, label: "25K" }, { v: 50000, label: "50K" }, { v: 100000, label: "100K" }, { v: 200000, label: "200K" }].map((c) => (
+        {[{ v: null, label: "All" }, { v: 5000, label: "5K" }, { v: 10000, label: "10K" }, { v: 25000, label: "25K" }, { v: 50000, label: "50K" }, { v: 100000, label: "100K" }, { v: 200000, label: "200K" }].concat(customSizes.map((sn) => ({ v: sn, label: fmtSizeLabel(sn) }))).map((c) => (
           <button key={c.label} type="button" onClick={() => setSizeFilter(sizeFilter === c.v ? null : c.v)} title={c.v ? `Show ${c.label} accounts` : "Show all sizes"} className={tx(`px-3 py-1.5 rounded-full text-[11px] font-mono font-bold border transition-all cursor-pointer ${sizeFilter === c.v ? "bg-sky-500/20 text-sky-300 border-sky-500/40" : "bg-[#050914] text-slate-400 border-slate-800 hover:text-white hover:border-slate-600"}`)}>
             {c.label}
           </button>
@@ -5942,7 +6437,7 @@ function Accounts() {
                   </div>
                   <div className="flex items-center gap-1">
                     {accHref && <a href={accHref} target="_blank" rel="noreferrer" title={accHref} className={tx("text-slate-400 hover:text-sky-300 p-1")}><ExternalLink size={14} /></a>}
-                    <button type="button" onClick={() => startEditAccount(acc)} className={tx("text-slate-400 hover:text-sky-400 p-1")}>
+                    <button type="button" onClick={() => startEditAccount(acc)} title="Edit account" className={tx("text-slate-400 hover:text-sky-400 p-1")}>
                       <Edit3 size={14} />
                     </button>
                     <button type="button" onClick={() => moveToTrash("account", acc, acc.id)} className={tx("text-slate-400 hover:text-rose-400 p-1")} title="Move account to Trash">
@@ -5968,6 +6463,8 @@ function Accounts() {
                 </div>
 
                 {acc.mt5Id && <div className="text-[11px] text-slate-500 font-mono mt-2">MT5 ID: {acc.mt5Id}</div>}
+                {Number(acc.amountPaid) > 0 && <div className="text-[11px] text-slate-500 font-mono mt-1">Paid: <span className={tx("text-emerald-400 font-bold")}>${Number(acc.amountPaid).toLocaleString()}</span></div>}
+                {acc.note && <div title={acc.note} className="text-[11px] text-slate-400 font-mono mt-1 italic truncate">{acc.note}</div>}
 
                 <div className="mt-2.5 space-y-2 font-mono">
                   <div>
@@ -6044,6 +6541,8 @@ function Accounts() {
                   <div className="text-[10px] text-slate-500 font-mono uppercase">Challenge Size</div>
                   <div className={tx("text-lg font-black text-white font-mono mt-0.5")}>${Number(plan.challengeSize || 0).toLocaleString()}</div>
                 </div>
+                {Number(plan.amountPaid) > 0 && <div className="text-[11px] text-slate-500 font-mono mt-2">Paid: <span className={tx("text-emerald-400 font-bold")}>${Number(plan.amountPaid).toLocaleString()}</span></div>}
+                {plan.note && <div title={plan.note} className="text-[11px] text-slate-400 font-mono mt-1 italic truncate">{plan.note}</div>}
                 <div className="mt-2.5 grid grid-cols-3 gap-1.5 font-mono text-center">
                   <div className={tx("rounded-lg bg-slate-900/60 border border-slate-800 py-1.5 px-1")}><div className="text-[9px] uppercase text-slate-500 font-bold">Daily Loss</div><div className={tx("text-xs font-black text-white mt-0.5")}>{plan.dailyLossLimit}%</div></div>
                   <div className={tx("rounded-lg bg-slate-900/60 border border-slate-800 py-1.5 px-1")}><div className="text-[9px] uppercase text-slate-500 font-bold">Max DD</div><div className={tx("text-xs font-black text-white mt-0.5")}>{plan.maxDrawdown}%</div></div>
@@ -6070,7 +6569,7 @@ function Accounts() {
 
       {showAccModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="terminal-card p-6 rounded-3xl max-w-sm w-full border border-sky-500/40 shadow-2xl">
+          <div className="terminal-card p-6 rounded-3xl max-w-sm w-full border border-sky-500/40 shadow-2xl max-h-[85vh] overflow-y-auto">
             <h4 className={tx("text-sm font-bold text-white mb-4 font-mono")}>{editingAccountId ? t.editAccount : t.addAccount}</h4>
             <div className="space-y-3 mb-4">
               <input
@@ -6096,14 +6595,7 @@ function Accounts() {
                 onChange={(e) => setAccountForm({ ...accountForm, initialBalance: e.target.value })}
                 className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")}
               />
-              <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Quick account size">
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold mr-0.5">Size:</span>
-                {[["5000", "5K"], ["10000", "10K"], ["25000", "25K"], ["50000", "50K"], ["100000", "100K"], ["200000", "200K"]].map(([v, label]) => (
-                  <button key={label} type="button" onClick={() => setAccountForm({ ...accountForm, initialBalance: v })} className={tx(`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border transition-all cursor-pointer ${String(accountForm.initialBalance ?? "") === v ? "bg-sky-500/20 text-sky-300 border-sky-500/40" : "bg-[#050914] text-slate-400 border-slate-800 hover:text-white hover:border-slate-600"}`)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <AcctSizeChips groupLabel="Quick account size" value={accountForm.initialBalance} onPick={(v) => setAccountForm({ ...accountForm, initialBalance: v })} customs={customSizes} onAdd={addCustomSize} onRemove={removeCustomSize} accent="sky" />
               <input
                 placeholder="MT5 ID (Optional)"
                 value={accountForm.mt5Id}
@@ -6124,9 +6616,20 @@ function Accounts() {
                 <label className="text-[9px] text-slate-500 font-mono">Max Drawdown (%)<input type="number" step="0.1" value={accountForm.maxDrawdown} onChange={(e) => setAccountForm({ ...accountForm, maxDrawdown: e.target.value })} className={tx("mt-1 w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")} /></label>
                 <label className="text-[9px] text-slate-500 font-mono">Profit Target (%)<input type="number" step="0.1" value={accountForm.profitTarget} onChange={(e) => setAccountForm({ ...accountForm, profitTarget: e.target.value })} className={tx("mt-1 w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")} /></label>
               </div>
-              <select value={accountForm.phase} onChange={(e) => setAccountForm({ ...accountForm, phase: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")}>
-                <option>Phase 1</option><option>Phase 2</option><option>Funded</option>
-              </select>
+              <input
+                placeholder="Note"
+                value={accountForm.note}
+                onChange={(e) => setAccountForm({ ...accountForm, note: e.target.value })}
+                className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")}
+              />
+              <input
+                type="number" min="0" step="0.01"
+                placeholder="Amount Paid ($)"
+                value={accountForm.amountPaid}
+                onChange={(e) => setAccountForm({ ...accountForm, amountPaid: e.target.value })}
+                className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-400")}
+              />
+              <AcctPhaseField value={accountForm.phase} onChange={(v) => setAccountForm({ ...accountForm, phase: v })} customs={customPhases} onAdd={addCustomPhase} onRemove={removeCustomPhase} accent="sky" />
             </div>
             <div className="flex gap-2 font-mono">
               <button type="button" onClick={() => setShowAccModal(false)} className={tx("flex-1 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 font-bold")}>{t.cancel}</button>
@@ -6138,21 +6641,27 @@ function Accounts() {
 
       {showPlanningModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="terminal-card p-6 rounded-3xl max-w-lg w-full border border-cyan-500/40 shadow-2xl">
+          <div className="terminal-card p-6 rounded-3xl max-w-lg w-full border border-cyan-500/40 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4"><h4 className={tx("text-sm font-bold text-white font-mono flex items-center gap-2")}><Rocket size={16} className={tx("text-cyan-400")} /> {editingPlanId ? "Edit Planned Account" : "Plan Prop Firm Account"}</h4><button type="button" onClick={() => setShowPlanningModal(false)} className={tx("p-1 text-slate-400 hover:text-white")}><X size={16} /></button></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <input placeholder="Firm name (e.g. FTMO)" value={planningForm.firmName} onChange={(e) => setPlanningForm({ ...planningForm, firmName: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")} />
               <input type="number" placeholder="Challenge size ($)" value={planningForm.challengeSize} onChange={(e) => setPlanningForm({ ...planningForm, challengeSize: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")} />
-              <div className="col-span-1 sm:col-span-2 flex items-center gap-1.5 flex-wrap" role="group" aria-label="Quick challenge size">
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold mr-0.5">Size:</span>
-                {[["5000", "5K"], ["10000", "10K"], ["25000", "25K"], ["50000", "50K"], ["100000", "100K"], ["200000", "200K"]].map(([v, label]) => (
-                  <button key={label} type="button" onClick={() => setPlanningForm({ ...planningForm, challengeSize: v })} className={tx(`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border transition-all cursor-pointer ${String(planningForm.challengeSize ?? "") === v ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" : "bg-[#050914] text-slate-400 border-slate-800 hover:text-white hover:border-slate-600"}`)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <AcctSizeChips groupLabel="Quick challenge size" value={planningForm.challengeSize} onPick={(v) => setPlanningForm({ ...planningForm, challengeSize: v })} customs={customSizes} onAdd={addCustomSize} onRemove={removeCustomSize} accent="cyan" />
               <input type="date" value={planningForm.plannedStartDate} onChange={(e) => setPlanningForm({ ...planningForm, plannedStartDate: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")} />
-              <select value={planningForm.phase} onChange={(e) => setPlanningForm({ ...planningForm, phase: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")}><option>Phase 1</option><option>Phase 2</option><option>Funded</option></select>
+              <input
+                placeholder="Note"
+                value={planningForm.note}
+                onChange={(e) => setPlanningForm({ ...planningForm, note: e.target.value })}
+                className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")}
+              />
+              <input
+                type="number" min="0" step="0.01"
+                placeholder="Amount Paid ($)"
+                value={planningForm.amountPaid}
+                onChange={(e) => setPlanningForm({ ...planningForm, amountPaid: e.target.value })}
+                className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")}
+              />
+              <AcctPhaseField value={planningForm.phase} onChange={(v) => setPlanningForm({ ...planningForm, phase: v })} customs={customPhases} onAdd={addCustomPhase} onRemove={removeCustomPhase} accent="cyan" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <input placeholder="Prop firm website (e.g. https://ftmo.com)" value={planningForm.website || ""} onChange={(e) => setPlanningForm({ ...planningForm, website: e.target.value })} className={tx("w-full bg-[#050914] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-cyan-400")} />
@@ -7530,5 +8039,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3a6e94dfac18a1c',t:'MTc4OTI5OTk4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3ad154ee900e6b4',t:'MTc4OTM2NDcwMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+dy>
 </html>
