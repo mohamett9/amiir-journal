@@ -653,7 +653,7 @@ const MONTH_NAMES = [
        ══════════════════════════════════════════════════════════════════════ */
 
 // Image resizing for fast cloud sync
-function resizeImage(dataUrl, maxWidth = 900) {
+function resizeImage(dataUrl, maxWidth = 1600) {
       return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
@@ -664,7 +664,7 @@ function resizeImage(dataUrl, maxWidth = 900) {
             canvas.height = Math.round(img.height * scale);
             const ctx = canvas.getContext("2d");
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL("image/jpeg", 0.78));
+            resolve(canvas.toDataURL("image/jpeg", 0.92));
           } catch (err) {
             reject(err);
           }
@@ -1738,6 +1738,32 @@ function AppProvider({ children }) {
         }
       };
 
+      const handlePasteImages = async (e) => {
+        const dt = e.clipboardData || (e.nativeEvent && e.nativeEvent.clipboardData);
+        if (!dt) return;
+        const files = Array.from(dt.files || []).filter((f) => f.type && f.type.startsWith("image/"));
+        if (!files.length) return;
+        e.preventDefault();
+        try {
+          const newImgs = await Promise.all(files.map((file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = async () => {
+                const resized = await resizeImage(reader.result);
+                resolve(resized);
+              };
+              reader.readAsDataURL(file);
+            });
+          }));
+          setForm((prev) => ({
+            ...prev,
+            images: [...(prev.images || []), ...newImgs]
+          }));
+        } catch (err) {
+          setError("Image paste failed.");
+        }
+      };
+
       // Handle Community Images
       const handleCommunityFiles = async (e) => {
         const files = Array.from(e.target.files || []);
@@ -1865,8 +1891,7 @@ function AppProvider({ children }) {
           tags: btCsv(form.tags),
           mistakes: btCsv(form.mistakes),
           entryTime: form.entryTime || "",
-          exitTime: form.exitTime || "",
-          duration: form.duration || ""
+          exitTime: form.exitTime || ""
         } : {};
 
         const tradeData = {
@@ -1887,6 +1912,7 @@ function AppProvider({ children }) {
           images: form.images || [],
           chartUrl: (form.chartUrl || "").trim(),
           checklist: form.checklist || [],
+          duration: form.duration || "",
           tradeType: form.tradeType || "live",
           ...btExtraFields,
           updatedAt: new Date().toISOString()
@@ -2470,7 +2496,7 @@ function AppProvider({ children }) {
     // formatters
     fmtTradeZella, fmtCalendarPnl, fmtR, fmtDollar,
     // handlers
-    unlockAdminMode, handleMultipleImages, handleCommunityFiles,
+    unlockAdminMode, handleMultipleImages, handlePasteImages, handleCommunityFiles,
     removeChatImage, toggleChecklistItem,
     addCustomChecklistItem, removeCustomChecklistItem,
     saveTrade, startEditTrade, removeTrade, saveBacktestSession, deleteBacktestSession,
@@ -2570,7 +2596,7 @@ function ChipSelector({ label, values, onChange, suggestions, tone, inputPlaceho
   );
 }
 function TradeForm() {
-  const { t, editingId, error, form, setForm, accounts, backtestSessions, backtestTrades, setShowForm, setEditingId, saveTrade, checklistItems, showChecklistEditor, setShowChecklistEditor, newChecklistInput, setNewChecklistInput, addCustomChecklistItem, removeCustomChecklistItem, toggleChecklistItem, handleMultipleImages, tagItems, mistakeItems, addCustomTag, removeCustomTag, renameCustomTag, addCustomMistake, removeCustomMistake, renameCustomMistake } = useApp();
+  const { t, editingId, error, form, setForm, accounts, backtestSessions, backtestTrades, setShowForm, setEditingId, saveTrade, checklistItems, showChecklistEditor, setShowChecklistEditor, newChecklistInput, setNewChecklistInput, addCustomChecklistItem, removeCustomChecklistItem, toggleChecklistItem, handleMultipleImages, handlePasteImages, tagItems, mistakeItems, addCustomTag, removeCustomTag, renameCustomTag, addCustomMistake, removeCustomMistake, renameCustomMistake } = useApp();
   const btKnownStrategies = useMemo(() => [...new Set((backtestTrades || []).map((x) => (x.strategy || "").trim()).filter(Boolean))].sort(), [backtestTrades]);
   return (
     <div className="terminal-card p-5 sm:p-7 rounded-3xl mb-8 border border-sky-500/40 shadow-2xl animate-in fade-in duration-200">
@@ -2826,10 +2852,7 @@ function TradeForm() {
                 <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>Setup</label>
                 <input value={form.setup || ""} onChange={(e) => setForm({ ...form, setup: e.target.value })} placeholder="e.g. MSS + FVG entry" className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono")} />
               </div>
-              <div>
-                <label htmlFor="trade-duration" className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>Duration</label>
-                <input id="trade-duration" value={form.duration || ""} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="e.g. 45 mins, 2h" className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono")} />
-              </div>
+
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
               <ChipSelector label="Tags" values={form.tags} onChange={(v) => setForm({ ...form, tags: v })} suggestions={tagItems} tone="cyan" inputPlaceholder="Type + Enter to add" chipsLabel="Trade tags" customKind="tag" onAddCustom={addCustomTag} onRemoveCustom={removeCustomTag} onRenameCustom={renameCustomTag} />
@@ -2900,6 +2923,11 @@ function TradeForm() {
                 className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-sky-400")}
               />
             </div>
+
+            <div>
+              <label htmlFor="trade-duration" className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>Duration</label>
+              <input id="trade-duration" value={form.duration || ""} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="e.g. 45 mins, 2h" className={tx("w-full bg-[#050914] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-sky-400")} />
+            </div>
           </div>
         </div>
 
@@ -2909,7 +2937,7 @@ function TradeForm() {
             <ImageIcon size={13} /> {t.analysisNotes || "Analysis & Media"}
           </div>
 
-          <div>
+          <div onPaste={handlePasteImages}>
             <label className={tx("text-[10px] uppercase font-mono text-slate-400 block mb-1 font-semibold")}>{t.chartsTitle}</label>
             <input
               type="file"
@@ -2918,6 +2946,7 @@ function TradeForm() {
               onChange={handleMultipleImages}
               className={tx("block w-full text-xs text-slate-400 cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-sky-500/15 file:text-sky-300 file:text-xs file:font-mono font-mono")}
             />
+            <div className="text-[10px] font-mono text-slate-500 mt-1.5">Tip: click here, then Ctrl+V / Cmd+V to paste screenshots</div>
             {form.images?.length > 0 && (
               <div className="flex gap-3 mt-3 flex-wrap">
                 {form.images.map((img, i) => (
@@ -4885,12 +4914,18 @@ function btOutcomeBadge(o) {
 }
 
 function BTTradesTable({ list, onOpen, onZoom, onLog, emptyTitle, emptySub, ariaLabel }) {
+  const addBar = onLog ? (
+    <div className="flex justify-end mb-2">
+      <button type="button" onClick={onLog} title="Log a trade" className={tx("flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-800 text-cyan-300 hover:border-cyan-500/40 hover:bg-cyan-500/10 text-[11px] font-bold transition-all cursor-pointer font-mono")}><Plus size={13} /> New trade</button>
+    </div>
+  ) : null;
   if (!list || list.length === 0) {
-    return <BTEmpty title={emptyTitle || "No trades here yet"} sub={emptySub || "Trades in this period will appear here automatically."} action={onLog ? <button type="button" onClick={onLog} className="px-4 py-2.5 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition-colors cursor-pointer">Log a backtest trade</button> : null} />;
+    return <>{addBar}<BTEmpty title={emptyTitle || "No trades here yet"} sub={emptySub || "Trades in this period will appear here automatically."} action={onLog ? <button type="button" onClick={onLog} className="px-4 py-2.5 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition-colors cursor-pointer">Log a backtest trade</button> : null} /></>;
   }
   const rows = btSortChrono(list).slice().reverse();
   const th = "px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap";
   return (
+    <>{addBar}
     <div className="terminal-card rounded-2xl overflow-hidden">
       <div className="overflow-x-auto">
         <table aria-label={ariaLabel} className="w-full min-w-[1020px] border-collapse text-left">
@@ -4953,6 +4988,7 @@ function BTTradesTable({ list, onOpen, onZoom, onLog, emptyTitle, emptySub, aria
         </table>
       </div>
     </div>
+    </>
   );
 }
 
@@ -8678,5 +8714,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3aeb6907a99e189',t:'MTc4OTM4MTc5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b1b2008d04aea6',t:'MTc4OTQxMzA2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+dy>
 </html>
