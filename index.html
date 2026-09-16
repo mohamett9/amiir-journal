@@ -99,6 +99,7 @@
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
         "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0"
       }
@@ -306,6 +307,21 @@
       .tt-pop { animation: none; }
       body.theme-anim, body.theme-anim *, body.theme-anim *::before, body.theme-anim *::after { transition: none !important; }
     }
+
+    /* ── Admin console motion (drawer / dialog / menu) ── */
+    @keyframes adm-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes adm-slide-in { from { transform: translateX(26px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes adm-pop-in { from { transform: translateY(8px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+    .adm-fade { animation: adm-fade-in .18s ease-out; }
+    .adm-drawer { animation: adm-slide-in .26s cubic-bezier(.16,1,.3,1); }
+    .adm-pop { animation: adm-pop-in .18s cubic-bezier(.16,1,.3,1); }
+    @media (prefers-reduced-motion: reduce) {
+      .adm-fade, .adm-drawer, .adm-pop { animation: none; }
+    }
+    /* Native select options stay readable in light mode */
+    html.light .adm-opt { background: #FFFFFF; color: #0F172A; }
+    /* Admin table row focus ring sits inside the row */
+    .adm-row:focus-visible { outline-offset: -2px; }
 
     /* ── Light-mode gradient stops (dark→light stop remaps; other utilities swap via tx()) ── */
 
@@ -840,6 +856,7 @@ var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=ne
     // ── React (ESM via importmap) ─────────────────────────────────────────
     import React, { useState, useEffect, useMemo, useRef, createContext, useContext } from "react";
     import ReactDOM from "react-dom/client";
+    import { createPortal } from "react-dom";
     import {
       Plus, TrendingUp, TrendingDown, Trash2, Edit3, X, ChevronDown, ChevronUp,
       ChevronLeft, ChevronRight, Image as ImageIcon, LayoutGrid, ListChecks,
@@ -847,7 +864,9 @@ var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=ne
       Clock, Award, Settings, Star, FlaskConical, Share2, Download, ZoomIn, ZoomOut, RotateCcw,
       Sparkles, MessageCircle, ShieldCheck, Activity, Users, Radio, Pin, Search, Bot,
       Filter, Check, ExternalLink, Flame, Rocket, Heart, ArrowUpRight, ArrowDownRight,
-      SlidersHorizontal, RefreshCw, BarChart2, BarChart3, Target, Layers, Calendar, CalendarRange, CheckCircle2, Instagram, Facebook, Moon, Sun, Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, LogIn
+      SlidersHorizontal, RefreshCw, BarChart2, BarChart3, Target, Layers, Calendar, CalendarRange, CheckCircle2, Instagram, Facebook, Moon, Sun, Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, LogIn,
+      MoreVertical, CreditCard, DollarSign, AlertTriangle, UserCheck, Ban, Copy, Inbox, Gauge,
+      Receipt, Zap, BadgeCheck, Hourglass, Loader2, Banknote, Info, XCircle, CalendarDays
     } from "lucide-react";
 
     // Firebase imports
@@ -2185,6 +2204,13 @@ function AppProvider({ children }) {
       // Presence & Live Monitor
       const [presenceUsers, setPresenceUsers] = useState([]);
 
+      // Admin console — billing + moderation records (creator only)
+      const [adminBilling, setAdminBilling] = useState({});
+      const [adminModeration, setAdminModeration] = useState({});
+      const [adminSampleMode, setAdminSampleMode] = useState(() => {
+        try { return localStorage.getItem("amiir_admin_sample") === "true"; } catch (e) { return false; }
+      });
+
       // Updates Tab State
       const [appUpdates, setAppUpdates] = useState([]);
       const [showNewUpdateForm, setShowNewUpdateForm] = useState(false);
@@ -2364,6 +2390,11 @@ function AppProvider({ children }) {
         return () => window.removeEventListener("amiir-theme", onTheme);
       }, []);
 
+      // Aggregate usage counters published with the presence heartbeat.
+      // Counts only — never trade contents, notes or screenshots.
+      const usageRef = useRef({});
+      const presencePingRef = useRef(null);
+
       // Auth Listener and Live Presence Heartbeat
       useEffect(() => {
         const unsub = onAuthStateChanged(auth, (u) => {
@@ -2373,15 +2404,28 @@ function AppProvider({ children }) {
           if (u) {
             const updatePresence = () => {
               const uRef = doc(db, "users_presence", u.uid);
+              const ua = navigator.userAgent || "";
+              const created = (() => {
+                const meta = u.metadata || {};
+                const ms = Date.parse(meta.creationTime || "");
+                return isNaN(ms) ? Date.now() : ms;
+              })();
               setDoc(uRef, {
                 uid: u.uid,
                 name: u.displayName || "Trader",
                 email: u.email || "",
                 photo: u.photoURL || "",
                 lastSeen: Date.now(),
-                device: navigator.userAgent.includes("Mobile") ? "Mobile" : "Desktop"
+                createdAt: created,
+                device: /Mobile|Android|iPhone|iPad/i.test(ua) ? "Mobile" : "Desktop",
+                platform: /iPhone|iPad|iPod/i.test(ua) ? "iOS" : /Android/i.test(ua) ? "Android" : /Mac/i.test(ua) ? "macOS" : /Windows/i.test(ua) ? "Windows" : "Web",
+                provider: (u.providerData && u.providerData[0] && u.providerData[0].providerId) || (u.isAnonymous ? "anonymous" : ""),
+                emailVerified: !!u.emailVerified,
+                isAnonymous: !!u.isAnonymous,
+                usage: usageRef.current
               }, { merge: true }).catch(() => {});
             };
+            presencePingRef.current = updatePresence;
 
             updatePresence();
             const interval = setInterval(updatePresence, 35000);
@@ -2413,6 +2457,73 @@ function AppProvider({ children }) {
         const now = Date.now();
         return presenceUsers.filter(u => (now - (u.lastSeen || 0)) < 90000).length;
       }, [presenceUsers]);
+
+      /* ── Admin console data plane (creator only) ──
+         users_billing/{uid}  → plan, status, price, renewal, payments[]
+         users_admin/{uid}    → suspend / delete moderation + audit events
+         Both listeners are optional: if the collections do not exist (or the
+         rules deny them) the panel simply renders with presence data only. */
+      useEffect(() => {
+        if (!isAdmin) { setAdminBilling({}); return; }
+        const unsub = onSnapshot(collection(db, "users_billing"), (snap) => {
+          const map = {};
+          snap.forEach((d) => { map[d.id] = { uid: d.id, ...d.data() }; });
+          setAdminBilling(map);
+        }, () => setAdminBilling({}));
+        return () => unsub();
+      }, [isAdmin]);
+
+      useEffect(() => {
+        if (!isAdmin) { setAdminModeration({}); return; }
+        const unsub = onSnapshot(collection(db, "users_admin"), (snap) => {
+          const map = {};
+          snap.forEach((d) => { map[d.id] = { uid: d.id, ...d.data() }; });
+          setAdminModeration(map);
+        }, () => setAdminModeration({}));
+        return () => unsub();
+      }, [isAdmin]);
+
+      // Presence + billing + moderation joined into the admin row shape.
+      const adminUsers = useMemo(() => {
+        if (!isAdmin) return [];
+        const seen = {};
+        const rows = [];
+        presenceUsers.forEach((p) => {
+          if (!p || !p.uid) return;
+          seen[p.uid] = true;
+          rows.push(admNormalizeUser(p, adminBilling[p.uid], adminModeration[p.uid]));
+        });
+        // Billing records without a presence doc still deserve a row.
+        Object.keys(adminBilling).forEach((uid) => {
+          if (seen[uid]) return;
+          rows.push(admNormalizeUser({ uid: uid, name: adminBilling[uid].name || "Trader", email: adminBilling[uid].email || "" }, adminBilling[uid], adminModeration[uid]));
+        });
+        return rows.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+      }, [isAdmin, presenceUsers, adminBilling, adminModeration]);
+
+      useEffect(() => {
+        try { localStorage.setItem("amiir_admin_sample", adminSampleMode ? "true" : "false"); } catch (e) {}
+      }, [adminSampleMode]);
+
+      const adminWriteModeration = async (uid, patch, event) => {
+        if (!isAdmin || !uid) throw new Error("not-allowed");
+        const prev = adminModeration[uid] || {};
+        const events = Array.isArray(prev.events) ? prev.events.slice(-49) : [];
+        if (event) events.push({ ...event, at: Date.now(), by: user?.email || "creator" });
+        await setDoc(doc(db, "users_admin", uid), { uid, ...patch, events, updatedAt: Date.now() }, { merge: true });
+      };
+
+      const adminSuspendUser = (uid, reason) =>
+        adminWriteModeration(uid, { status: "suspended", suspendedAt: Date.now(), reason: reason || "" }, { type: "suspended", note: reason || "" });
+
+      const adminUnsuspendUser = (uid) =>
+        adminWriteModeration(uid, { status: "active", suspendedAt: null, reason: "" }, { type: "reinstated", note: "" });
+
+      const adminDeleteUser = async (uid) => {
+        await adminWriteModeration(uid, { status: "deleted", deletedAt: Date.now() }, { type: "deleted", note: "" });
+        // Drop the presence record so the account leaves the live roster.
+        await deleteDoc(doc(db, "users_presence", uid)).catch(() => {});
+      };
 
       // Realtime Trades Listener
       useEffect(() => {
@@ -3184,6 +3295,26 @@ function AppProvider({ children }) {
 
       const monthStats = useMemo(() => computeMonthStats(calendarWeeks), [calendarWeeks]);
 
+      /* Publish aggregate usage counts with the next presence heartbeat so the
+         admin console can show engagement without ever reading trade content. */
+      useEffect(() => {
+        if (!user) return;
+        const latest = trades.reduce((best, tr) => {
+          const d = String(tr.date || "").slice(0, 10);
+          return d > best ? d : best;
+        }, "");
+        usageRef.current = {
+          trades: trades.length,
+          backtests: backtestTrades.length,
+          notes: notes.length,
+          accounts: accounts.length,
+          planned: plannedAccounts.length,
+          lastTradeDate: latest
+        };
+        const id = setTimeout(() => { if (presencePingRef.current) presencePingRef.current(); }, 1200);
+        return () => clearTimeout(id);
+      }, [user, trades.length, backtestTrades.length, notes.length, accounts.length, plannedAccounts.length, trades]);
+
       const fmtTradeZella = (netDollar, netR, mode) => {
         if (mode === "%") {
           return (netR >= 0 ? "+" : "") + Number(netR).toFixed(1) + "R";
@@ -3340,6 +3471,10 @@ function AppProvider({ children }) {
     // derived
     isAdmin, onlineCount, filteredTrades, backtestStats, filteredAccounts,
     stats, weeklyConsistency, dayMap, calendarWeeks, monthStats,
+    // admin console
+    adminUsers, adminBilling, adminModeration,
+    adminSampleMode, setAdminSampleMode,
+    adminSuspendUser, adminUnsuspendUser, adminDeleteUser,
     // formatters
     fmtTradeZella, fmtCalendarPnl, fmtR, fmtDollar,
     // handlers
@@ -8200,114 +8335,1520 @@ function Accounts() {
 }
 
     /* ══════════════════════════════════════════════════════════════════════
-       6e. COMPONENT — Admin (TAB 4 · live presence)
+       6e. COMPONENT — Admin suite
+            Overview · Users · Subscriptions · Payments · Settings
+            Gated by isAdmin (AppShell tab + defensive check inside Admin()).
        ══════════════════════════════════════════════════════════════════════ */
 
-function Admin() {
-  const { onlineCount, presenceUsers, trades, chatMessages } = useApp();
+const ADMIN_SECTIONS = [
+  { id: "overview", label: "Overview", icon: Gauge },
+  { id: "users", label: "Users", icon: Users },
+  { id: "subscriptions", label: "Subscriptions", icon: BadgeCheck },
+  { id: "payments", label: "Payments", icon: CreditCard },
+  { id: "settings", label: "Settings", icon: Settings }
+];
+
+const ADMIN_PLANS = {
+  free:    { id: "free",    label: "Free",    price: 0,  chip: "bg-slate-500/15 text-slate-300 border-slate-500/25", bar: "bg-slate-500" },
+  starter: { id: "starter", label: "Starter", price: 9,  chip: "bg-sky-500/15 text-sky-300 border-sky-500/30",       bar: "bg-sky-500" },
+  pro:     { id: "pro",     label: "Pro",     price: 29, chip: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",    bar: "bg-cyan-400" },
+  elite:   { id: "elite",   label: "Elite",   price: 79, chip: "bg-amber-500/15 text-amber-300 border-amber-500/30", bar: "bg-amber-400" }
+};
+const ADMIN_PLAN_ORDER = ["free", "starter", "pro", "elite"];
+
+const ADMIN_STATUS = {
+  active:    { label: "Active",    chip: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400" },
+  trial:     { label: "Trial",     chip: "bg-sky-500/15 text-sky-300 border-sky-500/30",             dot: "bg-sky-400" },
+  inactive:  { label: "Inactive",  chip: "bg-slate-500/10 text-slate-400 border-slate-500/25",       dot: "bg-slate-500" },
+  suspended: { label: "Suspended", chip: "bg-amber-500/15 text-amber-300 border-amber-500/30",       dot: "bg-amber-400" },
+  deleted:   { label: "Deleted",   chip: "bg-rose-500/15 text-rose-300 border-rose-500/30",          dot: "bg-rose-400" }
+};
+
+const ADMIN_RANGES = [{ id: "1d", label: "Today", days: 1 }, { id: "7d", label: "7D", days: 7 }, { id: "30d", label: "30D", days: 30 }];
+const ADM_DAY = 86400000;
+const ADM_ACTIVE_WINDOW = 7 * ADM_DAY;   // "Active" = seen within 7 days
+const ADM_ONLINE_WINDOW = 90000;         // presence heartbeat window
+
+const ADM_AVATAR_TINTS = [
+  "bg-sky-500/15 text-sky-300 border-sky-500/25",
+  "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
+  "bg-amber-500/15 text-amber-300 border-amber-500/25",
+  "bg-violet-500/15 text-violet-300 border-violet-500/25",
+  "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
+  "bg-rose-500/15 text-rose-300 border-rose-500/25"
+];
+
+const ADM_TONE = {
+  rose:    { wrap: "bg-rose-500/10 border-rose-500/25",       icon: "text-rose-400",    badge: "bg-rose-500/15 text-rose-300 border-rose-500/30",          dot: "bg-rose-400" },
+  amber:   { wrap: "bg-amber-500/10 border-amber-500/25",     icon: "text-amber-400",   badge: "bg-amber-500/15 text-amber-300 border-amber-500/30",       dot: "bg-amber-400" },
+  sky:     { wrap: "bg-sky-500/10 border-sky-500/25",         icon: "text-sky-400",     badge: "bg-sky-500/15 text-sky-300 border-sky-500/30",             dot: "bg-sky-400" },
+  emerald: { wrap: "bg-emerald-500/10 border-emerald-500/25", icon: "text-emerald-400", badge: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400" },
+  cyan:    { wrap: "bg-cyan-500/10 border-cyan-500/25",       icon: "text-cyan-400",    badge: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",          dot: "bg-cyan-400" },
+  slate:   { wrap: "bg-slate-500/10 border-slate-500/20",     icon: "text-slate-400",   badge: "bg-slate-500/15 text-slate-300 border-slate-500/25",       dot: "bg-slate-400" }
+};
+
+/* ── formatting / small utils ──────────────────────────────────────────── */
+function admHash(str) {
+  let h = 2166136261;
+  const s = String(str || "");
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return Math.abs(h >>> 0);
+}
+function admRng(seed) {
+  let a = seed >>> 0;
+  return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function admNum(n) { return Number(n || 0).toLocaleString("en-US"); }
+function admMoney(n, compact) {
+  const v = Number(n) || 0;
+  if (compact && Math.abs(v) >= 10000) return "$" + (v / 1000).toFixed(Math.abs(v) >= 100000 ? 0 : 1) + "k";
+  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: Math.abs(v) < 100 && v % 1 !== 0 ? 2 : 0 });
+}
+function admPct(n, d) { return (Number(n) || 0).toFixed(d == null ? 1 : d) + "%"; }
+function admDate(ts) {
+  if (!ts) return "—";
+  const dt = new Date(ts);
+  if (isNaN(dt.getTime())) return "—";
+  return dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+function admAgo(ts) {
+  if (!ts) return "Never";
+  const diff = Date.now() - ts;
+  if (diff < 60000) return "Just now";
+  if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+  if (diff < ADM_DAY) return Math.floor(diff / 3600000) + "h ago";
+  if (diff < 30 * ADM_DAY) return Math.floor(diff / ADM_DAY) + "d ago";
+  if (diff < 365 * ADM_DAY) return Math.floor(diff / (30 * ADM_DAY)) + "mo ago";
+  return Math.floor(diff / (365 * ADM_DAY)) + "y ago";
+}
+function admInDays(ts) { return ts ? Math.ceil((ts - Date.now()) / ADM_DAY) : null; }
+function admInitials(name, email) {
+  const src = String(name || email || "T").trim();
+  const parts = src.split(/[\s@._-]+/).filter(Boolean);
+  if (parts.length === 0) return "T";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+function admGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+function admCopy(text, done) {
+  const val = String(text || "");
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(val).then(() => done && done(true)).catch(() => done && done(false));
+      return;
+    }
+  } catch (e) {}
+  done && done(false);
+}
+
+/* ── presence doc + billing doc + moderation doc → one admin row ───────── */
+function admNormalizeUser(presence, billing, moderation) {
+  const p = presence || {};
+  const b = billing || {};
+  const m = moderation || {};
+  const now = Date.now();
+
+  const planId = ADMIN_PLANS[b.plan] ? b.plan : "free";
+  const plan = ADMIN_PLANS[planId];
+  const subStatus = b.status || (planId === "free" ? "none" : "active");
+  const lastSeen = Number(p.lastSeen) || 0;
+  const createdAt = Number(p.createdAt) || Number(b.startedAt) || lastSeen || 0;
+  const payments = Array.isArray(b.payments) ? b.payments : [];
+
+  let status = "active";
+  if (m.status === "deleted") status = "deleted";
+  else if (m.status === "suspended") status = "suspended";
+  else if (subStatus === "trialing") status = "trial";
+  else if (!lastSeen || now - lastSeen > ADM_ACTIVE_WINDOW) status = "inactive";
+
+  return {
+    uid: p.uid || b.uid || m.uid || "",
+    name: p.name || b.name || "Trader",
+    email: p.email || b.email || "",
+    photo: p.photo || "",
+    device: p.device || "",
+    platform: p.platform || "",
+    provider: p.provider || "",
+    emailVerified: !!p.emailVerified,
+    isAnonymous: !!p.isAnonymous,
+    createdAt,
+    lastSeen,
+    online: lastSeen > 0 && now - lastSeen < ADM_ONLINE_WINDOW,
+    usage: p.usage || {},
+    plan: planId,
+    priceMonthly: b.priceMonthly != null ? Number(b.priceMonthly) : plan.price,
+    subStatus,
+    startedAt: Number(b.startedAt) || 0,
+    renewsAt: Number(b.renewsAt) || 0,
+    trialEndsAt: Number(b.trialEndsAt) || 0,
+    paymentMethod: b.paymentMethod || "",
+    payments,
+    lifetimeValue: payments.reduce((s, x) => s + (x && x.status !== "failed" ? Number(x.amount) || 0 : 0), 0),
+    isPaid: planId !== "free" && (subStatus === "active" || subStatus === "past_due"),
+    pastDue: subStatus === "past_due",
+    moderation: m,
+    status,
+    sample: !!p.sample
+  };
+}
+
+/* ── sample dataset (preview only — never written to Firestore) ────────── */
+function admBuildSample() {
+  const names = [
+    "Amiir Prime", "Hodan Yusuf", "Liban Warsame", "Sagal Ahmed", "Khadar Nuur", "Ayaan Farah",
+    "Mustafe Ali", "Ilhan Abdi", "Yasin Omar", "Deqa Hassan", "Bashir Jama", "Nimo Salaad",
+    "Guled Mohamed", "Hafsa Ismail", "Zakariye Aden", "Ubax Osman", "Farhan Diriye", "Sahra Kaltun",
+    "Abdiwahab Kheyre", "Munira Said", "Cabdi Xuseen", "Leyla Barre", "Rooble Shire", "Amal Yonis"
+  ];
+  const domains = ["gmail.com", "outlook.com", "proton.me", "amiir.app"];
+  const methods = ["Visa •••• 4242", "Mastercard •••• 5310", "EVC Plus", "Zaad wallet"];
+  const rnd = admRng(20260916);
+  const now = Date.now();
+  const rows = [];
+
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
+    const handle = name.toLowerCase().replace(/[^a-z]+/g, ".");
+    const r1 = rnd(), r2 = rnd(), r3 = rnd(), r4 = rnd();
+    const planId = r1 < 0.46 ? "free" : r1 < 0.68 ? "starter" : r1 < 0.9 ? "pro" : "elite";
+    const plan = ADMIN_PLANS[planId];
+    const createdAt = now - Math.floor(r2 * 320 + 2) * ADM_DAY;
+    const lastSeen = Math.max(createdAt, now - Math.floor(Math.pow(r3, 2.6) * 52 * ADM_DAY) - Math.floor(r4 * 40000));
+
+    let subStatus = planId === "free" ? "none" : "active";
+    if (planId !== "free" && r4 < 0.16) subStatus = "trialing";
+    else if (planId !== "free" && r4 > 0.93) subStatus = "past_due";
+    else if (planId !== "free" && r4 > 0.88) subStatus = "canceled";
+
+    const payments = [];
+    if (planId !== "free" && subStatus !== "trialing") {
+      const cycles = Math.min(9, 1 + Math.floor(rnd() * 8));
+      for (let c = cycles; c >= 1; c--) {
+        const at = now - c * 30 * ADM_DAY + Math.floor(rnd() * 4 * ADM_DAY);
+        if (at < createdAt) continue;
+        payments.push({ id: "pi_" + admHash(handle + c).toString(36), amount: plan.price, at, status: subStatus === "past_due" && c === 1 ? "failed" : "paid" });
+      }
+    }
+
+    const presence = {
+      uid: "smp_" + admHash(handle).toString(36),
+      name,
+      email: handle + "@" + domains[Math.floor(rnd() * domains.length)],
+      photo: "",
+      lastSeen,
+      createdAt,
+      device: rnd() > 0.42 ? "Mobile" : "Desktop",
+      platform: rnd() > 0.5 ? "iOS" : "Android",
+      provider: rnd() > 0.35 ? "google.com" : "password",
+      emailVerified: rnd() > 0.2,
+      sample: true,
+      usage: {
+        trades: Math.floor(rnd() * 420),
+        backtests: Math.floor(rnd() * 180),
+        notes: Math.floor(rnd() * 40),
+        accounts: Math.floor(rnd() * 5),
+        planned: Math.floor(rnd() * 3),
+        lastTradeDate: new Date(lastSeen - Math.floor(rnd() * 6) * ADM_DAY).toISOString().slice(0, 10)
+      }
+    };
+    const billing = planId === "free" ? null : {
+      plan: planId,
+      status: subStatus,
+      priceMonthly: plan.price,
+      startedAt: createdAt + ADM_DAY,
+      renewsAt: subStatus === "past_due" ? now - Math.floor(rnd() * 6 + 1) * ADM_DAY : now + Math.floor(rnd() * 28 + 1) * ADM_DAY,
+      trialEndsAt: subStatus === "trialing" ? now + Math.floor(rnd() * 9 - 1) * ADM_DAY : 0,
+      paymentMethod: methods[Math.floor(rnd() * methods.length)],
+      payments
+    };
+    const moderation =
+      i === 5 ? { status: "suspended", suspendedAt: now - 3 * ADM_DAY, reason: "Payment dispute under review", events: [{ type: "suspended", at: now - 3 * ADM_DAY, by: "creator", note: "Payment dispute under review" }] } :
+      i === 17 ? { status: "suspended", suspendedAt: now - 26 * ADM_DAY, reason: "Shared login across 4 devices", events: [{ type: "suspended", at: now - 26 * ADM_DAY, by: "creator", note: "Shared login across 4 devices" }] } :
+      null;
+
+    rows.push(admNormalizeUser(presence, billing, moderation));
+  }
+  return rows.sort((a, b) => b.lastSeen - a.lastSeen);
+}
+const ADMIN_SAMPLE_USERS = admBuildSample();
+
+/* ── derived metrics for the Overview module ───────────────────────────── */
+function admMetrics(rows, days) {
+  const now = Date.now();
+  const span = days * ADM_DAY;
+  const from = now - span;
+  const prevFrom = from - span;
+  const live = rows.filter((u) => u.status !== "deleted");
+
+  const paid = live.filter((u) => u.isPaid);
+  const trial = live.filter((u) => u.status === "trial" || u.subStatus === "trialing");
+  const suspended = live.filter((u) => u.status === "suspended");
+  const activeRange = live.filter((u) => u.lastSeen >= from);
+  const activePrev = live.filter((u) => u.lastSeen >= prevFrom && u.lastSeen < from);
+  const active7 = live.filter((u) => u.lastSeen >= now - ADM_ACTIVE_WINDOW);
+  const online = live.filter((u) => u.online);
+  const newUsers = live.filter((u) => u.createdAt >= from);
+  const newPrev = live.filter((u) => u.createdAt >= prevFrom && u.createdAt < from);
+
+  let revenue = 0, revenuePrev = 0, failed = 0;
+  live.forEach((u) => (u.payments || []).forEach((p) => {
+    const at = Number(p.at) || 0, amt = Number(p.amount) || 0;
+    if (p.status === "failed") { if (at >= from) failed += amt; return; }
+    if (at >= from) revenue += amt;
+    else if (at >= prevFrom) revenuePrev += amt;
+  }));
+
+  const mrr = paid.filter((u) => u.subStatus === "active").reduce((s, u) => s + (Number(u.priceMonthly) || 0), 0);
+  const mrrNew = paid.filter((u) => u.subStatus === "active" && u.startedAt >= from).reduce((s, u) => s + (Number(u.priceMonthly) || 0), 0);
+
+  return {
+    total: live.length,
+    paid: paid.length, trial: trial.length, suspended: suspended.length,
+    activeRange: activeRange.length, activePrev: activePrev.length,
+    active7: active7.length, online: online.length, onlineList: online,
+    newUsers: newUsers.length, newPrev: newPrev.length,
+    revenue, revenuePrev, failed, mrr, mrrNew,
+    arpu: paid.length ? mrr / paid.length : 0,
+    conversion: live.length ? (paid.length / live.length) * 100 : 0,
+    planCounts: ADMIN_PLAN_ORDER.map((id) => ({ id, label: ADMIN_PLANS[id].label, bar: ADMIN_PLANS[id].bar, price: ADMIN_PLANS[id].price, count: live.filter((u) => u.plan === id).length })),
+    pastDue: live.filter((u) => u.pastDue || (u.isPaid && u.renewsAt && u.renewsAt < now)),
+    trialEnding: trial.filter((u) => u.trialEndsAt && u.trialEndsAt - now < 3 * ADM_DAY),
+    churnRisk: paid.filter((u) => u.lastSeen && now - u.lastSeen > 14 * ADM_DAY),
+    dormant: live.filter((u) => u.lastSeen && now - u.lastSeen > 30 * ADM_DAY),
+    days
+  };
+}
+
+function admBuckets(rows, days) {
+  const now = Date.now();
+  const spans = [];
+  if (days <= 1) {
+    for (let i = 5; i >= 0; i--) {
+      const end = now - i * 4 * 3600000;
+      const start = end - 4 * 3600000;
+      spans.push({ label: String(new Date(start).getHours()).padStart(2, "0"), start, end });
+    }
+  } else {
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now - i * ADM_DAY);
+      d.setHours(0, 0, 0, 0);
+      spans.push({ label: String(d.getDate()), start: d.getTime(), end: d.getTime() + ADM_DAY });
+    }
+  }
+  return spans.map((b) => ({ label: b.label, count: rows.filter((u) => u.createdAt >= b.start && u.createdAt < b.end).length }));
+}
+
+/* ══════════════ shared admin primitives ══════════════ */
+
+function AdmAvatar({ user, size }) {
+  const s = size || 36;
+  const tint = ADM_AVATAR_TINTS[admHash(user.uid || user.email || user.name) % ADM_AVATAR_TINTS.length];
+  return (
+    <span className="relative inline-flex shrink-0" style={{ width: s, height: s }}>
+      {user.photo
+        ? <img src={user.photo} alt="" className={tx("w-full h-full rounded-full object-cover border border-slate-800")} />
+        : <span className={tx("w-full h-full rounded-full border flex items-center justify-center font-extrabold tracking-tight " + tint)} style={{ fontSize: Math.round(s * 0.34) }}>{admInitials(user.name, user.email)}</span>}
+      {user.online && <span title="Online now" className={tx("absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900")} />}
+    </span>
+  );
+}
+
+function AdmPill({ className, children, title }) {
+  return <span title={title} className={tx("inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold whitespace-nowrap " + className)}>{children}</span>;
+}
+
+function AdmStatusPill({ status }) {
+  const meta = ADMIN_STATUS[status] || ADMIN_STATUS.inactive;
+  return <AdmPill className={meta.chip}><span className={"w-1.5 h-1.5 rounded-full " + meta.dot} />{meta.label}</AdmPill>;
+}
+
+function AdmPlanPill({ plan }) {
+  const meta = ADMIN_PLANS[plan] || ADMIN_PLANS.free;
+  return <AdmPill className={meta.chip}>{meta.label}</AdmPill>;
+}
+
+function AdmDelta({ value, suffix }) {
+  if (value == null || !isFinite(value)) return null;
+  const flat = Math.abs(value) < 0.05;
+  const up = value > 0;
+  const cls = flat ? "text-slate-400" : up ? "text-emerald-400" : "text-rose-400";
+  const Icon = flat ? null : up ? ArrowUpRight : ArrowDownRight;
+  return (
+    <span className={tx("inline-flex items-center gap-0.5 text-[10px] font-bold tnum " + cls)}>
+      {Icon && <Icon size={11} className="stroke-[2.5]" />}
+      {flat ? "0" : (up ? "+" : "−") + (Math.abs(value) >= 100 ? Math.round(Math.abs(value)) : Math.abs(value).toFixed(1))}{suffix || "%"}
+    </span>
+  );
+}
+
+function AdmKpi({ label, icon: Icon, value, foot, accent }) {
+  return (
+    <div className={tx("terminal-card rounded-2xl p-3.5 border-l-2 " + (accent || "border-l-sky-400"))}>
+      <div className="flex items-center gap-1.5 min-w-0">
+        {Icon && <Icon size={12} className="text-slate-500 shrink-0" />}
+        <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold truncate">{label}</span>
+      </div>
+      <div className={tx("text-[21px] sm:text-[23px] leading-tight font-black text-white mt-1.5 tnum tracking-tight")}>{value}</div>
+      <div className="mt-1 flex items-center gap-1.5 flex-wrap min-h-[15px]">{foot}</div>
+    </div>
+  );
+}
+
+function AdmSegmented({ options, value, onChange, ariaLabel }) {
+  return (
+    <div role="group" aria-label={ariaLabel} className={tx("inline-flex items-center gap-0.5 p-0.5 rounded-xl bg-[#050914] border border-slate-800")}>
+      {options.map((o) => (
+        <button key={o.id} type="button" onClick={() => onChange(o.id)} aria-pressed={value === o.id}
+          className={tx("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap " + (value === o.id ? "bg-sky-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-200"))}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AdmSelect({ label, value, onChange, options, icon: Icon }) {
+  return (
+    <label className={tx("shrink-0 flex items-center gap-1.5 rounded-xl bg-[#050914] border border-slate-800 px-2.5 py-1.5 focus-within:border-sky-500/50 transition-colors cursor-pointer")}>
+      {Icon && <Icon size={12} className="text-slate-500 shrink-0" />}
+      <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold hidden lg:inline">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}
+        className={tx("bg-transparent text-[11px] font-bold text-slate-200 outline-none cursor-pointer max-w-[118px]")}>
+        {options.map((o) => <option key={o.id} value={o.id} className={tx("bg-[#080E1E] text-slate-200")}>{o.label}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function AdmSection({ title, sub, icon: Icon, right, children, className }) {
+  return (
+    <div className={"terminal-card rounded-2xl " + (className || "")}>
+      <div className={tx("flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b border-slate-800/70 flex-wrap")}>
+        <div className="min-w-0">
+          <div className={tx("text-[13px] font-bold text-white flex items-center gap-2 tracking-tight")}>
+            {Icon && <Icon size={14} className={tx("text-sky-400")} />}{title}
+          </div>
+          {sub && <div className="text-[11px] text-slate-500 mt-0.5">{sub}</div>}
+        </div>
+        {right}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function AdmEmpty({ icon: Icon, title, sub, action }) {
+  const I = Icon || Inbox;
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-12 px-6">
+      <div className={tx("w-11 h-11 rounded-2xl bg-slate-800/70 border border-slate-800 flex items-center justify-center mb-3")}>
+        <I size={18} className="text-slate-500" />
+      </div>
+      <div className={tx("text-[13px] font-bold text-white")}>{title}</div>
+      {sub && <div className="text-[11px] text-slate-500 mt-1 max-w-sm leading-relaxed">{sub}</div>}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+
+function AdmCopyBtn({ value, label }) {
+  const [done, setDone] = useState(false);
+  useEffect(() => { if (!done) return; const id = setTimeout(() => setDone(false), 1600); return () => clearTimeout(id); }, [done]);
+  if (!value) return null;
+  return (
+    <button type="button" title={"Copy " + (label || "value")} aria-label={"Copy " + (label || "value")}
+      onClick={(e) => { e.stopPropagation(); admCopy(value, () => setDone(true)); }}
+      className={tx("p-1 rounded-md text-slate-500 hover:text-sky-400 hover:bg-slate-800/70 transition-colors cursor-pointer shrink-0")}>
+      {done ? <Check size={11} className={tx("text-emerald-400")} /> : <Copy size={11} />}
+    </button>
+  );
+}
+
+/* Overlays render into <body> so the sticky header's stacking context
+   (main is `relative z-10`) can never clip or mis-anchor a fixed layer. */
+function AdmPortal({ children }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(children, document.body);
+}
+
+/* Floating row menu — fixed positioning so the table never clips it. */
+function AdmRowMenu({ anchor, items, onClose }) {
+  useEffect(() => {
+    const close = () => onClose();
+    const esc = (e) => { if (e.key === "Escape") onClose(); };
+    const id = setTimeout(() => document.addEventListener("mousedown", close), 0);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    document.addEventListener("keydown", esc);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener("mousedown", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [onClose]);
+
+  const W = 206;
+  const H = items.length * 34 + 12;
+  const left = Math.max(8, Math.min(anchor.right - W, window.innerWidth - W - 8));
+  const top = anchor.bottom + H > window.innerHeight - 8 ? Math.max(8, anchor.top - H - 6) : anchor.bottom + 6;
+
+  return (
+    <AdmPortal>
+    <div role="menu" style={{ top: top, left: left, width: W }} onMouseDown={(e) => e.stopPropagation()}
+      className={tx("adm-pop fixed z-[95] rounded-xl bg-[#080E1E] border border-slate-700 shadow-2xl shadow-black/50 p-1.5")}>
+      {items.map((it, i) => it.divider ? <div key={i} className={tx("my-1 h-px bg-slate-800")} /> : (
+        <button key={i} type="button" role="menuitem" disabled={it.disabled}
+          onClick={() => { onClose(); it.onClick && it.onClick(); }}
+          className={tx("w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[11px] font-semibold text-left transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed " + (it.danger ? "text-rose-300 hover:bg-rose-500/10" : "text-slate-300 hover:bg-slate-800 hover:text-white"))}>
+          {it.icon && <it.icon size={13} className={tx(it.danger ? "text-rose-400" : "text-slate-400")} />}
+          {it.label}
+        </button>
+      ))}
+    </div>
+    </AdmPortal>
+  );
+}
+
+function AdmToast({ toast }) {
+  if (!toast) return null;
+  const tone = toast.tone === "error" ? { c: "text-rose-300", b: "border-rose-500/40", I: XCircle }
+    : toast.tone === "warn" ? { c: "text-amber-300", b: "border-amber-500/40", I: AlertTriangle }
+    : { c: "text-emerald-300", b: "border-emerald-500/40", I: CheckCircle2 };
+  return (
+    <AdmPortal>
+    <div role="status" className={tx("adm-pop fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 z-[120] px-4 py-2.5 rounded-xl bg-[#080E1E] border shadow-2xl shadow-black/50 flex items-center gap-2 max-w-[92vw] " + tone.b)}>
+      <tone.I size={14} className={tx(tone.c)} />
+      <span className={tx("text-[11px] font-bold " + tone.c)}>{toast.msg}</span>
+    </div>
+    </AdmPortal>
+  );
+}
+
+/* ══════════════ OVERVIEW MODULE ══════════════ */
+
+function AdminOverview({ rows, range, setRange, onJump, sample }) {
+  const { profileName } = useApp();
+  const days = (ADMIN_RANGES.find((r) => r.id === range) || ADMIN_RANGES[1]).days;
+  const m = useMemo(() => admMetrics(rows, days), [rows, days]);
+  const buckets = useMemo(() => admBuckets(rows, days), [rows, days]);
+  const maxBucket = Math.max(1, ...buckets.map((b) => b.count));
+  const rangeLabel = days === 1 ? "today" : "last " + days + " days";
+  const pctDelta = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : cur > 0 ? 100 : 0);
+
+  const alerts = [];
+  if (m.pastDue.length) alerts.push({ id: "past_due", tone: "rose", icon: CreditCard, title: "Payments past due", count: m.pastDue.length, detail: admMoney(m.pastDue.reduce((s, u) => s + (u.priceMonthly || 0), 0)) + " of MRR failed to renew — retry or reach out", jump: { status: "all", plan: "past_due", activity: "all", q: "" } });
+  if (m.trialEnding.length) alerts.push({ id: "trial", tone: "amber", icon: Hourglass, title: "Trials ending within 72h", count: m.trialEnding.length, detail: "Nudge these traders before the trial lapses", jump: { status: "trial", plan: "all", activity: "all", q: "" } });
+  if (m.churnRisk.length) alerts.push({ id: "churn", tone: "amber", icon: Zap, title: "Paying users gone quiet", count: m.churnRisk.length, detail: "Paid accounts with no activity for 14+ days — churn risk", jump: { status: "all", plan: "paid", activity: "inactive14", q: "" } });
+  if (m.suspended) alerts.push({ id: "susp", tone: "slate", icon: Ban, title: "Suspended accounts", count: m.suspended, detail: "Awaiting review or reinstatement", jump: { status: "suspended", plan: "all", activity: "all", q: "" } });
+  if (m.dormant.length > Math.max(3, m.total * 0.35)) alerts.push({ id: "dormant", tone: "slate", icon: Clock, title: "Dormant base growing", count: m.dormant.length, detail: admPct((m.dormant.length / Math.max(1, m.total)) * 100, 0) + " of users have not opened the journal in 30 days", jump: { status: "all", plan: "all", activity: "inactive30", q: "" } });
+  if (!sample && m.paid === 0) alerts.push({ id: "billing", tone: "sky", icon: Info, title: "Billing not connected yet", count: null, detail: "Revenue, MRR and plan mix stay at zero until subscriptions are written to users_billing.", to: "settings" });
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className={tx("text-sm font-bold text-white font-mono flex items-center gap-2")}>
-            <ShieldCheck size={18} className={tx("text-rose-400")} /> Creator Admin Control & Live Presence
+      {/* Header + date filters */}
+      <div className="terminal-card rounded-2xl px-4 sm:px-5 py-4 flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h3 className={tx("text-base sm:text-lg font-black text-white tracking-tight font-display")}>
+            {admGreeting()}, {String(profileName || "Creator").split(" ")[0]}
           </h3>
-          <p className={tx("text-xs text-slate-400 font-mono mt-0.5")}>
-            Xogta tooska ah ee dadka soo galay webkaaga (Live Presence).
+          <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+            <CalendarDays size={12} className="shrink-0" />
+            {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            <span className="text-slate-500">·</span>
+            <span className={tx("text-slate-400")}>Showing {rangeLabel}</span>
           </p>
         </div>
-        <span className={tx("text-[10px] font-mono px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold")}>
-          Creator Access
-        </span>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-        <div className={tx("terminal-card p-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/20")}>
-          <div className={tx("text-[10px] text-emerald-400 uppercase flex items-center gap-1.5 font-bold")}>
-            <Radio size={12} className={tx("text-emerald-400 animate-ping")} /> Active Now
-          </div>
-          <div className={tx("text-2xl font-black text-white mt-1")}>{onlineCount} <span className={tx("text-xs font-normal text-slate-400")}>Online</span></div>
-        </div>
-
-        <div className="terminal-card p-4 rounded-2xl">
-          <div className={tx("text-[10px] text-slate-400 uppercase flex items-center gap-1.5 font-bold")}>
-            <Users size={12} /> Registered Traders
-          </div>
-          <div className={tx("text-2xl font-black text-sky-400 mt-1")}>{presenceUsers.length}</div>
-        </div>
-
-        <div className="terminal-card p-4 rounded-2xl">
-          <div className={tx("text-[10px] text-slate-400 uppercase flex items-center gap-1.5 font-bold")}>
-            <ListChecks size={12} /> Global Trades
-          </div>
-          <div className={tx("text-2xl font-black text-white mt-1")}>{trades.length}</div>
-        </div>
-
-        <div className="terminal-card p-4 rounded-2xl">
-          <div className={tx("text-[10px] text-slate-400 uppercase flex items-center gap-1.5 font-bold")}>
-            <MessageSquare size={12} /> Community Messages
-          </div>
-          <div className={tx("text-2xl font-black text-amber-400 mt-1")}>{chatMessages.length}</div>
-        </div>
-      </div>
-
-      {/* Registered Users Realtime List */}
-      <div className="terminal-card rounded-3xl p-5 space-y-3.5">
-        <div className={tx("flex items-center justify-between border-b border-slate-800 pb-3")}>
-          <span className={tx("text-xs font-bold text-white font-mono flex items-center gap-2")}>
-            <Activity size={15} className={tx("text-sky-400")} /> Active Traders & Heartbeat
+        <div className="flex items-center gap-2">
+          <span className={tx("hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-[10px] font-bold text-emerald-300")}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-beacon" /> {m.online} online
           </span>
+          <AdmSegmented ariaLabel="Date range" options={ADMIN_RANGES.map((r) => ({ id: r.id, label: r.label }))} value={range} onChange={setRange} />
         </div>
+      </div>
 
-        <div className="space-y-2.5">
-          {presenceUsers.length === 0 ? (
-            <div className="text-center py-10 text-slate-500 font-mono text-xs">
-              Weli wax users ah lama helin.
+      {/* 5 compact KPI cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <AdmKpi label="Total Users" icon={Users} accent="border-l-sky-400" value={admNum(m.total)}
+          foot={<><span className={tx("text-[10px] font-bold tnum " + (m.newUsers ? "text-emerald-400" : "text-slate-400"))}>+{m.newUsers}</span><span className="text-[10px] text-slate-500">new this period</span></>} />
+        <AdmKpi label="Paid Users" icon={BadgeCheck} accent="border-l-emerald-400" value={admNum(m.paid)}
+          foot={<span className="text-[10px] text-slate-500">{admPct(m.conversion)} conversion</span>} />
+        <AdmKpi label="Revenue" icon={Banknote} accent="border-l-cyan-400" value={admMoney(m.revenue, true)}
+          foot={<><AdmDelta value={pctDelta(m.revenue, m.revenuePrev)} /><span className="text-[10px] text-slate-500">vs prev {days}d</span></>} />
+        <AdmKpi label="Active Users" icon={Activity} accent="border-l-violet-400" value={admNum(m.activeRange)}
+          foot={<><AdmDelta value={pctDelta(m.activeRange, m.activePrev)} /><span className="text-[10px] text-slate-500">{admPct(m.total ? (m.activeRange / m.total) * 100 : 0, 0)} of base</span></>} />
+        <AdmKpi label="MRR" icon={TrendingUp} accent="border-l-amber-400" value={admMoney(m.mrr, true)}
+          foot={<><span className={tx("text-[10px] font-bold text-emerald-400 tnum")}>+{admMoney(m.mrrNew)}</span><span className="text-[10px] text-slate-500">added</span></>} />
+      </div>
+
+      {/* Summary metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <AdmSection className="lg:col-span-2 flex flex-col" icon={BarChart2} title="Signups" sub={"New accounts · " + rangeLabel}
+          right={<span className={tx("text-[11px] font-bold text-white tnum")}>{admNum(m.newUsers)} <span className="text-slate-500 font-semibold">total</span></span>}>
+          <div className="px-4 sm:px-5 pt-4 pb-3 relative flex-1 flex flex-col justify-end min-h-[150px]">
+            <div className="flex items-end gap-[3px] flex-1 min-h-[110px] max-h-[190px]">
+              {buckets.map((b, i) => (
+                <div key={i} title={b.count + " signup" + (b.count === 1 ? "" : "s")} className="flex-1 flex flex-col items-center justify-end gap-1 group min-w-0">
+                  <span className={tx("text-[9px] font-bold text-slate-400 tnum opacity-0 group-hover:opacity-100 transition-opacity")}>{b.count}</span>
+                  <div className={tx("w-full rounded-t-[3px] transition-all " + (b.count ? "bg-sky-500/70 group-hover:bg-sky-400" : "bg-slate-800/50"))}
+                    style={{ height: b.count ? Math.max(4, (b.count / maxBucket) * 100) + "%" : "3px" }} />
+                </div>
+              ))}
             </div>
-          ) : (
-            presenceUsers.map((u) => {
-              const isUserOnline = (Date.now() - (u.lastSeen || 0)) < 90000;
-              const lastSeenDate = u.lastSeen ? new Date(u.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Recently";
+            <div className="flex items-center gap-[3px] mt-1.5">
+              {buckets.map((b, i) => (
+                <div key={i} className="flex-1 text-center text-[9px] text-slate-500 tnum truncate">
+                  {buckets.length > 14 ? (i % 5 === 0 ? b.label : "") : b.label}
+                </div>
+              ))}
+            </div>
+            {m.newUsers === 0 && (
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center pointer-events-none">
+                <span className={tx("px-2.5 py-1 rounded-lg bg-[#050914] border border-slate-800 text-[10px] font-semibold text-slate-500")}>
+                  No signups in this window
+                </span>
+              </div>
+            )}
+          </div>
+          <div className={tx("grid grid-cols-2 sm:grid-cols-4 border-t border-slate-800/70 divide-x divide-slate-800/50")}>
+            {[
+              { l: "ARPU", v: admMoney(m.arpu), h: "Average revenue per paying user" },
+              { l: "Trials", v: admNum(m.trial), h: "Users currently on a trial" },
+              { l: "Active 7d", v: admNum(m.active7), h: "Seen in the last 7 days" },
+              { l: "Dormant 30d", v: admNum(m.dormant.length), h: "No activity for 30+ days" }
+            ].map((s) => (
+              <div key={s.l} title={s.h} className="px-4 py-3">
+                <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold truncate">{s.l}</div>
+                <div className={tx("text-sm font-black text-white mt-0.5 tnum")}>{s.v}</div>
+              </div>
+            ))}
+          </div>
+        </AdmSection>
 
-              return (
-                <div key={u.uid} className={tx("bg-[#050914] p-3.5 rounded-2xl border border-slate-800/80 flex items-center justify-between gap-3")}>
-                  <div className="flex items-center gap-3.5">
-                    {u.photo ? (
-                      <img src={u.photo} alt="" className={tx("w-10 h-10 rounded-full object-cover border border-slate-700")} />
-                    ) : (
-                      <div className={tx("w-10 h-10 rounded-full bg-slate-800 text-sky-400 font-black text-xs flex items-center justify-center font-mono")}>
-                        {u.name ? u.name[0] : "T"}
+        <div className="space-y-3">
+          <AdmSection icon={Layers} title="Plan mix" sub={admNum(m.total) + " accounts"}>
+            <div className="px-4 sm:px-5 py-4">
+              <div className={tx("flex h-2 rounded-full overflow-hidden bg-slate-800/70 gap-px")}>
+                {m.planCounts.filter((p) => p.count > 0).map((p) => (
+                  <div key={p.id} title={p.label + ": " + p.count} className={p.bar} style={{ width: (p.count / Math.max(1, m.total)) * 100 + "%" }} />
+                ))}
+              </div>
+              <div className="mt-3 space-y-2">
+                {m.planCounts.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className={"w-2 h-2 rounded-sm shrink-0 " + p.bar} />
+                      <span className={tx("text-[11px] font-semibold text-slate-300 truncate")}>{p.label}</span>
+                      {p.price > 0 && <span className="text-[10px] text-slate-500 tnum">${p.price}/mo</span>}
+                    </span>
+                    <span className={tx("text-[11px] font-bold text-white tnum shrink-0")}>
+                      {p.count}<span className="text-slate-500 font-semibold ml-1">{admPct(m.total ? (p.count / m.total) * 100 : 0, 0)}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </AdmSection>
+
+          <AdmSection icon={Radio} title="Live now" sub={m.online + " active in the last 90s"}>
+            <div className="px-4 sm:px-5 py-4">
+              {m.onlineList.length === 0 ? (
+                <div className="text-[11px] text-slate-500">No one is online right now.</div>
+              ) : (
+                <div className="space-y-2.5">
+                  {m.onlineList.slice(0, 4).map((u) => (
+                    <div key={u.uid} className="flex items-center gap-2.5 min-w-0">
+                      <AdmAvatar user={u} size={28} />
+                      <div className="min-w-0 flex-1">
+                        <div className={tx("text-[11px] font-bold text-white truncate")}>{u.name}</div>
+                        <div className="text-[10px] text-slate-500 truncate">{u.email || u.uid}</div>
                       </div>
-                    )}
-                    <div>
-                      <div className={tx("text-xs font-bold text-white flex items-center gap-2 font-mono")}>
-                        {u.name}
-                        {u.device && (
-                          <span className={tx("text-[9px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400")}>{u.device}</span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-500 font-mono">{u.email}</div>
+                      {u.device && <span className={tx("text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-bold shrink-0")}>{u.device}</span>}
                     </div>
-                  </div>
+                  ))}
+                  {m.onlineList.length > 4 && (
+                    <button type="button" onClick={() => onJump("users", { status: "all", plan: "all", activity: "online", q: "" })}
+                      className={tx("text-[10px] font-bold text-sky-400 hover:text-sky-300 cursor-pointer")}>
+                      +{m.onlineList.length - 4} more online →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </AdmSection>
+        </div>
+      </div>
 
-                  <div className="text-right font-mono">
-                    {isUserOnline ? (
-                      <span className={tx("inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-bold border border-emerald-500/30")}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
-                      </span>
-                    ) : (
-                      <span className="text-xs text-slate-500">
-                        Seen {lastSeenDate}
-                      </span>
-                    )}
+      {/* Needs attention */}
+      <AdmSection icon={AlertTriangle} title="Needs attention" sub="Signals worth acting on today"
+        right={<span className={tx("text-[10px] font-bold px-2 py-0.5 rounded-md border " + (alerts.length ? ADM_TONE.amber.badge : ADM_TONE.emerald.badge))}>{alerts.length ? alerts.length + " open" : "All clear"}</span>}>
+        {alerts.length === 0 ? (
+          <AdmEmpty icon={CheckCircle2} title="Nothing needs you right now" sub="No failed payments, expiring trials or churn signals in this window." />
+        ) : (
+          <div className={tx("divide-y divide-slate-800/50")}>
+            {alerts.map((a) => {
+              const tone = ADM_TONE[a.tone] || ADM_TONE.slate;
+              return (
+                <div key={a.id} className={tx("flex items-start gap-3 px-4 sm:px-5 py-3.5 hover:bg-slate-900/30 transition-colors")}>
+                  <span className={tx("w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 " + tone.wrap)}>
+                    <a.icon size={14} className={tx(tone.icon)} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={tx("text-[12px] font-bold text-white")}>{a.title}</span>
+                      {a.count != null && <span className={tx("text-[10px] font-bold px-1.5 py-px rounded border tnum " + tone.badge)}>{a.count}</span>}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{a.detail}</div>
                   </div>
+                  <button type="button" onClick={() => (a.to ? onJump(a.to) : onJump("users", a.jump))}
+                    className={tx("shrink-0 px-2.5 py-1.5 rounded-lg border border-slate-800 text-[10px] font-bold text-slate-300 hover:border-sky-500/40 hover:text-sky-300 transition-colors cursor-pointer")}>
+                    Review
+                  </button>
                 </div>
               );
-            })
+            })}
+          </div>
+        )}
+      </AdmSection>
+    </div>
+  );
+}
+
+/* ══════════════ USERS MODULE ══════════════ */
+
+const ADM_STATUS_FILTERS = [
+  { id: "all", label: "All statuses" }, { id: "active", label: "Active" }, { id: "trial", label: "Trial" },
+  { id: "inactive", label: "Inactive" }, { id: "suspended", label: "Suspended" }, { id: "deleted", label: "Deleted" }
+];
+const ADM_PLAN_FILTERS = [{ id: "all", label: "All plans" }, { id: "paid", label: "Paid only" }, { id: "past_due", label: "Past due" }]
+  .concat(ADMIN_PLAN_ORDER.map((id) => ({ id: id, label: ADMIN_PLANS[id].label })));
+const ADM_ACTIVITY_FILTERS = [
+  { id: "all", label: "Any activity" }, { id: "online", label: "Online now" }, { id: "today", label: "Active today" },
+  { id: "7d", label: "Active 7 days" }, { id: "inactive14", label: "Inactive 14d+" }, { id: "inactive30", label: "Inactive 30d+" }
+];
+const ADM_PAGE_SIZE = 10;
+
+function AdminUsers({ rows, preset, onConsumePreset, onAction, actionTick }) {
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("all");
+  const [plan, setPlan] = useState("all");
+  const [activity, setActivity] = useState("all");
+  const [sort, setSort] = useState({ key: "lastSeen", dir: "desc" });
+  const [page, setPage] = useState(0);
+  const [menu, setMenu] = useState(null);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    if (!preset) return;
+    setQ(preset.q || ""); setStatus(preset.status || "all"); setPlan(preset.plan || "all"); setActivity(preset.activity || "all");
+    setPage(0);
+    onConsumePreset();
+  }, [preset, onConsumePreset]);
+
+  useEffect(() => { setPage(0); }, [q, status, plan, activity]);
+  useEffect(() => { setSelected(null); setMenu(null); }, [actionTick]);
+
+  const clearFilters = () => { setQ(""); setStatus("all"); setPlan("all"); setActivity("all"); };
+
+  const summary = useMemo(() => {
+    const now = Date.now();
+    const live = rows.filter((u) => u.status !== "deleted");
+    return {
+      total: live.length,
+      active: live.filter((u) => u.lastSeen >= now - ADM_ACTIVE_WINDOW && u.status !== "suspended").length,
+      paid: live.filter((u) => u.isPaid).length,
+      trial: live.filter((u) => u.status === "trial" || u.subStatus === "trialing").length
+    };
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    const now = Date.now();
+    const needle = q.trim().toLowerCase();
+    const out = rows.filter((u) => {
+      if (status === "all") { if (u.status === "deleted") return false; }
+      else if (u.status !== status) return false;
+
+      if (plan === "paid") { if (!u.isPaid) return false; }
+      else if (plan === "past_due") { if (!u.pastDue) return false; }
+      else if (plan !== "all" && u.plan !== plan) return false;
+
+      if (activity === "online" && !u.online) return false;
+      if (activity === "today" && u.lastSeen < now - ADM_DAY) return false;
+      if (activity === "7d" && u.lastSeen < now - 7 * ADM_DAY) return false;
+      if (activity === "inactive14" && !(u.lastSeen && now - u.lastSeen > 14 * ADM_DAY)) return false;
+      if (activity === "inactive30" && !(u.lastSeen && now - u.lastSeen > 30 * ADM_DAY)) return false;
+
+      if (needle && (u.name + " " + u.email + " " + u.uid).toLowerCase().indexOf(needle) === -1) return false;
+      return true;
+    });
+
+    const dir = sort.dir === "asc" ? 1 : -1;
+    return out.sort((a, b) => {
+      if (sort.key === "name") return dir * String(a.name || "").localeCompare(String(b.name || ""));
+      if (sort.key === "plan") return dir * (ADMIN_PLAN_ORDER.indexOf(a.plan) - ADMIN_PLAN_ORDER.indexOf(b.plan));
+      if (sort.key === "createdAt") return dir * ((a.createdAt || 0) - (b.createdAt || 0));
+      return dir * ((a.lastSeen || 0) - (b.lastSeen || 0));
+    });
+  }, [rows, q, status, plan, activity, sort]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / ADM_PAGE_SIZE));
+  const safePage = Math.min(page, pages - 1);
+  const pageRows = filtered.slice(safePage * ADM_PAGE_SIZE, safePage * ADM_PAGE_SIZE + ADM_PAGE_SIZE);
+  const hasFilters = !!q || status !== "all" || plan !== "all" || activity !== "all";
+
+  const openMenu = (e, user) => {
+    e.stopPropagation();
+    const r = e.currentTarget.getBoundingClientRect();
+    setMenu({ user: user, rect: { top: r.top, bottom: r.bottom, right: r.right, left: r.left } });
+  };
+
+  const menuItems = (u) => {
+    const items = [
+      { label: "View details", icon: Eye, onClick: () => setSelected(u) },
+      { label: "Copy email", icon: Mail, disabled: !u.email, onClick: () => admCopy(u.email, () => onAction({ tone: "ok", msg: "Email copied" })) },
+      { label: "Copy user ID", icon: Copy, onClick: () => admCopy(u.uid, () => onAction({ tone: "ok", msg: "User ID copied" })) },
+      { divider: true }
+    ];
+    if (u.status === "suspended") items.push({ label: "Unsuspend user", icon: UserCheck, onClick: () => onAction({ do: "unsuspend", user: u }) });
+    else items.push({ label: "Suspend user", icon: Ban, disabled: u.status === "deleted", onClick: () => onAction({ do: "suspend", user: u }) });
+    items.push({ label: "Delete user", icon: Trash2, danger: true, disabled: u.status === "deleted", onClick: () => onAction({ do: "delete", user: u }) });
+    return items;
+  };
+
+  const Th = ({ id, label, right }) => {
+    const on = sort.key === id;
+    return (
+      <th scope="col" className={"px-4 py-2.5 " + (right ? "text-right" : "")}>
+        <button type="button" onClick={() => setSort((s) => ({ key: id, dir: s.key === id && s.dir === "desc" ? "asc" : "desc" }))}
+          className={tx("group inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer " + (on ? "text-slate-200" : "text-slate-500 hover:text-slate-300"))}>
+          {label}
+          {on ? (sort.dir === "asc" ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+        </button>
+      </th>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <AdmKpi label="Total Users" icon={Users} accent="border-l-sky-400" value={admNum(summary.total)} foot={<span className="text-[10px] text-slate-500">All registered accounts</span>} />
+        <AdmKpi label="Active" icon={Activity} accent="border-l-emerald-400" value={admNum(summary.active)} foot={<span className="text-[10px] text-slate-500">Seen in last 7 days</span>} />
+        <AdmKpi label="Paid" icon={BadgeCheck} accent="border-l-cyan-400" value={admNum(summary.paid)} foot={<span className="text-[10px] text-slate-500">{admPct(summary.total ? (summary.paid / summary.total) * 100 : 0)} of base</span>} />
+        <AdmKpi label="Trial" icon={Hourglass} accent="border-l-amber-400" value={admNum(summary.trial)} foot={<span className="text-[10px] text-slate-500">Converting soon</span>} />
+      </div>
+
+      {/* Search + compact filters */}
+      <div className="terminal-card rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center gap-2.5">
+        <div className="relative flex-1 min-w-0">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, email or user ID…" aria-label="Search users"
+            className={tx("w-full pl-8 pr-8 py-2 rounded-xl bg-[#050914] border border-slate-800 text-[12px] text-slate-200 placeholder:text-slate-600 outline-none focus:border-sky-500/50 transition-colors")} />
+          {q && (
+            <button type="button" onClick={() => setQ("")} aria-label="Clear search"
+              className={tx("absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-500 hover:text-slate-300 cursor-pointer")}><X size={13} /></button>
+          )}
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 sm:overflow-visible">
+          <AdmSelect label="Status" icon={Filter} value={status} onChange={setStatus} options={ADM_STATUS_FILTERS} />
+          <AdmSelect label="Plan" icon={Layers} value={plan} onChange={setPlan} options={ADM_PLAN_FILTERS} />
+          <AdmSelect label="Activity" icon={Activity} value={activity} onChange={setActivity} options={ADM_ACTIVITY_FILTERS} />
+          {hasFilters && (
+            <button type="button" onClick={clearFilters}
+              className={tx("shrink-0 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[10px] font-bold text-slate-400 hover:text-rose-300 hover:border-rose-500/30 transition-colors cursor-pointer whitespace-nowrap")}>
+              Clear
+            </button>
           )}
         </div>
       </div>
+
+      {/* Table (md+) / stacked cards (mobile) */}
+      <div className="terminal-card rounded-2xl overflow-hidden">
+        <div className={tx("flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-800/70 flex-wrap")}>
+          <span className={tx("text-[11px] font-bold text-slate-300")}>
+            {hasFilters ? admNum(filtered.length) + " of " + admNum(rows.length) + " users" : admNum(filtered.length) + " users"}
+          </span>
+          {pages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button type="button" disabled={safePage === 0} onClick={() => setPage(safePage - 1)} aria-label="Previous page"
+                className={tx("p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer")}><ChevronLeft size={13} /></button>
+              <span className={tx("text-[10px] font-bold text-slate-400 tnum px-1")}>{safePage + 1} / {pages}</span>
+              <button type="button" disabled={safePage >= pages - 1} onClick={() => setPage(safePage + 1)} aria-label="Next page"
+                className={tx("p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer")}><ChevronRight size={13} /></button>
+            </div>
+          )}
+        </div>
+
+        {pageRows.length === 0 ? (
+          <AdmEmpty icon={Users}
+            title={hasFilters ? "No users match these filters" : "No users yet"}
+            sub={hasFilters ? "Try a different search term, or reset the filters to see the full list." : "Registered traders appear here as soon as they sign in — presence, plan and usage sync automatically."}
+            action={hasFilters ? <button type="button" onClick={clearFilters} className={tx("px-4 py-2 rounded-xl text-[11px] font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors cursor-pointer")}>Reset filters</button> : null} />
+        ) : (
+          <>
+            {/* ── desktop table ── */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full min-w-[720px] border-collapse text-left">
+                <thead>
+                  <tr className={tx("border-b border-slate-800/70 bg-slate-900/40")}>
+                    <Th id="name" label="User" />
+                    <Th id="plan" label="Plan" />
+                    <th scope="col" className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</th>
+                    <Th id="lastSeen" label="Last active" />
+                    <Th id="createdAt" label="Joined" />
+                    <th scope="col" className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.map((u) => (
+                    <tr key={u.uid} tabIndex={0} onClick={() => setSelected(u)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(u); } }}
+                      className={tx("border-b border-slate-800/50 last:border-0 hover:bg-sky-500/5 transition-colors cursor-pointer")}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <AdmAvatar user={u} size={34} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className={tx("text-[12px] font-bold text-white truncate max-w-[170px]")}>{u.name}</span>
+                              {u.sample && <span className={tx("text-[8px] font-extrabold px-1 py-px rounded bg-violet-500/15 text-violet-300 border border-violet-500/25 shrink-0")}>SAMPLE</span>}
+                            </div>
+                            <div className="text-[10.5px] text-slate-500 truncate max-w-[200px]">{u.email || u.uid}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col items-start gap-1">
+                          <AdmPlanPill plan={u.plan} />
+                          {u.priceMonthly > 0 && <span className="text-[10px] text-slate-500 tnum">${u.priceMonthly}/mo</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3"><AdmStatusPill status={u.status} /></td>
+                      <td className="px-4 py-3">
+                        <div className={tx("text-[11.5px] font-semibold text-slate-300 whitespace-nowrap")}>
+                          {u.online ? <span className={tx("text-emerald-400")}>Online now</span> : admAgo(u.lastSeen)}
+                        </div>
+                        <div className="text-[10px] text-slate-500 whitespace-nowrap">{u.device || "—"}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className={tx("text-[11.5px] font-semibold text-slate-300 whitespace-nowrap")}>{admDate(u.createdAt)}</div>
+                        <div className="text-[10px] text-slate-500 whitespace-nowrap">{u.createdAt ? admAgo(u.createdAt).replace(" ago", " old") : "—"}</div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button type="button" onClick={(e) => openMenu(e, u)} aria-haspopup="menu" aria-label={"Actions for " + u.name}
+                          className={tx("inline-flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer")}>
+                          <MoreVertical size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ── mobile cards ── */}
+            <div className={tx("md:hidden divide-y divide-slate-800/50")}>
+              {pageRows.map((u) => (
+                <div key={u.uid} onClick={() => setSelected(u)} className={tx("p-3.5 active:bg-sky-500/5 transition-colors cursor-pointer")}>
+                  <div className="flex items-start gap-3">
+                    <AdmAvatar user={u} size={38} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={tx("text-[12.5px] font-bold text-white truncate max-w-[150px]")}>{u.name}</span>
+                        {u.sample && <span className={tx("text-[8px] font-extrabold px-1 py-px rounded bg-violet-500/15 text-violet-300 border border-violet-500/25")}>SAMPLE</span>}
+                      </div>
+                      <div className="text-[10.5px] text-slate-500 truncate">{u.email || u.uid}</div>
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        <AdmStatusPill status={u.status} />
+                        <AdmPlanPill plan={u.plan} />
+                        {u.priceMonthly > 0 && <span className="text-[10px] text-slate-500 tnum">${u.priceMonthly}/mo</span>}
+                      </div>
+                    </div>
+                    <button type="button" onClick={(e) => openMenu(e, u)} aria-haspopup="menu" aria-label={"Actions for " + u.name}
+                      className={tx("-mr-1 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0")}>
+                      <MoreVertical size={16} />
+                    </button>
+                  </div>
+                  <div className={tx("grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-800/50")}>
+                    <div>
+                      <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Last active</div>
+                      <div className={tx("text-[11px] font-semibold text-slate-300 mt-0.5")}>
+                        {u.online ? <span className={tx("text-emerald-400")}>Online now</span> : admAgo(u.lastSeen)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Joined</div>
+                      <div className={tx("text-[11px] font-semibold text-slate-300 mt-0.5")}>{admDate(u.createdAt)}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {menu && <AdmRowMenu anchor={menu.rect} items={menuItems(menu.user)} onClose={() => setMenu(null)} />}
+      {selected && <AdminUserDrawer user={rows.find((r) => r.uid === selected.uid) || selected} onClose={() => setSelected(null)} onAction={onAction} />}
+    </div>
+  );
+}
+
+/* ── User details drawer ───────────────────────────────────────────────── */
+function AdmField({ label, value, mono, copy }) {
+  return (
+    <div className={tx("bg-slate-900/50 border border-slate-800/70 rounded-xl px-3 py-2.5 min-w-0")}>
+      <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">{label}</div>
+      <div className="flex items-center gap-1 mt-0.5 min-w-0">
+        <span className={tx("text-[12px] font-bold text-slate-100 truncate " + (mono ? "tnum" : ""))}>{value || "—"}</span>
+        {copy ? <AdmCopyBtn value={copy} label={label} /> : null}
+      </div>
+    </div>
+  );
+}
+
+function AdmStat({ label, value, icon: Icon }) {
+  return (
+    <div className={tx("bg-slate-900/50 border border-slate-800/70 rounded-xl px-2 py-2.5 text-center")}>
+      {Icon && <Icon size={13} className="text-slate-500 mx-auto" />}
+      <div className={tx("text-base font-black text-white mt-1 tnum")}>{value}</div>
+      <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold mt-0.5 truncate">{label}</div>
+    </div>
+  );
+}
+
+function AdminUserDrawer({ user, onClose, onAction }) {
+  useEffect(() => {
+    const esc = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", esc);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", esc); document.body.style.overflow = prev; };
+  }, [onClose]);
+
+  const u = user;
+  const usage = u.usage || {};
+  const mod = u.moderation || {};
+  const trialLeft = u.trialEndsAt ? admInDays(u.trialEndsAt) : null;
+  const subLabel = u.subStatus === "past_due" ? "Past due" : u.subStatus === "trialing" ? "Trialing"
+    : u.subStatus === "canceled" ? "Canceled" : u.subStatus === "none" ? "No subscription" : "Active";
+
+  const timeline = [];
+  if (u.createdAt) timeline.push({ at: u.createdAt, icon: UserPlus, tone: "sky", title: "Account created", detail: u.provider ? "Signed up via " + (u.provider === "google.com" ? "Google" : u.provider === "password" ? "email & password" : u.provider) : "" });
+  if (u.startedAt) timeline.push({ at: u.startedAt, icon: BadgeCheck, tone: "emerald", title: (ADMIN_PLANS[u.plan] || ADMIN_PLANS.free).label + " plan started", detail: u.priceMonthly ? admMoney(u.priceMonthly) + " / month" : "" });
+  (u.payments || []).slice(-4).forEach((p, i) => timeline.push({
+    at: Number(p.at) || 0, icon: p.status === "failed" ? XCircle : Receipt,
+    tone: p.status === "failed" ? "rose" : "emerald",
+    title: p.status === "failed" ? "Payment failed" : "Payment received",
+    detail: admMoney(p.amount) + (p.id ? " · " + p.id : ""), key: "pay" + i
+  }));
+  if (u.trialEndsAt) timeline.push({ at: u.trialEndsAt, icon: Hourglass, tone: "amber", title: trialLeft != null && trialLeft >= 0 ? "Trial ends" : "Trial ended", detail: trialLeft != null && trialLeft >= 0 ? "In " + trialLeft + " day" + (trialLeft === 1 ? "" : "s") : "" });
+  (mod.events || []).forEach((ev, i) => timeline.push({
+    at: Number(ev.at) || 0,
+    icon: ev.type === "suspended" ? Ban : ev.type === "deleted" ? Trash2 : UserCheck,
+    tone: ev.type === "suspended" ? "amber" : ev.type === "deleted" ? "rose" : "emerald",
+    title: ev.type === "suspended" ? "Account suspended" : ev.type === "deleted" ? "Account deleted" : "Account reinstated",
+    detail: [ev.note, ev.by ? "by " + ev.by : ""].filter(Boolean).join(" · "), key: "mod" + i
+  }));
+  if (usage.lastTradeDate) {
+    const t = new Date(usage.lastTradeDate + "T12:00:00").getTime();
+    if (!isNaN(t)) timeline.push({ at: t, icon: ListChecks, tone: "cyan", title: "Last trade logged", detail: "" });
+  }
+  if (u.lastSeen) timeline.push({ at: u.lastSeen, icon: Activity, tone: "slate", title: u.online ? "Online now" : "Last seen", detail: [u.device, u.platform].filter(Boolean).join(" · ") });
+  timeline.sort((a, b) => b.at - a.at);
+
+  return (
+    <AdmPortal>
+    <div className="fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-label={"Details for " + u.name}>
+      <div className="adm-fade absolute inset-0 bg-black/65 backdrop-blur-[2px]" onClick={onClose} />
+      <div className={tx("adm-drawer absolute inset-y-0 right-0 w-full sm:w-[min(560px,100%)] bg-[#080E1E] border-l border-slate-800 shadow-2xl shadow-black/60 flex flex-col")}>
+
+        {/* header */}
+        <div className={tx("px-4 sm:px-5 py-4 border-b border-slate-800/70 shrink-0")}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <AdmAvatar user={u} size={44} />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={tx("text-[15px] font-black text-white tracking-tight truncate max-w-[210px]")}>{u.name}</span>
+                  {u.sample && <span className={tx("text-[8px] font-extrabold px-1 py-px rounded bg-violet-500/15 text-violet-300 border border-violet-500/25")}>SAMPLE</span>}
+                </div>
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-[11px] text-slate-500 truncate">{u.email || "No email on file"}</span>
+                  <AdmCopyBtn value={u.email} label="email" />
+                </div>
+              </div>
+            </div>
+            <button type="button" onClick={onClose} autoFocus aria-label="Close details"
+              className={tx("p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0")}><X size={16} /></button>
+          </div>
+          <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+            <AdmStatusPill status={u.status} />
+            <AdmPlanPill plan={u.plan} />
+            {u.isPaid && <AdmPill className={ADM_TONE.emerald.badge}><DollarSign size={9} />{admMoney(u.priceMonthly)}/mo</AdmPill>}
+            {u.online && <AdmPill className={ADM_TONE.emerald.badge}><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-beacon" />Online</AdmPill>}
+          </div>
+        </div>
+
+        {/* body */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-5">
+
+          {mod.status === "suspended" && (
+            <div className={tx("rounded-xl px-3.5 py-3 flex items-start gap-2.5 border " + ADM_TONE.amber.wrap)}>
+              <Ban size={14} className={tx("text-amber-400 mt-0.5 shrink-0")} />
+              <div className="min-w-0">
+                <div className={tx("text-[11.5px] font-bold text-amber-300")}>Suspended {mod.suspendedAt ? admAgo(mod.suspendedAt) : ""}</div>
+                <div className={tx("text-[11px] text-slate-400 mt-0.5 leading-relaxed")}>{mod.reason || "No reason recorded."}</div>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 flex items-center gap-1.5"><User size={11} /> Profile</div>
+            <div className="grid grid-cols-2 gap-2">
+              <AdmField label="Full name" value={u.name} />
+              <AdmField label="Email" value={u.email} copy={u.email} />
+              <AdmField label="User ID" value={u.uid} mono copy={u.uid} />
+              <AdmField label="Sign-in method" value={u.isAnonymous ? "Guest session" : u.provider === "google.com" ? "Google" : u.provider === "password" ? "Email & password" : u.provider} />
+              <AdmField label="Email verified" value={u.emailVerified ? "Yes" : "No"} />
+              <AdmField label="Device" value={[u.device, u.platform].filter(Boolean).join(" · ")} />
+              <AdmField label="Joined" value={admDate(u.createdAt)} />
+              <AdmField label="Last active" value={u.online ? "Online now" : admAgo(u.lastSeen)} />
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 flex items-center gap-1.5"><CreditCard size={11} /> Subscription</div>
+            {!u.isPaid && u.plan === "free" ? (
+              <div className={tx("rounded-xl bg-slate-900/50 border border-slate-800/70 px-3.5 py-3 text-[11.5px] text-slate-400 leading-relaxed")}>
+                On the <span className={tx("font-bold text-slate-200")}>Free</span> plan — no billing record in <code className={tx("text-cyan-300")}>users_billing</code>.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <AdmField label="Plan" value={(ADMIN_PLANS[u.plan] || ADMIN_PLANS.free).label} />
+                <AdmField label="Billing status" value={subLabel} />
+                <AdmField label="Price" value={admMoney(u.priceMonthly) + " / month"} mono />
+                <AdmField label="Lifetime value" value={admMoney(u.lifetimeValue)} mono />
+                <AdmField label="Started" value={admDate(u.startedAt)} />
+                <AdmField label={u.pastDue ? "Overdue since" : "Renews"} value={admDate(u.renewsAt)} />
+                {u.trialEndsAt ? <AdmField label="Trial ends" value={admDate(u.trialEndsAt) + (trialLeft != null && trialLeft >= 0 ? " · " + trialLeft + "d left" : "")} /> : null}
+                {u.paymentMethod ? <AdmField label="Payment method" value={u.paymentMethod} /> : null}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 flex items-center gap-1.5"><BarChart2 size={11} /> Usage</div>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              <AdmStat label="Trades" value={admNum(usage.trades || 0)} icon={ListChecks} />
+              <AdmStat label="Backtests" value={admNum(usage.backtests || 0)} icon={BarChart2} />
+              <AdmStat label="Notes" value={admNum(usage.notes || 0)} icon={BookOpen} />
+              <AdmStat label="Accounts" value={admNum(usage.accounts || 0)} icon={Wallet} />
+              <AdmStat label="Planned" value={admNum(usage.planned || 0)} icon={Target} />
+            </div>
+            <div className="mt-2 flex items-start gap-1.5 text-[10px] text-slate-500 leading-relaxed">
+              <Lock size={10} className="mt-0.5 shrink-0" />
+              Aggregate counts only. Trade entries, journal notes and screenshots stay private to the trader and are never exposed in admin.
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 flex items-center gap-1.5"><Clock size={11} /> Activity timeline</div>
+            {timeline.length === 0 ? (
+              <div className="text-[11px] text-slate-500">No recorded activity yet.</div>
+            ) : (
+              <div className="relative pl-4">
+                <div className={tx("absolute left-[5px] top-1.5 bottom-1.5 w-px bg-slate-800")} />
+                <div className="space-y-3.5">
+                  {timeline.slice(0, 12).map((ev, i) => {
+                    const tone = ADM_TONE[ev.tone] || ADM_TONE.slate;
+                    return (
+                      <div key={ev.key || i} className="relative">
+                        <span className={tx("absolute -left-4 top-1 w-[11px] h-[11px] rounded-full bg-[#080E1E] border border-slate-700 flex items-center justify-center")}>
+                          <span className={"w-1 h-1 rounded-full " + tone.dot} />
+                        </span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className={tx("text-[11.5px] font-bold text-slate-200 flex items-center gap-1.5")}>
+                              <ev.icon size={11} className={tx(tone.icon)} />{ev.title}
+                            </div>
+                            {ev.detail && <div className="text-[10.5px] text-slate-500 mt-0.5 truncate">{ev.detail}</div>}
+                          </div>
+                          <span className="text-[10px] text-slate-500 whitespace-nowrap shrink-0 tnum">{admDate(ev.at)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* admin actions */}
+        <div className={tx("px-4 sm:px-5 py-3.5 border-t border-slate-800/70 bg-[#050914] shrink-0")}>
+          <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-2">Admin actions</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {u.status === "suspended" ? (
+              <button type="button" onClick={() => onAction({ do: "unsuspend", user: u })}
+                className={tx("flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 transition-colors cursor-pointer")}>
+                <UserCheck size={13} /> Unsuspend
+              </button>
+            ) : (
+              <button type="button" disabled={u.status === "deleted"} onClick={() => onAction({ do: "suspend", user: u })}
+                className={tx("flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed")}>
+                <Ban size={13} /> Suspend
+              </button>
+            )}
+            <button type="button" onClick={() => admCopy(u.email || u.uid, () => onAction({ tone: "ok", msg: "Copied to clipboard" }))}
+              className={tx("flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition-colors cursor-pointer")}>
+              <Copy size={13} /> Copy contact
+            </button>
+            <div className="flex-1" />
+            <button type="button" disabled={u.status === "deleted"} onClick={() => onAction({ do: "delete", user: u })}
+              className={tx("flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed")}>
+              <Trash2 size={13} /> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </AdmPortal>
+  );
+}
+
+/* ── destructive confirmation dialog ───────────────────────────────────── */
+function AdminConfirmDialog({ action, onClose, onConfirm }) {
+  const [text, setText] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const u = action.user;
+  const isDelete = action.do === "delete";
+  const isSuspend = action.do === "suspend";
+  const target = u.email || u.uid;
+  const ready = !isDelete || text.trim().toLowerCase() === String(target).toLowerCase();
+
+  useEffect(() => {
+    const esc = (e) => { if (e.key === "Escape" && !busy) onClose(); };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [onClose, busy]);
+
+  const run = async () => {
+    if (!ready || busy) return;
+    setBusy(true);
+    try { await onConfirm(reason); } catch (e) { setBusy(false); }
+  };
+
+  const tone = isDelete ? ADM_TONE.rose : isSuspend ? ADM_TONE.amber : ADM_TONE.emerald;
+  const Icon = isDelete ? AlertTriangle : isSuspend ? Ban : UserCheck;
+  const cta = isDelete ? "bg-rose-500 hover:bg-rose-400 text-white" : isSuspend ? "bg-amber-500 hover:bg-amber-400 text-slate-950" : "bg-emerald-500 hover:bg-emerald-400 text-slate-950";
+
+  return (
+    <AdmPortal>
+    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-label="Confirm admin action">
+      <div className="adm-fade absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => !busy && onClose()} />
+      <div className={tx("adm-pop relative w-full sm:max-w-[440px] bg-[#080E1E] border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black/60 overflow-hidden")}>
+
+        <div className={tx("px-5 py-4 border-b border-slate-800/70 flex items-start gap-3")}>
+          <span className={tx("w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 " + tone.wrap)}>
+            <Icon size={16} className={tx(tone.icon)} />
+          </span>
+          <div className="min-w-0">
+            <div className={tx("text-[14px] font-black text-white tracking-tight")}>
+              {isDelete ? "Delete this user?" : isSuspend ? "Suspend this user?" : "Reinstate this user?"}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5 truncate">{u.name} · {u.email || u.uid}</div>
+          </div>
+        </div>
+
+        <div className="px-5 py-4 space-y-3">
+          {isDelete ? (
+            <>
+              <div className={tx("rounded-xl px-3.5 py-3 space-y-1.5 border " + ADM_TONE.rose.wrap)}>
+                {[
+                  "The account is marked deleted and loses access on next launch.",
+                  "Their presence record is removed, so they disappear from this panel.",
+                  "Private journal data in their own collection is not touched by this action.",
+                  "The Firebase Auth login must be removed separately from the console."
+                ].map((line, i) => (
+                  <div key={i} className={tx("flex items-start gap-2 text-[11px] text-rose-200 leading-relaxed")}>
+                    <span className="mt-1 w-1 h-1 rounded-full bg-rose-400 shrink-0" />{line}
+                  </div>
+                ))}
+              </div>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                  Type <span className={tx("text-slate-300 normal-case")}>{target}</span> to confirm
+                </span>
+                <input value={text} onChange={(e) => setText(e.target.value)} autoFocus spellCheck={false} autoComplete="off" placeholder={target}
+                  className={tx("mt-1.5 w-full px-3 py-2 rounded-xl bg-[#050914] border border-slate-800 text-[12px] text-slate-200 placeholder:text-slate-600 outline-none focus:border-rose-500/50 transition-colors")} />
+              </label>
+            </>
+          ) : isSuspend ? (
+            <>
+              <p className={tx("text-[11.5px] text-slate-400 leading-relaxed")}>
+                The account stays intact but is flagged as suspended for review. You can reinstate it at any time — the action is written to their activity timeline.
+              </p>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Reason (optional)</span>
+                <input value={reason} onChange={(e) => setReason(e.target.value)} autoFocus placeholder="e.g. Payment dispute under review"
+                  className={tx("mt-1.5 w-full px-3 py-2 rounded-xl bg-[#050914] border border-slate-800 text-[12px] text-slate-200 placeholder:text-slate-600 outline-none focus:border-amber-500/50 transition-colors")} />
+              </label>
+            </>
+          ) : (
+            <p className={tx("text-[11.5px] text-slate-400 leading-relaxed")}>
+              Full access is restored immediately and the reinstatement is recorded in their activity timeline.
+            </p>
+          )}
+        </div>
+
+        <div className={tx("px-5 py-3.5 border-t border-slate-800/70 flex items-center gap-2 bg-[#050914]")}>
+          <button type="button" onClick={onClose} disabled={busy}
+            className={tx("flex-1 py-2.5 rounded-xl text-[11px] font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50")}>
+            Cancel
+          </button>
+          <button type="button" onClick={run} disabled={!ready || busy}
+            className={"flex-1 py-2.5 rounded-xl text-[11px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed " + cta}>
+            {busy ? <Loader2 size={13} className="animate-spin" /> : <Icon size={13} />}
+            {isDelete ? "Delete permanently" : isSuspend ? "Suspend user" : "Unsuspend user"}
+          </button>
+        </div>
+      </div>
+    </div>
+    </AdmPortal>
+  );
+}
+
+/* ══════════════ SUBSCRIPTIONS / PAYMENTS (scaffold) ══════════════ */
+
+function AdmScaffold({ icon: Icon, title, sub, bullets, contract }) {
+  return (
+    <div className="terminal-card rounded-2xl p-5 sm:p-7">
+      <div className="flex items-start gap-4">
+        <span className={tx("w-11 h-11 rounded-2xl bg-sky-500/10 border border-sky-500/25 flex items-center justify-center shrink-0")}>
+          <Icon size={19} className={tx("text-sky-400")} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className={tx("text-[15px] font-black text-white tracking-tight")}>{title}</h3>
+            <span className={tx("text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider")}>Next up</span>
+          </div>
+          <p className="text-[11.5px] text-slate-500 mt-1 leading-relaxed max-w-xl">{sub}</p>
+          <div className="grid sm:grid-cols-2 gap-2 mt-4">
+            {bullets.map((b, i) => (
+              <div key={i} className={tx("flex items-start gap-2 rounded-xl bg-slate-900/50 border border-slate-800/70 px-3 py-2.5")}>
+                <CheckCircle2 size={12} className="text-slate-500 mt-0.5 shrink-0" />
+                <span className={tx("text-[11px] font-semibold text-slate-300 leading-relaxed")}>{b}</span>
+              </div>
+            ))}
+          </div>
+          {contract && (
+            <div className={tx("mt-4 rounded-xl bg-[#050914] border border-slate-800 px-3.5 py-3 overflow-x-auto")}>
+              <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Data contract</div>
+              <code className={tx("text-[10.5px] text-cyan-300 leading-relaxed block whitespace-pre-wrap break-words")}>{contract}</code>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ SETTINGS ══════════════ */
+
+function AdminSettings({ sample, setSample, onToast }) {
+  const { user, isAdmin } = useApp();
+  const unlocked = (function () { try { return localStorage.getItem("amiir_creator_admin") === "true"; } catch (e) { return false; } })();
+
+  return (
+    <div className="space-y-3">
+      <AdmSection icon={ShieldCheck} title="Creator access" sub="How this panel decides who is an admin">
+        <div className="p-4 sm:p-5 grid sm:grid-cols-2 gap-2">
+          <AdmField label="Signed in as" value={user && user.email ? user.email : "—"} copy={user && user.email ? user.email : ""} />
+          <AdmField label="Admin resolved" value={isAdmin ? "Yes · creator" : "No"} />
+          <AdmField label="Match rule" value="Email contains amiir / amein / mohamet / admin" />
+          <AdmField label="Device unlock" value={unlocked ? "PIN unlocked on this device" : "Not unlocked here"} />
+          {unlocked && (
+            <div className="sm:col-span-2">
+              <button type="button"
+                onClick={() => { try { localStorage.removeItem("amiir_creator_admin"); } catch (e) {} onToast({ tone: "warn", msg: "Creator unlock revoked — reloading" }); setTimeout(() => window.location.reload(), 1000); }}
+                className={tx("px-3.5 py-2 rounded-xl text-[11px] font-bold bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 transition-colors cursor-pointer")}>
+                Revoke creator unlock on this device
+              </button>
+            </div>
+          )}
+        </div>
+      </AdmSection>
+
+      <AdmSection icon={Eye} title="Preview data" sub="Explore the panel before real subscriptions exist">
+        <div className="p-4 sm:p-5">
+          <label className={tx("flex items-start gap-3 cursor-pointer rounded-xl bg-slate-900/50 border border-slate-800/70 px-3.5 py-3")}>
+            <input type="checkbox" checked={sample} onChange={(e) => setSample(e.target.checked)} className="mt-0.5 accent-sky-500 cursor-pointer" />
+            <span className="min-w-0">
+              <span className={tx("block text-[12px] font-bold text-slate-200")}>Show sample users</span>
+              <span className="block text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                Renders 24 fictional accounts (tagged <span className={tx("text-violet-300 font-bold")}>SAMPLE</span>) so every state — trials, past-due, suspended, churn risk — is visible.
+                Sample rows are read-only: suspend and delete are blocked and nothing is written to Firestore.
+              </span>
+            </span>
+          </label>
+        </div>
+      </AdmSection>
+
+      <AdmSection icon={Layers} title="Data sources" sub="Collections this panel reads and writes">
+        <div className={tx("divide-y divide-slate-800/50")}>
+          {[
+            { c: "users_presence/{uid}", m: "read · self-write", d: "Identity, lastSeen heartbeat, device, createdAt and aggregate usage counters. Every signed-in client writes its own document." },
+            { c: "users_billing/{uid}", m: "read", d: "plan · status · priceMonthly · startedAt · renewsAt · trialEndsAt · paymentMethod · payments[]. Powers Revenue, MRR, plan mix and the Subscription panel." },
+            { c: "users_admin/{uid}", m: "read · admin-write", d: "status (active | suspended | deleted), suspendedAt, reason and the events[] audit trail behind the activity timeline." }
+          ].map((s) => (
+            <div key={s.c} className="px-4 sm:px-5 py-3.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <code className={tx("text-[11px] font-bold text-cyan-300")}>{s.c}</code>
+                <span className={tx("text-[9px] font-bold px-1.5 py-px rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider")}>{s.m}</span>
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1 leading-relaxed">{s.d}</div>
+            </div>
+          ))}
+        </div>
+      </AdmSection>
+    </div>
+  );
+}
+
+/* ══════════════ ADMIN ROOT ══════════════ */
+
+function Admin() {
+  const { isAdmin, adminUsers, adminSampleMode, setAdminSampleMode, adminSuspendUser, adminUnsuspendUser, adminDeleteUser } = useApp();
+  const [section, setSection] = useState("overview");
+  const [range, setRange] = useState("7d");
+  const [preset, setPreset] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [actionTick, setActionTick] = useState(0);
+
+  useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(null), 2800); return () => clearTimeout(id); }, [toast]);
+
+  const rows = adminSampleMode ? ADMIN_SAMPLE_USERS : adminUsers;
+  const liveCount = rows.filter((u) => u.status !== "deleted").length;
+
+  const handleAction = (a) => {
+    if (!a) return;
+    if (a.msg) { setToast({ tone: a.tone || "ok", msg: a.msg }); return; }
+    if (a.user && a.user.sample) { setToast({ tone: "warn", msg: "Sample users are read-only" }); return; }
+    setConfirm(a);
+  };
+
+  const runConfirm = async (reason) => {
+    const a = confirm;
+    if (!a) return;
+    try {
+      if (a.do === "suspend") { await adminSuspendUser(a.user.uid, reason); setToast({ tone: "ok", msg: a.user.name + " suspended" }); }
+      else if (a.do === "unsuspend") { await adminUnsuspendUser(a.user.uid); setToast({ tone: "ok", msg: a.user.name + " reinstated" }); }
+      else if (a.do === "delete") { await adminDeleteUser(a.user.uid); setToast({ tone: "ok", msg: a.user.name + " deleted" }); }
+      setConfirm(null);
+      setActionTick((n) => n + 1);
+    } catch (e) {
+      setConfirm(null);
+      setToast({ tone: "error", msg: "Action failed — check Firestore rules" });
+    }
+  };
+
+  const jump = (to, filters) => {
+    setSection(to);
+    if (filters) setPreset(filters);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  if (!isAdmin) {
+    return (
+      <div className="terminal-card rounded-2xl">
+        <AdmEmpty icon={Lock} title="Admin access required"
+          sub="This area is restricted to the creator account. If you own this workspace, sign in with your creator email or unlock creator mode with your PIN." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* suite header */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <h3 className={tx("text-sm font-bold text-white flex items-center gap-2 tracking-tight")}>
+            <ShieldCheck size={17} className={tx("text-rose-400")} /> Admin Console
+          </h3>
+          <p className="text-[11px] text-slate-500 mt-0.5">Operations for Amiir Journal — users, subscriptions and revenue.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {adminSampleMode && (
+            <button type="button" onClick={() => setAdminSampleMode(false)} title="Turn off sample data"
+              className={tx("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-violet-500/15 border border-violet-500/30 text-[10px] font-bold text-violet-300 hover:bg-violet-500/25 transition-colors cursor-pointer")}>
+              <Eye size={11} /> Sample data <X size={11} />
+            </button>
+          )}
+          <span className={tx("text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30")}>Creator access</span>
+        </div>
+      </div>
+
+      {/* sub-navigation */}
+      <nav aria-label="Admin sections" className={tx("flex items-center gap-1 p-1 rounded-2xl bg-[#080E1E] border border-slate-800/90 overflow-x-auto no-scrollbar shadow-lg")}>
+        {ADMIN_SECTIONS.map((s) => {
+          const on = section === s.id;
+          return (
+            <button key={s.id} type="button" onClick={() => setSection(s.id)} aria-current={on ? "page" : undefined}
+              className={tx("flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 active:scale-95 border " + (on ? "bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-sm" : "text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-900/40"))}>
+              <s.icon size={13} className={tx(on ? "text-sky-400" : "text-slate-500")} />
+              {s.label}
+              {s.id === "users" && liveCount > 0 && (
+                <span className={tx("text-[9px] font-extrabold px-1.5 py-px rounded tnum " + (on ? "bg-sky-500/25 text-sky-200" : "bg-slate-800 text-slate-400"))}>{liveCount}</span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* first-run hint */}
+      {!adminSampleMode && liveCount === 0 && (
+        <div className={tx("terminal-card rounded-2xl px-4 py-3.5 flex items-center gap-3 flex-wrap")}>
+          <span className={tx("w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 " + ADM_TONE.sky.wrap)}>
+            <Info size={14} className={tx("text-sky-400")} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className={tx("text-[12px] font-bold text-white")}>No user records yet</div>
+            <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">Traders appear here as soon as they sign in. Load sample data to preview every state of the console.</div>
+          </div>
+          <button type="button" onClick={() => setAdminSampleMode(true)}
+            className="px-3.5 py-2 rounded-xl text-[11px] font-bold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-colors cursor-pointer shrink-0">
+            Load sample data
+          </button>
+        </div>
+      )}
+
+      {section === "overview" && <AdminOverview rows={rows} range={range} setRange={setRange} onJump={jump} sample={adminSampleMode} />}
+      {section === "users" && <AdminUsers rows={rows} preset={preset} onConsumePreset={() => setPreset(null)} onAction={handleAction} actionTick={actionTick} />}
+      {section === "subscriptions" && (
+        <AdmScaffold icon={BadgeCheck} title="Subscriptions"
+          sub="Plan-level control: upgrades, downgrades, trial extensions, cancellations and dunning — driven by the same users_billing records the Overview already reads."
+          bullets={["Plan catalogue with pricing and limits", "Trial management and manual extensions", "Upgrade / downgrade with proration preview", "Cancellation reasons and win-back queue", "Coupon and lifetime-deal ledger", "Churn and retention cohorts"]}
+          contract={'users_billing/{uid} → { plan: "pro", status: "active", priceMonthly: 29, startedAt, renewsAt, trialEndsAt, paymentMethod, payments: [{ id, amount, at, status }] }'} />
+      )}
+      {section === "payments" && (
+        <AdmScaffold icon={CreditCard} title="Payments"
+          sub="The money ledger: every charge, refund and failed attempt in one searchable table, with payouts and reconciliation."
+          bullets={["Transaction table with status filters", "Refunds and partial refunds", "Failed-payment retry and dunning", "EVC Plus / Zaad / card method breakdown", "Monthly revenue and payout CSV export", "Receipt lookup by payment ID"]}
+          contract={'payments/{paymentId} → { uid, amount, currency, method, status: "paid" | "failed" | "refunded", at, invoiceUrl }'} />
+      )}
+      {section === "settings" && <AdminSettings sample={adminSampleMode} setSample={setAdminSampleMode} onToast={setToast} />}
+
+      {confirm && <AdminConfirmDialog action={confirm} onClose={() => setConfirm(null)} onConfirm={runConfirm} />}
+      <AdmToast toast={toast} />
     </div>
   );
 }
@@ -9579,5 +11120,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b1b2008d04aea6',t:'MTc4OTQxMzA2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3bb38d86b0ed981',t:'MTc4OTUxMjk1OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b1b2008d04aea6',t:'MTc4OTQxMzA2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3bb38d86b0ed981',t:'MTc4OTUxMjk1OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3c28e13bea98c19',t:'MTc4OTU4OTg1MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
