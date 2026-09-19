@@ -316,17 +316,27 @@
       backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     }
     .aj-brand { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
+    /* No plate, no ring — the mark floats and carries its own glow. */
     .aj-logo {
       width: 38px; height: 38px; flex: 0 0 auto;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 11px;
-      /* Dark plate so the cyan/white AM Crown mark keeps full contrast */
-      background: linear-gradient(160deg, #0B1628 0%, #050B16 100%);
-      border: 1px solid rgba(15, 185, 212, 0.34);
-      box-shadow: 0 6px 18px -4px rgba(14, 165, 233, 0.40), inset 0 1px 0 rgba(255,255,255,0.08);
+      background: none; border: 0; box-shadow: none; border-radius: 0;
+      filter: drop-shadow(0 0 12px rgba(15,185,212,.42)) drop-shadow(0 2px 6px rgba(2,10,24,.55));
     }
     .aj-brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-    .aj-brand-name { font-weight: 700; font-size: 14.5px; color: #F8FAFC; letter-spacing: -0.01em; white-space: nowrap; }
+    /* Split lockup: "AMIIR" light, "JOURNAL" cyan, wide premium tracking. */
+    .aj-brand-name {
+      font-weight: 800; font-size: 13.5px; white-space: nowrap;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      display: inline-flex; gap: 0.38em; align-items: baseline;
+    }
+    .aj-brand-name .b1 { color: #F8FAFC; text-shadow: 0 0 16px rgba(226,242,255,.24); }
+    .aj-brand-name .b2 {
+      background: linear-gradient(92deg, #0FB9D4 0%, #38BDF8 55%, #7DD3FC 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+      filter: drop-shadow(0 0 12px rgba(15,185,212,.34));
+    }
     .aj-brand-sub {
       font-size: 9px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       color: #38BDF8; white-space: nowrap;
@@ -397,8 +407,13 @@
     }
     .aj-hero-veil {
       position: absolute; inset: 0; pointer-events: none;
+      /* The hero photo has strong out-of-focus city bokeh. At the old 0.22
+         mid-stop those blobs read as stray dots behind the headline, so the
+         mid band is deepened and a soft elliptical scrim is anchored over
+         the text column to give the type a clean, even ground. */
       background:
-        linear-gradient(180deg, rgba(3, 8, 22, 0.55) 0%, rgba(3, 8, 22, 0.22) 38%, rgba(4, 9, 22, 0.82) 88%, #040918 100%);
+        radial-gradient(ellipse 78% 52% at 30% 52%, rgba(3, 8, 22, 0.78) 0%, rgba(3, 8, 22, 0.52) 45%, rgba(3, 8, 22, 0) 78%),
+        linear-gradient(180deg, rgba(3, 8, 22, 0.62) 0%, rgba(3, 8, 22, 0.52) 38%, rgba(4, 9, 22, 0.86) 88%, #040918 100%);
     }
     .aj-hero-glow {
       position: absolute; inset: 0; pointer-events: none;
@@ -427,7 +442,7 @@
       margin-top: 0.85rem;
       display: flex; flex-direction: column;
       font-size: clamp(1.7rem, 5.6vw, 2.5rem);
-      text-shadow: 0 4px 30px rgba(2, 6, 23, 0.7);
+      text-shadow: 0 2px 10px rgba(2, 6, 23, 0.55), 0 6px 34px rgba(2, 6, 23, 0.75);
     }
     .aj-line-grad {
       background: linear-gradient(92deg, #38BDF8 10%, #22D3EE 60%, #7DD3FC 100%);
@@ -1570,17 +1585,16 @@
 
     .pm-brand { display: inline-flex; align-items: center; gap: 10px; }
 
+    /* Plateless: no background, no border ring — just the mark, its glow and
+       the travelling light. */
     .pm-brand-mark {
       position: relative;
       display: inline-flex; align-items: center; justify-content: center;
-      width: 34px; height: 34px; border-radius: 11px;
-      background: linear-gradient(160deg, #0B1526 0%, #070E1C 100%);
-      border: 1px solid rgba(103,199,224,.30);
-      box-shadow:
-        0 1px 0 rgba(180,230,245,.16) inset,
-        0 2px 8px -2px rgba(6,20,34,.5);
+      width: 34px; height: 34px;
+      background: none; border: 0; box-shadow: none; border-radius: 11px;
       overflow: visible;
-      transition: transform var(--pm-t-mid) var(--pm-ease), border-color var(--pm-t-mid) var(--pm-ease);
+      filter: drop-shadow(0 0 11px rgba(103,199,224,.40)) drop-shadow(0 2px 5px rgba(4,12,24,.5));
+      transition: transform var(--pm-t-mid) var(--pm-ease);
     }
 
     /* ── Tracing-light gradient border ──
@@ -1620,14 +1634,9 @@
       @keyframes pm-brand-trace-spin { to { transform: rotate(360deg); } }
     }
 
-    /* The plate stays dark in light mode on purpose — the AM mark has a white
-       half, which would vanish on a white tile. */
     html.light .pm-brand-mark:not(.tdi *) {
-      background: linear-gradient(160deg, #123049 0%, #0B2033 100%);
-      border-color: rgba(86,178,204,.40);
-      box-shadow:
-        0 1px 0 rgba(255,255,255,.14) inset,
-        0 2px 10px -3px rgba(21,83,172,.34);
+      background: none; border: 0; box-shadow: none;
+      filter: drop-shadow(0 0 9px rgba(26,106,212,.30)) drop-shadow(0 2px 5px rgba(17,38,73,.26));
     }
     /* Slightly deeper trace so it stays legible on white. */
     html.light .pm-brand-mark:not(.tdi *)::after {
@@ -1661,13 +1670,25 @@
     @keyframes pm-brand-breathe { from { opacity: .34; } to { opacity: .68; } }
 
     .pm-brand-mark > * { position: relative; z-index: 3; }
-    .pm-brand:hover .pm-brand-mark { transform: translateY(-1px); border-color: rgba(103,199,224,.52); }
+    .pm-brand:hover .pm-brand-mark { transform: translateY(-1px); }
 
     .pm-brand-name {
-      font-weight: 800; letter-spacing: -.017em; line-height: 1.05;
-      font-size: 14.5px;
+      font-weight: 800; line-height: 1.05;
+      font-size: 13.5px; letter-spacing: .15em; text-transform: uppercase;
+      display: inline-flex; gap: .38em; align-items: baseline; white-space: nowrap;
     }
-    @media (max-width: 380px) { .pm-brand-name { font-size: 13px; } }
+    .pm-brand-name .b2 {
+      background: linear-gradient(92deg, #0FB9D4 0%, #38BDF8 55%, #7DD3FC 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+      filter: drop-shadow(0 0 11px rgba(15,185,212,.32));
+    }
+    @media (max-width: 480px) {
+      .pm-brand-name { font-size: 11px; letter-spacing: .07em; gap: .3em; }
+    }
+    @media (max-width: 380px) {
+      .pm-brand-name { font-size: 10px; letter-spacing: .05em; }
+    }
 
     /* Respect reduced motion: keep the halo, drop the movement. */
     @media (prefers-reduced-motion: reduce) {
@@ -1745,12 +1766,11 @@
       -webkit-backdrop-filter: saturate(150%) blur(18px);
       box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 6px 22px -16px rgba(17,38,73,.26);
     }
-    html.light .aj-brand-name { color: #0F1E36; }
+    html.light .aj-brand-name .b1 { color: #0F1E36; text-shadow: none; }
     html.light .aj-brand-sub  { color: #1A6AD4; }
     html.light .aj-logo {
-      background: linear-gradient(160deg, #0D1B33 0%, #071022 100%);
-      border-color: rgba(46,135,234,.34);
-      box-shadow: 0 8px 20px -8px rgba(26,106,212,.46), inset 0 1px 0 rgba(255,255,255,.12);
+      background: none; border: 0; box-shadow: none;
+      filter: drop-shadow(0 0 10px rgba(26,106,212,.30)) drop-shadow(0 2px 5px rgba(17,38,73,.28));
     }
     html.light .aj-link { color: #5A6B85; }
     html.light .aj-link:hover { color: #133F80; background: rgba(227,240,254,.85); }
@@ -2172,8 +2192,8 @@ const DICT = {
         navHelp: "Help",
         secureFastPrivate: "Secure \u2022 Fast \u2022 Private",
         heroEyebrow: "DISCIPLINE / PLAN / EXECUTE / GROW",
-        heroTitleA: "Better Trades.",
-        heroTitleB: "Bigger Dreams.",
+        heroTitleA: "Better Trades",
+        heroTitleB: "Bigger Dreams",
         heroSub: "Track your trades. Analyze your performance. Build consistency.",
         featTrackTitle: "Track Trades",
         featTrackSub: "Keep your trading journal organized.",
@@ -6248,10 +6268,10 @@ function Journal() {
             onClick={clearAllFilters}
             disabled={!hasActiveFilters}
             title={t.clearFilters || "Clear Filters"}
-            className={tx(`flex items-center justify-center w-[38px] h-[38px] rounded-xl transition-all cursor-pointer shrink-0 ${
+            className={tx(`flex items-center justify-center w-[34px] h-[34px] rounded-lg transition-colors cursor-pointer shrink-0 bg-transparent border-0 ${
               hasActiveFilters
-                ? "bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 hover:border-rose-500/50"
-                : "bg-slate-900/40 border border-slate-800 text-slate-700 cursor-not-allowed"
+                ? "text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                : "text-slate-700 cursor-not-allowed"
             }`)}
           >
             <RefreshCw size={13} />
@@ -9563,7 +9583,7 @@ function Accounts() {
               </div>
             )}
             <div title="Filter accounts" className="relative flex-shrink-0" ref={typePopoverRef}>
-              <button type="button" ref={typeAnchorRef} onClick={() => setShowTypePopover((v) => !v)} aria-label="Filters" className={tx(`flex items-center justify-center w-[38px] h-[38px] rounded-xl border transition-all cursor-pointer shrink-0 ${showTypePopover || accountTypeFilter !== "all" ? "is-on bg-sky-500/15 border-sky-500/40 text-sky-300" : "bg-[#050914] border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white"}`)}>
+              <button type="button" ref={typeAnchorRef} onClick={() => setShowTypePopover((v) => !v)} aria-label="Filters" className={tx(`flex items-center justify-center w-[34px] h-[34px] rounded-lg border-0 bg-transparent transition-colors cursor-pointer shrink-0 ${showTypePopover || accountTypeFilter !== "all" ? "is-on text-sky-300 bg-sky-500/10" : "text-slate-400 hover:text-white hover:bg-slate-800/50"}`)}>
                 <PMFilterIcon />
                 {accountTypeFilter !== "all" && <span className="pm-filter-dot bg-sky-400"></span>}
               </button>
@@ -9595,7 +9615,7 @@ function Accounts() {
                 </div>
               </PMPopover>
             </div>
-            <button type="button" onClick={clearAcctFilters} disabled={!acctHasFilter} title="Clear filters" aria-label="Clear account filters" className={tx(`flex items-center justify-center w-[38px] h-[38px] rounded-xl transition-all cursor-pointer shrink-0 ${acctHasFilter ? "bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 hover:border-rose-500/50" : "bg-slate-900/40 border border-slate-800 text-slate-700 cursor-not-allowed"}`)}><RefreshCw size={13} /></button>
+            <button type="button" onClick={clearAcctFilters} disabled={!acctHasFilter} title="Clear filters" aria-label="Clear account filters" className={tx(`flex items-center justify-center w-[34px] h-[34px] rounded-lg transition-colors cursor-pointer shrink-0 bg-transparent border-0 ${acctHasFilter ? "text-rose-400 hover:text-rose-300 hover:bg-rose-500/10" : "text-slate-700 cursor-not-allowed"}`)}><RefreshCw size={13} /></button>
           </div>
         </div>
         <div className="relative flex-shrink-0">
@@ -9902,11 +9922,11 @@ const ADMIN_ROLES = {
   owner:   { id: "owner",   label: "Owner",   sub: "Full access including moderation",
              areas: "*", moderate: true },
   manager: { id: "manager", label: "Manager", sub: "All monitoring areas, no destructive actions",
-             areas: ["overview","users","journal","accounts","backtests","notes","mentor","community","updates"], moderate: false },
+             areas: ["overview","users","subscriptions","payments"], moderate: false },
   support: { id: "support", label: "Support", sub: "User lookup and activity only",
-             areas: ["overview","users","updates"], moderate: false },
+             areas: ["overview","users"], moderate: false },
   viewer:  { id: "viewer",  label: "Viewer",  sub: "Read-only dashboards",
-             areas: ["overview","updates"], moderate: false }
+             areas: ["overview"], moderate: false }
 };
 
 function adminRoleOf(isAdmin) {
@@ -9917,17 +9937,15 @@ function adminRoleOf(isAdmin) {
 }
 const adminCan = (role, area) => !!role && (role.areas === "*" || role.areas.indexOf(area) !== -1);
 
+/* Five core sections. The per-user monitoring views (journal, accounts,
+   backtests, notes, mentor, community) are still reachable through the
+   user drawer's tabs — they are just no longer top-level nav entries. */
 const ADMIN_SECTIONS = [
-  { id: "overview",  label: "Dashboard", icon: Gauge },
-  { id: "users",     label: "Admins",    icon: Users },
-  { id: "journal",   label: "Journal",   icon: BookOpen },
-  { id: "accounts",  label: "Accounts",  icon: Wallet },
-  { id: "backtests", label: "Backtests", icon: FlaskConical },
-  { id: "notes",     label: "Notes",     icon: Edit3 },
-  { id: "mentor",    label: "AI Mentor", icon: Bot },
-  { id: "community", label: "Community", icon: Users },
-  { id: "updates",   label: "Updates",   icon: Sparkles },
-  { id: "settings",  label: "Settings",  icon: Settings }
+  { id: "overview",      label: "Overview",      icon: Gauge },
+  { id: "users",         label: "Users",         icon: Users },
+  { id: "subscriptions", label: "Subscriptions", icon: BadgeCheck },
+  { id: "payments",      label: "Payments",      icon: CreditCard },
+  { id: "settings",      label: "Settings",      icon: Settings }
 ];
 
 const ADMIN_PLANS = {
@@ -10384,10 +10402,10 @@ function FilterTrigger() {
         aria-label="Filters"
         aria-haspopup="dialog"
         aria-expanded={showFiltersPopover}
-        className={tx(`relative flex items-center justify-center w-[38px] h-[38px] rounded-xl border transition-all cursor-pointer ${
+        className={tx(`relative flex items-center justify-center w-[34px] h-[34px] rounded-lg border-0 bg-transparent transition-colors cursor-pointer ${
           showFiltersPopover || on
-            ? "bg-sky-500/15 border-sky-500/40 text-sky-300"
-            : "bg-[#050914] border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+            ? "text-sky-300 bg-sky-500/10"
+            : "text-slate-400 hover:text-white hover:bg-slate-800/50"
         }`)}
       >
         <PMFilterIcon size={15} />
@@ -13238,13 +13256,6 @@ function Admin() {
 
       {section === "overview" && <AdminOverview rows={rows} range={range} setRange={setRange} onJump={jump} sample={adminSampleMode} />}
       {section === "users" && <AdminUsers rows={rows} preset={preset} onConsumePreset={() => setPreset(null)} onAction={handleAction} actionTick={actionTick} role={role} />}
-      {section === "journal" && <AdminJournalArea rows={rows} onOpen={jumpUser} />}
-      {section === "accounts" && <AdminAccountsArea rows={rows} onOpen={jumpUser} />}
-      {section === "backtests" && <AdminBacktestsArea rows={rows} onOpen={jumpUser} />}
-      {section === "notes" && <AdminNotesArea rows={rows} onOpen={jumpUser} />}
-      {section === "mentor" && <AdminMentorArea rows={rows} />}
-      {section === "community" && <AdminCommunityArea rows={rows} />}
-      {section === "updates" && <AdminUpdatesArea />}
       {section === "subscriptions" && (
         <AdmScaffold icon={BadgeCheck} title="Subscriptions"
           sub="Plan-level control: upgrades, downgrades, trial extensions, cancellations and dunning — driven by the same users_billing records the Overview already reads."
@@ -14214,7 +14225,7 @@ function LoginPage() {
         <div className="aj-brand">
           <div className="aj-logo"><AmCrownMark size={26} title="Amiir Journal" /></div>
           <div className="aj-brand-text">
-            <span className="aj-brand-name">Amiir Journal</span>
+            <span className="aj-brand-name"><span className="b1">Amiir</span><span className="b2">Journal</span></span>
             <span className="aj-brand-sub">Trading Journal &amp; Analytics</span>
           </div>
         </div>
@@ -14585,7 +14596,7 @@ function AppShell() {
                       <span className="pm-brand-mark">
                         <AmCrownMark size={18} title="Amiir Journal" />
                       </span>
-                      <span className={tx("pm-brand-name text-slate-100 group-hover:text-white transition-colors truncate max-w-[132px] sm:max-w-none")}>Amiir Journal</span>
+                      <span className={tx("pm-brand-name text-slate-100 group-hover:text-white transition-colors max-w-[150px] sm:max-w-none")}><span className="b1">Amiir</span><span className="b2">Journal</span></span>
                     </button>
 
                     {/* Right Header Actions */}
@@ -14672,7 +14683,7 @@ function AppShell() {
                     ))}
                   </nav>
 
-              <div key={showForm ? "form" : tab} className="pm-view">
+              <div key={tab} className="pm-view">
                 {showForm && <TradeForm />}
                 {(tab === "journal" || tab === "backtest") && <Journal />}
                 {tab === "dashboard" && <Dashboard />}
@@ -14815,5 +14826,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b1b2008d04aea6',t:'MTc4OTQxMzA2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3bb38d86b0ed981',t:'MTc4OTUxMjk1OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3d521ecde89e6b4',t:'MTc4OTc4NDY0OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b1b2008d04aea6',t:'MTc4OTQxMzA2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3bb38d86b0ed981',t:'MTc4OTUxMjk1OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3d5744928137893',t:'MTc4OTc4ODAyMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
