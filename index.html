@@ -316,12 +316,38 @@
       backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     }
     .aj-brand { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
-    /* No plate, no ring — the mark floats and carries its own glow. */
+    /* Login: the traced ring belongs to the badge ONLY — the wordmark beside
+       it stays clean. */
     .aj-logo {
+      position: relative;
       width: 38px; height: 38px; flex: 0 0 auto;
       display: flex; align-items: center; justify-content: center;
-      background: none; border: 0; box-shadow: none; border-radius: 0;
+      background: none; border: 0; box-shadow: none; border-radius: 12px;
       filter: drop-shadow(0 0 12px rgba(15,185,212,.42)) drop-shadow(0 2px 6px rgba(2,10,24,.55));
+    }
+    .aj-logo > * { position: relative; z-index: 3; }
+    .aj-logo::after {
+      content: "";
+      position: absolute; inset: -2px;
+      border-radius: 13px;
+      padding: 1.5px;
+      background: conic-gradient(from var(--pm-trace, 0deg),
+        rgba(15,185,212,0)     0deg,
+        rgba(15,185,212,0)    190deg,
+        rgba(56,189,248,.55)  250deg,
+        rgba(190,244,255,1)   295deg,
+        rgba(56,189,248,.55)  335deg,
+        rgba(15,185,212,0)    360deg);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+              mask-composite: exclude;
+      pointer-events: none;
+      z-index: 2;
+      animation: pm-brand-trace 3.2s linear infinite;
+    }
+    @supports not (background: conic-gradient(from var(--x, 0deg), red, blue)) {
+      .aj-logo::after { animation: pm-brand-trace-spin 3.2s linear infinite; }
     }
     .aj-brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
     /* Split lockup: "AMIIR" light, "JOURNAL" cyan, wide premium tracking. */
@@ -429,12 +455,24 @@
       padding: 2.1rem 1.4rem 2.6rem;
     }
     .aj-eyebrow {
-      font-size: 9.5px; font-weight: 700; letter-spacing: 0.28em;
+      font-size: 9.5px; font-weight: 700; letter-spacing: 0.22em;
       color: #7DD3FC; text-transform: uppercase;
-      display: flex; flex-wrap: wrap; justify-content: center; gap: 0.15rem;
+      display: flex; flex-wrap: wrap; justify-content: center;
+      align-items: center; gap: 0 0.1rem;
+      max-width: 100%; padding-inline: 0.25rem;
       text-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
     }
-    .aj-eyebrow em { font-style: normal; color: rgba(125, 211, 252, 0.4); margin: 0 0.45rem; }
+    .aj-eyebrow > span { display: inline-flex; align-items: center; white-space: nowrap; }
+    /* Separator is its own flex item so a wrap never strands a slash against
+       a word, and never pushes the row past the viewport. */
+    .aj-eyebrow em {
+      font-style: normal; color: rgba(125, 211, 252, 0.38);
+      margin: 0 0.4rem; letter-spacing: 0;
+    }
+    @media (max-width: 480px) {
+      .aj-eyebrow { font-size: 8.5px; letter-spacing: 0.16em; }
+      .aj-eyebrow em { margin: 0 0.28rem; }
+    }
     .aj-hero-title {
       font-family: 'Sora', 'Inter', sans-serif;
       font-weight: 800; letter-spacing: -0.025em; line-height: 1.06;
@@ -444,16 +482,20 @@
       font-size: clamp(1.7rem, 5.6vw, 2.5rem);
       text-shadow: 0 2px 10px rgba(2, 6, 23, 0.55), 0 6px 34px rgba(2, 6, 23, 0.75);
     }
+    /* Single unified accent — same token as .aj-eyebrow, so the discipline
+       line and "Bigger Dreams" read as one colour instead of a gradient. */
     .aj-line-grad {
-      background: linear-gradient(92deg, #38BDF8 10%, #22D3EE 60%, #7DD3FC 100%);
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent; color: transparent;
-      filter: drop-shadow(0 0 22px rgba(34, 211, 238, 0.28));
+      color: #7DD3FC;
+      -webkit-text-fill-color: #7DD3FC;
+      background: none;
+      text-shadow: 0 2px 10px rgba(2, 6, 23, 0.55), 0 0 26px rgba(125, 211, 252, 0.26);
     }
     .aj-hero-sub {
-      margin-top: 0.8rem;
-      font-size: 12.5px; line-height: 1.65; color: #B6C3D6;
-      max-width: 30rem; text-wrap: balance;
+      margin-top: 0.9rem;
+      font-size: 13px; line-height: 1.7; color: #C3CFE0;
+      letter-spacing: 0.005em;
+      max-width: 27rem; text-wrap: balance;
+      padding-inline: 0.25rem;
     }
     .aj-feats { display: none; }
     .aj-signature { display: none; }
@@ -1060,10 +1102,19 @@
     button:not(:disabled):not(.pm-raw):active { transform: translateY(.5px) scale(.985); }
 
     /* Primary sky/blue buttons → premium gradient + lift + sheen */
+    /* `position: relative` lives in its own rule that bows out whenever a
+       Tailwind positioning utility is present. The combined selector below
+       scores 0-2-1 and used to beat `.fixed` (0-1-0), which silently pinned
+       the mobile FAB back into normal flow. */
+    button.bg-sky-500:not(.pm-raw):not(.fixed):not(.absolute):not(.sticky),
+    button.bg-sky-600:not(.pm-raw):not(.fixed):not(.absolute):not(.sticky),
+    button.bg-blue-600:not(.pm-raw):not(.fixed):not(.absolute):not(.sticky) {
+      position: relative;
+    }
     button.bg-sky-500:not(.pm-raw),
     button.bg-sky-600:not(.pm-raw),
     button.bg-blue-600:not(.pm-raw) {
-      position: relative; overflow: hidden;
+      overflow: hidden;
       background-image: linear-gradient(135deg, #3D93EE 0%, #1A6AD4 54%, #1553AC 100%);
       border-color: rgba(95,169,245,.46);
       box-shadow:
@@ -1583,7 +1634,15 @@
 
     /* ══════════ 11i. BRAND LOCKUP ══════════ */
 
-    .pm-brand { display: inline-flex; align-items: center; gap: 10px; }
+    /* No box, no padded plate — the brand is just the mark next to the name.
+       `isolation` is retained so .pm-brand-mark::before (z-index:-1) stays
+       inside this stacking context instead of falling behind the header. */
+    .pm-brand {
+      position: relative;
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 0; border-radius: 0; background: none; border: 0; box-shadow: none;
+      isolation: isolate;
+    }
 
     /* Plateless: no background, no border ring — just the mark, its glow and
        the travelling light. */
@@ -1604,8 +1663,8 @@
     .pm-brand-mark::after {
       content: "";
       position: absolute;
-      inset: -1.5px;
-      border-radius: 12.5px;
+      inset: -2px;
+      border-radius: 13px;
       padding: 1.5px;
       background: conic-gradient(from var(--pm-trace, 0deg),
         rgba(103,199,224,0)    0deg,
@@ -1670,6 +1729,7 @@
     @keyframes pm-brand-breathe { from { opacity: .34; } to { opacity: .68; } }
 
     .pm-brand-mark > * { position: relative; z-index: 3; }
+    .pm-brand > * { position: relative; z-index: 3; }
     .pm-brand:hover .pm-brand-mark { transform: translateY(-1px); }
 
     .pm-brand-name {
@@ -1693,7 +1753,46 @@
     /* Respect reduced motion: keep the halo, drop the movement. */
     @media (prefers-reduced-motion: reduce) {
       .pm-brand-mark::before { animation: none; opacity: .42; }
-      .pm-brand-mark::after { animation: none; opacity: .5; }
+      .pm-brand-mark::after, .aj-logo::after { animation: none; opacity: .5; }
+    }
+
+    /* ══════════ 11m. FOOTER LIVE DOT ══════════ */
+
+    /* Small emerald pip with a soft breathing halo — a quiet "app is live"
+       signal, not a notification badge. */
+    .pm-live-dot {
+      position: relative;
+      display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #34D399;
+      box-shadow: 0 0 0 0 rgba(52,211,153,.5);
+      animation: pm-live-pulse 2.8s ease-out infinite;
+    }
+    html.light .pm-live-dot { background: #0B7D57; }
+    @keyframes pm-live-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(52,211,153,.45); opacity: 1; }
+      70%  { box-shadow: 0 0 0 5px rgba(52,211,153,0); opacity: .78; }
+      100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pm-live-dot { animation: none; }
+    }
+
+    /* ══════════ 11j. SUPPORT CENTER ══════════ */
+
+    /* Soft off-centre wash behind the support masthead. Purely decorative and
+       kept well under the neon threshold. */
+    .pm-support-aura {
+      position: absolute; inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 46% 120% at 88% 12%, rgba(56,189,248,.12), transparent 68%),
+        radial-gradient(ellipse 34% 100% at 4% 96%, rgba(103,199,224,.07), transparent 70%);
+    }
+    html.light .pm-support-aura {
+      background:
+        radial-gradient(ellipse 46% 120% at 88% 12%, rgba(26,106,212,.09), transparent 68%),
+        radial-gradient(ellipse 34% 100% at 4% 96%, rgba(21,89,180,.05), transparent 70%);
     }
 
     /* ══════════ 11h. PORTALLED POPOVER LAYER ══════════ */
@@ -1825,10 +1924,10 @@
     html.light .aj-eyebrow     { color: #BFDBFE; }
     html.light .aj-eyebrow em  { color: rgba(191,219,254,.55); }
     html.light .aj-line-grad {
-      background: linear-gradient(92deg, #BFDCFF 4%, #EAF4FF 52%, #FFFFFF 100%);
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 3px 18px rgba(6,18,40,.55));
+      color: #BFDBFE;
+      -webkit-text-fill-color: #BFDBFE;
+      background: none;
+      text-shadow: 0 2px 22px rgba(6,18,40,.42);
     }
     html.light .aj-signature { color: #DBEAFE; }
     html.light .aj-hero-foot {
@@ -1930,7 +2029,7 @@
       color: #B3253F; background: #FDECEF; border: 1px solid rgba(224,45,75,.28);
     }
     html.light .aj-msg-ok {
-      color: #0B7D57; background: #E6F7F0; border: 1px solid rgba(14,159,110,.28);
+      color: #0A7350; background: #E6F7F0; border: 1px solid rgba(14,159,110,.28);
     }
 
     /* ── Submit ── */
@@ -2044,10 +2143,10 @@ var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=ne
       Clock, Award, Settings, Star, FlaskConical, Share2, Download, ZoomIn, ZoomOut, RotateCcw,
       Sparkles, MessageCircle, ShieldCheck, Activity, Users, Radio, Pin, Search, Bot,
       Filter, Check, ExternalLink, Flame, Rocket, Heart, ArrowUpRight, ArrowDownRight,
-      SlidersHorizontal, RefreshCw, BarChart2, BarChart3, Target, Layers, Calendar, CalendarRange, CheckCircle2, Instagram, Facebook, Moon, Sun, Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, LogIn,
+      SlidersHorizontal, Undo2, BarChart2, BarChart3, Target, Layers, Calendar, CalendarRange, CheckCircle2, Instagram, Facebook, Moon, Sun, Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, LogIn,
       MoreVertical, CreditCard, DollarSign, AlertTriangle, UserCheck, Ban, Copy, Inbox, Gauge,
       Receipt, Zap, BadgeCheck, Hourglass, Loader2, Banknote, Info, XCircle, CalendarDays,
-      Minus, Scale, NotebookPen, Link2, ChevronsUpDown
+      Minus, Scale, NotebookPen, Link2, ChevronsUpDown, LifeBuoy, HelpCircle
     } from "lucide-react";
 
     // Firebase imports
@@ -2059,7 +2158,7 @@ var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=ne
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import {
       getFirestore, collection, doc, setDoc, updateDoc, deleteDoc,
-      onSnapshot, query, orderBy, limit, addDoc
+      onSnapshot, query, orderBy, limit, addDoc, getDocs
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     /* ══════════════════════════════════════════════════════════════════════
@@ -2125,7 +2224,7 @@ const DICT = {
         addNote: "New Note",
         signInGoogle: "Continue with Google",
         chatPlaceholder: "Share market idea, setup, or chart...",
-        devBy: "Track your edge Master your process",
+        devBy: "Track your edge \u00B7 Master your process",
         calendarTitle: "Trading Calendar",
         thisMonth: "This Month",
         editChecklist: "Customize",
@@ -2190,6 +2289,7 @@ const DICT = {
         navFeatures: "Features",
         navAbout: "About",
         navHelp: "Help",
+        support: "Support",
         secureFastPrivate: "Secure \u2022 Fast \u2022 Private",
         heroEyebrow: "DISCIPLINE / PLAN / EXECUTE / GROW",
         heroTitleA: "Better Trades",
@@ -2255,7 +2355,7 @@ const DICT = {
         addNote: "Qor Cashar",
         signInGoogle: "Ku gal Google",
         chatPlaceholder: "Qor fikrad ama la wadaag chart...",
-        devBy: "Waxaa dhisay",
+        devBy: "La soco faa\u2019iidadaada \u00B7 Horumari habkaaga",
         calendarTitle: "Kalandarka Ganacsiga",
         thisMonth: "Bishan",
         editChecklist: "Beddel",
@@ -2320,10 +2420,11 @@ const DICT = {
         navFeatures: "Astaamaha",
         navAbout: "Ku Saabsan",
         navHelp: "Caawimaad",
+        support: "Caawimaad",
         secureFastPrivate: "Ammaan \u2022 Degdeg \u2022 Khaas",
         heroEyebrow: "ANSHAX / QORSHE / FULI / KOR",
-        heroTitleA: "Ganacsi Fiican.",
-        heroTitleB: "Riyo Waaweyn.",
+        heroTitleA: "Ganacsi Fiican",
+        heroTitleB: "Riyo Waaweyn",
         heroSub: "Diiwaangeli ganacsiyadaada. Falanqee waxqabadkaaga. Dhiso joogteynta.",
         featTrackTitle: "Diiwaangeli Ganacsi",
         featTrackSub: "Hayso diiwaankaaga ganacsi oo habaysan.",
@@ -3130,10 +3231,10 @@ const THEME_BASE = {
   "text-sky-300": "text-[#1553AC]",
   "text-sky-400": "text-[#1559B4]",
   "text-sky-400/90": "text-[#1559B4]",
-  "text-emerald-300": "text-[#0B7D57]",
-  "text-emerald-300/80": "text-[#0B7D57]",
-  "text-emerald-400": "text-[#0B7D57]",
-  "text-emerald-400/90": "text-[#0B7D57]",
+  "text-emerald-300": "text-[#0A7350]",
+  "text-emerald-300/80": "text-[#0A7350]",
+  "text-emerald-400": "text-[#0A7350]",
+  "text-emerald-400/90": "text-[#0A7350]",
   "text-sky-300": "text-[#0E7490]",
   "text-cyan-100": "text-[#0E7490]",
   "text-cyan-200": "text-[#0E7490]",
@@ -3154,7 +3255,7 @@ const THEME_BASE = {
   "text-slate-700": "text-[#47597A]",
   "text-cyan-500": "text-[#0E7490]",
   "text-sky-500": "text-[#1553AC]",
-  "text-emerald-500": "text-[#0B7D57]",
+  "text-emerald-500": "text-[#0A7350]",
   "text-rose-500": "text-[#C21F3E]",
   "text-amber-500": "text-[#B45309]",
   "text-violet-500": "text-[#6D28D9]",
@@ -6262,20 +6363,6 @@ function Journal() {
           {/* Filter control — right of Search, sleek thin icon */}
           <FilterTrigger />
 
-          {/* Clear Filters Button */}
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            disabled={!hasActiveFilters}
-            title={t.clearFilters || "Clear Filters"}
-            className={tx(`flex items-center justify-center w-[34px] h-[34px] rounded-lg transition-colors cursor-pointer shrink-0 bg-transparent border-0 ${
-              hasActiveFilters
-                ? "text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                : "text-slate-700 cursor-not-allowed"
-            }`)}
-          >
-            <RefreshCw size={13} />
-          </button>
 
         </div>
 
@@ -6567,11 +6654,11 @@ function Journal() {
           })}
 
           {feedTrades.length > 3 && (
-            <div className="flex items-center justify-start pt-3 pb-1">
+            <div className="flex items-center justify-start pt-2.5 pb-0.5">
               <button
                 type="button"
                 onClick={() => setVisibleCount(prev => prev >= feedTrades.length ? 3 : feedTrades.length)}
-                className={tx("px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/40 text-[11px] tracking-wider text-sky-400 transition-all cursor-pointer font-bold active:scale-95 font-mono")}
+                className={tx("inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-transparent hover:bg-sky-500/10 border border-slate-800/70 hover:border-sky-500/35 text-[10px] tracking-[0.1em] text-sky-400/90 hover:text-sky-300 transition-all cursor-pointer font-bold active:scale-95 font-mono")}
               >
                 {visibleCount >= filteredTrades.length ? t.showLess : t.seeMore}
               </button>
@@ -8765,9 +8852,13 @@ function BacktestRoom() {
             </div>
             <button
               type="button" onClick={() => setShowFilters((v) => !v)}
-              className={tx(`pm-filter font-mono border ${showFilters || activeFilterCount > 0 ? "is-on bg-sky-500/15 border-cyan-500/40 text-cyan-200" : "bg-[#050914] border-slate-800 text-slate-300 hover:border-slate-600 hover:text-white"}`)}
+              title="Filters" aria-label="Filters" aria-expanded={showFilters}
+              className={tx(`relative flex items-center justify-center w-[34px] h-[34px] rounded-lg border-0 bg-transparent transition-colors cursor-pointer shrink-0 ${showFilters || activeFilterCount > 0 ? "is-on text-sky-300 bg-sky-500/10" : "text-slate-400 hover:text-white hover:bg-slate-800/50"}`)}
             >
-              <PMFilterIcon size={14} /> Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              <PMFilterIcon size={14} />
+              {activeFilterCount > 0 && (
+                <span className={tx("absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-sky-500 text-white text-[9px] font-bold leading-[15px] text-center")}>{activeFilterCount}</span>
+              )}
             </button>
             <button type="button" onClick={() => setSeshModal({})} className={tx("pm-filter font-mono hidden sm:inline-flex border border-slate-800 bg-[#050914] text-slate-200 hover:border-cyan-400/50 hover:text-cyan-200")}><Plus /> Session</button>
             <button type="button" onClick={logTrade} className={tx("pm-filter font-mono bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg shadow-cyan-500/20")}><Plus /> Log trade</button>
@@ -8787,7 +8878,7 @@ function BacktestRoom() {
           ))}
           <div className="flex-1" />
           {(depth > 0 || activeFilterCount > 0) && (
-            <button type="button" onClick={resetRoom} className={tx("flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-400 hover:text-rose-300 transition-colors cursor-pointer whitespace-nowrap")}><RefreshCw size={13} /> Reset view</button>
+            <button type="button" onClick={resetRoom} className={tx("flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-400 hover:text-rose-300 transition-colors cursor-pointer whitespace-nowrap")}><Undo2 size={13} /> Reset view</button>
           )}
         </div>
 
@@ -9567,12 +9658,12 @@ function Accounts() {
   const visiblePlanned = (plannedAccounts || []).filter((p) => sizeOk(p.challengeSize) && (accountTypeFilter === "all" || accountTypeFilter === "Plan"));
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-3 flex-wrap">
-        <div className="terminal-card p-3 sm:p-4 rounded-2xl flex-1 min-w-[280px]">
+      <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="terminal-card p-2.5 sm:p-3 rounded-2xl flex-1 min-w-[260px] max-w-[620px]">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="relative flex-1 min-w-0">
-              <Search size={15} className={tx("absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none")} />
-              <input value={accountSearchQuery} onChange={(e) => setAccountSearchQuery(e.target.value)} placeholder="Search accounts..." className={tx("w-full bg-[#050914] border border-slate-800 rounded-xl pl-11 pr-10 py-3 text-xs text-white font-mono focus:outline-none placeholder:text-slate-600")} />
+              <Search size={13} className={tx("absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none")} />
+              <input value={accountSearchQuery} onChange={(e) => setAccountSearchQuery(e.target.value)} placeholder="Search accounts..." className={tx("w-full bg-[#050914] border border-slate-800 rounded-lg pl-9 pr-8 py-2 text-[11px] text-white font-mono focus:outline-none focus:border-sky-500/40 placeholder:text-slate-600 transition-colors")} />
               {accountSearchQuery && (
                 <button type="button" onClick={() => setAccountSearchQuery("")} title="Clear search" aria-label="Clear account search" className={tx("absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 transition-colors")}><X size={13} /></button>
               )}
@@ -9615,16 +9706,18 @@ function Accounts() {
                 </div>
               </PMPopover>
             </div>
-            <button type="button" onClick={clearAcctFilters} disabled={!acctHasFilter} title="Clear filters" aria-label="Clear account filters" className={tx(`flex items-center justify-center w-[34px] h-[34px] rounded-lg transition-colors cursor-pointer shrink-0 bg-transparent border-0 ${acctHasFilter ? "text-rose-400 hover:text-rose-300 hover:bg-rose-500/10" : "text-slate-700 cursor-not-allowed"}`)}><RefreshCw size={13} /></button>
+
           </div>
         </div>
         <div className="relative flex-shrink-0">
           <button
             type="button"
             onClick={() => setShowAddMenu((v) => !v)}
-            className={tx("flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer font-mono shadow-md shadow-sky-500/20")}
+            title={t.addAccount}
+            aria-expanded={showAddMenu}
+            className={tx("flex items-center gap-1 pl-2.5 pr-2 py-1.5 rounded-lg text-[11px] font-bold bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer font-mono shadow-sm shadow-sky-500/20 whitespace-nowrap")}
           >
-            <Plus size={13} /> {t.addAccount} <ChevronDown size={13} className={showAddMenu ? "rotate-180 transition-transform" : "transition-transform"} />
+            <Plus size={12} className="stroke-[2.6]" /> {t.addAccount} <ChevronDown size={11} className={showAddMenu ? "rotate-180 transition-transform" : "transition-transform"} />
           </button>
           {showAddMenu && (
             <>
@@ -12351,40 +12444,178 @@ function AdmNoData({ what }) {
   );
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   ADMIN — read a selected user's real trade documents
+
+   The presence doc only ever carried counts, so the drawer could show
+   "12 trades" but never the trades themselves. This hook reads the user's
+   own subcollections directly (users/{uid}/trades, /backtest_trades) so an
+   admin reviewing an account can see the actual entries, win rate and
+   recent activity. Access is still governed by Firestore rules — if the
+   rules deny the read we surface a clear "restricted" state rather than
+   inventing data.
+   ══════════════════════════════════════════════════════════════════════ */
+
+function useAdmUserTrades(uid, enabled) {
+  const [state, setState] = useState({ status: "idle", live: [], backtest: [] });
+
+  useEffect(() => {
+    if (!uid || !enabled) { setState({ status: "idle", live: [], backtest: [] }); return; }
+    let alive = true;
+    setState({ status: "loading", live: [], backtest: [] });
+
+    const read = async (name) => {
+      const snap = await getDocs(query(collection(db, "users", uid, name), limit(500)));
+      const out = [];
+      snap.forEach((d) => out.push({ id: d.id, ...d.data() }));
+      return out;
+    };
+
+    Promise.all([read("trades"), read("backtest_trades")])
+      .then(([live, backtest]) => {
+        if (!alive) return;
+        setState({ status: "ready", live, backtest });
+      })
+      .catch((err) => {
+        if (!alive) return;
+        setState({ status: "denied", live: [], backtest: [], error: String((err && err.code) || err) });
+      });
+
+    return () => { alive = false; };
+  }, [uid, enabled]);
+
+  return state;
+}
+
+/* Win rate / R / P&L computed from the real documents. */
+function admTradeStats(list) {
+  const L = Array.isArray(list) ? list : [];
+  const wins = L.filter((x) => x.outcome === "win").length;
+  const losses = L.filter((x) => x.outcome === "loss").length;
+  const bes = L.filter((x) => x.outcome === "be").length;
+  const decided = wins + losses;
+  return {
+    total: L.length,
+    wins, losses, bes,
+    winRate: decided ? Math.round((wins / decided) * 100) : null,
+    netR: L.reduce((a, x) => a + (Number(x.rMultiple) || 0), 0),
+    netDollar: L.reduce((a, x) => a + (Number(x.pnlDollar) || 0), 0)
+  };
+}
+
+/* Compact, read-only table of a user's most recent trades. */
+function AdmTradeTable({ rows, emptyWhat }) {
+  const [showAll, setShowAll] = useState(false);
+  if (!rows.length) return <AdmNoData what={emptyWhat || "trades"} />;
+
+  const sorted = rows.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const shown = showAll ? sorted.slice(0, 100) : sorted.slice(0, 8);
+
+  const tone = (o) => o === "win" ? "text-emerald-400" : o === "loss" ? "text-rose-400" : "text-slate-400";
+
+  return (
+    <div className="space-y-2">
+      <div className={tx("rounded-xl border border-slate-800/70 overflow-hidden")}>
+        <table className="w-full text-left">
+          <thead>
+            <tr className={tx("bg-slate-900/60 border-b border-slate-800/70")}>
+              {["Date", "Symbol", "Dir", "Outcome", "R", "P&L"].map((h) => (
+                <th key={h} className={tx("px-2.5 py-2 text-[9px] uppercase tracking-wider text-slate-500 font-bold")}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((r, i) => (
+              <tr key={r.id || i} className={tx("border-b border-slate-800/40 last:border-0")}>
+                <td className={tx("px-2.5 py-1.5 text-[11px] text-slate-400 tnum whitespace-nowrap")}>{r.date || "—"}</td>
+                <td className={tx("px-2.5 py-1.5 text-[11px] font-bold text-slate-200")}>{r.symbol || "—"}</td>
+                <td className={tx("px-2.5 py-1.5 text-[10.5px] text-slate-400 uppercase")}>{r.direction || "—"}</td>
+                <td className={tx(`px-2.5 py-1.5 text-[10.5px] font-bold uppercase ${tone(r.outcome)}`)}>{r.outcome || "—"}</td>
+                <td className={tx(`px-2.5 py-1.5 text-[11px] tnum font-bold ${(Number(r.rMultiple) || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`)}>
+                  {Number.isFinite(Number(r.rMultiple)) ? (Number(r.rMultiple) >= 0 ? "+" : "") + Number(r.rMultiple).toFixed(2) + "R" : "—"}
+                </td>
+                <td className={tx(`px-2.5 py-1.5 text-[11px] tnum ${(Number(r.pnlDollar) || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`)}>
+                  {Number.isFinite(Number(r.pnlDollar)) && r.pnlDollar !== "" ? admMoney(Number(r.pnlDollar)) : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {sorted.length > 8 && (
+        <button type="button" onClick={() => setShowAll((v) => !v)}
+          className={tx("text-[10px] font-bold tracking-wider text-sky-400 hover:text-sky-300 transition-colors cursor-pointer")}>
+          {showAll ? "Show less" : `Show all ${sorted.length}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* Loading / permission-denied states — never fabricated. */
+function AdmTradeState({ status, error }) {
+  if (status === "loading") {
+    return (
+      <div className={tx("rounded-xl border border-dashed border-slate-800 px-4 py-6 text-center")}>
+        <p className={tx("text-[11.5px] text-slate-500")}>Loading trades…</p>
+      </div>
+    );
+  }
+  return (
+    <div className={tx("rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-6 text-center")}>
+      <p className={tx("text-[11.5px] text-amber-300 font-semibold")}>Trade documents could not be read.</p>
+      <p className={tx("text-[10px] text-slate-500 mt-1")}>
+        Firestore rules must allow the admin account to read <span className="font-mono">users/&#123;uid&#125;/trades</span>.
+        {error ? " (" + error + ")" : ""}
+      </p>
+    </div>
+  );
+}
+
 function AdmUserTabs({ u }) {
   const [tab, setTab] = useState("journal");
   const usage = u.usage || {};
   const has = (n) => Number.isFinite(Number(n));
+  // Real documents for the selected user — admin review of actual content.
+  const td = useAdmUserTrades(u.uid, tab === "journal" || tab === "trading" || tab === "backtests");
+  const liveStats = useMemo(() => admTradeStats(td.live), [td.live]);
+  const btStatsAdm = useMemo(() => admTradeStats(td.backtest), [td.backtest]);
 
   const body = () => {
     switch (tab) {
       case "journal":
-        return has(usage.trades) ? (
+        return (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <AdmMetric label="Trades logged" value={usage.trades} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <AdmMetric label="Trades logged" value={td.status === "ready" ? liveStats.total : usage.trades} />
+              <AdmMetric label="Win rate" value={liveStats.winRate != null ? liveStats.winRate + "%" : null}
+                tone={liveStats.winRate != null && liveStats.winRate >= 50 ? "text-emerald-400" : "text-rose-400"} />
               <AdmMetric label="Notes" value={usage.notes} />
               <AdmMetric label="Last entry" value={usage.lastTradeDate || null} />
             </div>
-            <p className={tx("text-[10.5px] text-slate-500 leading-relaxed")}>
-              Counts only. Individual journal entries are the user's private content and are not exposed here.
-            </p>
+            {td.status === "ready"
+              ? <AdmTradeTable rows={td.live} emptyWhat="journal entries" />
+              : td.status === "idle" ? null : <AdmTradeState status={td.status} error={td.error} />}
           </div>
-        ) : <AdmNoData what="journal activity" />;
+        );
 
       case "trading":
-        return has(usage.trades) ? (
+        return (
           <div className="space-y-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <AdmMetric label="Total trades" value={usage.trades} />
-              <AdmMetric label="Last trade" value={usage.lastTradeDate || null} />
+              <AdmMetric label="Total trades" value={td.status === "ready" ? liveStats.total : usage.trades} />
+              <AdmMetric label="Win rate" value={liveStats.winRate != null ? liveStats.winRate + "%" : null}
+                tone={liveStats.winRate != null && liveStats.winRate >= 50 ? "text-emerald-400" : "text-rose-400"} />
+              <AdmMetric label="Wins / losses" value={td.status === "ready" ? liveStats.wins + " / " + liveStats.losses : null} />
+              <AdmMetric label="Net R" value={td.status === "ready" && liveStats.total ? (liveStats.netR >= 0 ? "+" : "") + liveStats.netR.toFixed(2) + "R" : null}
+                tone={liveStats.netR >= 0 ? "text-emerald-400" : "text-rose-400"} />
+              <AdmMetric label="Net P&L" value={td.status === "ready" && liveStats.total ? admMoney(liveStats.netDollar) : null}
+                tone={liveStats.netDollar >= 0 ? "text-emerald-400" : "text-rose-400"} />
               <AdmMetric label="Accounts" value={usage.accounts} />
             </div>
-            <p className={tx("text-[10.5px] text-slate-500 leading-relaxed")}>
-              Performance figures (win rate, R, P&amp;L) are not replicated into the admin store, so they are not shown.
-            </p>
+            {td.status !== "ready" && td.status !== "idle" && <AdmTradeState status={td.status} error={td.error} />}
           </div>
-        ) : <AdmNoData what="trading data" />;
+        );
 
       case "accounts":
         return has(usage.accounts) ? (
@@ -12395,12 +12626,21 @@ function AdmUserTabs({ u }) {
         ) : <AdmNoData what="account data" />;
 
       case "backtests":
-        return has(usage.backtests) ? (
-          <div className="grid grid-cols-2 gap-2">
-            <AdmMetric label="Backtest trades" value={usage.backtests} />
-            <AdmMetric label="Live trades" value={usage.trades} />
+        return (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <AdmMetric label="Backtest trades" value={td.status === "ready" ? btStatsAdm.total : usage.backtests} />
+              <AdmMetric label="Win rate" value={btStatsAdm.winRate != null ? btStatsAdm.winRate + "%" : null}
+                tone={btStatsAdm.winRate != null && btStatsAdm.winRate >= 50 ? "text-emerald-400" : "text-rose-400"} />
+              <AdmMetric label="Net R" value={td.status === "ready" && btStatsAdm.total ? (btStatsAdm.netR >= 0 ? "+" : "") + btStatsAdm.netR.toFixed(2) + "R" : null}
+                tone={btStatsAdm.netR >= 0 ? "text-emerald-400" : "text-rose-400"} />
+              <AdmMetric label="Live trades" value={td.status === "ready" ? liveStats.total : usage.trades} />
+            </div>
+            {td.status === "ready"
+              ? <AdmTradeTable rows={td.backtest} emptyWhat="backtest trades" />
+              : td.status === "idle" ? null : <AdmTradeState status={td.status} error={td.error} />}
           </div>
-        ) : <AdmNoData what="backtest data" />;
+        );
 
       case "notes":
         return has(usage.notes) ? (
@@ -13953,6 +14193,444 @@ function Notes() {
        6j. COMPONENT — Community (TAB 7 · live chat)
        ══════════════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════════
+   SUPPORT & HELP CENTER
+   Three panels in one view:
+     · Quick help   — searchable FAQ accordion (static, no data invented)
+     · Contact      — real channels that already exist in the app footer
+     · Report form  — writes to users/{uid}/support_tickets + support_inbox,
+                      then lists the user's own tickets with live status.
+   Ticket writes degrade gracefully: if Firestore rules reject the write we
+   surface the reason and the mailto fallback rather than pretending it sent.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const SUPPORT_TOPICS = [
+  { id: "bug", label: "Bug / something broken", icon: AlertTriangle, tone: "rose" },
+  { id: "account", label: "Account & login", icon: Lock, tone: "sky" },
+  { id: "data", label: "Missing or wrong data", icon: Layers, tone: "amber" },
+  { id: "feature", label: "Feature request", icon: Sparkles, tone: "violet" },
+  { id: "other", label: "Something else", icon: MessageCircle, tone: "slate" }
+];
+
+const SUPPORT_TONES = {
+  rose:   { ic: "text-rose-300",   bg: "bg-rose-500/12",   bd: "border-rose-500/30" },
+  sky:    { ic: "text-sky-300",    bg: "bg-sky-500/12",    bd: "border-sky-500/30" },
+  amber:  { ic: "text-amber-300",  bg: "bg-amber-500/12",  bd: "border-amber-500/30" },
+  violet: { ic: "text-violet-300", bg: "bg-violet-500/12", bd: "border-violet-500/30" },
+  slate:  { ic: "text-slate-300",  bg: "bg-slate-500/12",  bd: "border-slate-600/40" }
+};
+
+const SUPPORT_FAQ = [
+  { q: "How do I log a trade?",
+    a: "Press the + New Trade button in the header (or the floating + on mobile). Fill in pair, direction, entry and exit, then Save. The trade appears in your Journal immediately and feeds the Dashboard stats." },
+  { q: "What is the difference between a live trade and a backtest?",
+    a: "Live trades are stored in your Journal and count toward your real statistics. Backtests live in the Backtest room, grouped by session, and never mix into your live win rate." },
+  { q: "I deleted a trade by mistake — can I get it back?",
+    a: "Yes. Open the profile menu in the top-left and choose Recovery / Trash. Deleted trades and notes stay there so you can restore them." },
+  { q: "How is my win rate calculated?",
+    a: "Win rate counts only decided trades — those marked win or loss. Break-even trades are tracked separately and excluded from the percentage so the number is not diluted." },
+  { q: "Can I add my own trading pairs and sessions?",
+    a: "Yes. The pair selector lets you type a new pair and press Enter to save it. Custom sessions can be added from the session field, and both persist for future trades." },
+  { q: "How do I add a funded or challenge account?",
+    a: "Go to Accounts and use + Add Account. Choose Active account for live, funded, challenge or demo accounts, or Planned account to map out a future prop evaluation." },
+  { q: "Is my trading data private?",
+    a: "Your journal, notes and accounts live under your own user document and are not shared with other traders. Community chat is the only space that is public by design." },
+  { q: "The AI Mentor says it needs more trades.",
+    a: "The mentor needs at least 5 logged trades before it can find patterns worth reporting. Keep journaling and it will start surfacing insights about your edge." }
+];
+
+function SupportFaqItem({ item, open, onToggle }) {
+  return (
+    <div className={tx("rounded-xl border border-slate-800/80 bg-[#050914] overflow-hidden transition-colors hover:border-slate-700")}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={tx("w-full flex items-center justify-between gap-3 px-3.5 py-3 text-left cursor-pointer")}
+      >
+        <span className={tx("text-[11.5px] font-semibold text-slate-200 font-mono leading-snug")}>{item.q}</span>
+        <ChevronDown size={14} className={tx("shrink-0 text-slate-500 transition-transform " + (open ? "rotate-180" : ""))} />
+      </button>
+      {open && (
+        <div className={tx("px-3.5 pb-3.5 -mt-0.5 text-[11px] leading-relaxed text-slate-400 font-mono border-t border-slate-800/70 pt-2.5")}>
+          {item.a}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SupportTicketRow({ tk }) {
+  const st = tk.status === "resolved"
+    ? { label: "Resolved", cls: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30", Icon: CheckCircle2 }
+    : tk.status === "in_progress"
+      ? { label: "In progress", cls: "bg-sky-500/12 text-sky-300 border-sky-500/30", Icon: Loader2 }
+      : { label: "Open", cls: "bg-amber-500/12 text-amber-300 border-amber-500/30", Icon: Hourglass };
+  const topic = SUPPORT_TOPICS.find((x) => x.id === tk.topic) || SUPPORT_TOPICS[4];
+  return (
+    <div className={tx("rounded-xl border border-slate-800/80 bg-[#050914] p-3")}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 mb-1">
+            <topic.icon size={11} className={tx(SUPPORT_TONES[topic.tone].ic + " shrink-0")} />
+            <span className={tx("text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-slate-500")}>{topic.label}</span>
+          </div>
+          <p className={tx("text-[11.5px] font-semibold text-slate-200 font-mono truncate")}>{tk.subject}</p>
+          <p className={tx("text-[10.5px] text-slate-500 font-mono mt-1 line-clamp-2 leading-relaxed")}>{tk.message}</p>
+        </div>
+        <span className={tx("shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-mono font-bold uppercase tracking-wider " + st.cls)}>
+          <st.Icon size={9} /> {st.label}
+        </span>
+      </div>
+      <div className={tx("mt-2 pt-2 border-t border-slate-800/70 flex items-center gap-1.5 text-[9.5px] font-mono text-slate-600")}>
+        <Clock size={9} />
+        {tk.createdAt ? new Date(tk.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—"}
+        {tk.ref ? <><span className={tx("w-px h-2.5 bg-slate-700/70 mx-0.5")} /> <span>Ref {tk.ref}</span></> : null}
+      </div>
+    </div>
+  );
+}
+
+function Support() {
+  const { user, trades, backtestTrades, accounts, notes } = useApp();
+
+  const [faqQuery, setFaqQuery] = useState("");
+  const [openFaq, setOpenFaq] = useState(null);
+  const [topic, setTopic] = useState("bug");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [includeDiag, setIncludeDiag] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(null);
+  const [sendErr, setSendErr] = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [ticketsState, setTicketsState] = useState("loading");
+
+  /* Live view of this user's own tickets. */
+  useEffect(() => {
+    if (!user || !user.uid) { setTicketsState("idle"); return; }
+    let alive = true;
+    const q = query(collection(db, "users", user.uid, "support_tickets"), orderBy("createdAt", "desc"), limit(20));
+    const unsub = onSnapshot(q,
+      (snap) => { if (!alive) return; setTickets(snap.docs.map((d) => ({ id: d.id, ...d.data() }))); setTicketsState("ready"); },
+      ()      => { if (!alive) return; setTicketsState("denied"); }
+    );
+    return () => { alive = false; unsub(); };
+  }, [user && user.uid]);
+
+  const faqList = useMemo(() => {
+    const term = faqQuery.trim().toLowerCase();
+    if (!term) return SUPPORT_FAQ;
+    return SUPPORT_FAQ.filter((f) => (f.q + " " + f.a).toLowerCase().includes(term));
+  }, [faqQuery]);
+
+  /* Diagnostics are read from what the app already knows — never invented. */
+  const diagnostics = useMemo(() => ({
+    trades: (trades || []).length,
+    backtests: (backtestTrades || []).length,
+    accounts: (accounts || []).length,
+    notes: (notes || []).length,
+    viewport: typeof window !== "undefined" ? window.innerWidth + "x" + window.innerHeight : "",
+    agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 180) : "",
+    theme: typeof document !== "undefined" && document.documentElement.classList.contains("light") ? "light" : "dark"
+  }), [trades, backtestTrades, accounts, notes]);
+
+  const canSend = subject.trim().length > 2 && message.trim().length > 9 && !sending;
+
+  const submitTicket = async (e) => {
+    e.preventDefault();
+    if (!canSend) return;
+    setSending(true); setSendErr(""); setSent(null);
+    const ref = "AJ-" + Date.now().toString(36).toUpperCase().slice(-6);
+    const payload = {
+      ref,
+      topic,
+      subject: subject.trim().slice(0, 140),
+      message: message.trim().slice(0, 4000),
+      status: "open",
+      uid: user ? user.uid : "",
+      email: (user && user.email) || "",
+      name: (user && user.displayName) || "Trader",
+      diagnostics: includeDiag ? diagnostics : null,
+      createdAt: new Date().toISOString()
+    };
+    try {
+      await addDoc(collection(db, "users", user.uid, "support_tickets"), payload);
+      /* Mirror into the admin inbox. A rules failure here must not lose the
+         user's ticket, which is already saved above. */
+      try { await addDoc(collection(db, "support_inbox"), payload); } catch (mirrorErr) { /* admin mirror optional */ }
+      setSent(ref); setSubject(""); setMessage("");
+    } catch (err) {
+      setSendErr(err && err.message ? err.message : "Could not save your report.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const mailBody = encodeURIComponent(
+    "Topic: " + topic + "\n" +
+    "Subject: " + subject + "\n\n" + message +
+    (includeDiag ? "\n\n---\nDiagnostics: " + JSON.stringify(diagnostics) : "")
+  );
+
+  return (
+    <div className="space-y-4 sm:space-y-5">
+
+      {/* ── Masthead ── */}
+      <div className={tx("terminal-card rounded-3xl border border-sky-500/20 p-4 sm:p-6 relative overflow-hidden")}>
+        <div className="pm-support-aura" aria-hidden="true" />
+        <div className="relative flex items-start gap-3.5 flex-wrap">
+          <span className={tx("shrink-0 w-11 h-11 rounded-2xl bg-sky-500/12 border border-sky-500/25 flex items-center justify-center")}>
+            <LifeBuoy size={20} className={tx("text-sky-300")} strokeWidth={1.8} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className={tx("text-base sm:text-lg font-bold text-white font-mono tracking-tight")}>Support &amp; Help Center</h2>
+            <p className={tx("text-[11.5px] text-slate-400 font-mono mt-1 leading-relaxed max-w-[54ch]")}>
+              Find an answer in seconds, or send us the details and we will look into it.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={tx("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-[10px] font-mono font-bold text-emerald-300 uppercase tracking-wider")}>
+              <span className="pm-live-dot" aria-hidden="true" /> Support online
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-4 sm:gap-5 items-start">
+
+        {/* ══ LEFT · FAQ + report form ══ */}
+        <div className="space-y-4 sm:space-y-5 min-w-0">
+
+          {/* Quick help */}
+          <section className={tx("terminal-card rounded-3xl border border-slate-800/90 p-4 sm:p-5")}>
+            <div className="flex items-center justify-between gap-3 mb-3.5 flex-wrap">
+              <h3 className={tx("text-sm font-bold text-white font-mono flex items-center gap-2")}>
+                <HelpCircle size={15} className={tx("text-sky-400")} /> Quick help
+                <span className={tx("text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/25")}>{faqList.length}</span>
+              </h3>
+              <div className="relative flex-1 min-w-[180px] max-w-[280px]">
+                <Search size={13} className={tx("absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none")} />
+                <input
+                  value={faqQuery}
+                  onChange={(e) => setFaqQuery(e.target.value)}
+                  placeholder="Search help..."
+                  aria-label="Search help articles"
+                  className={tx("w-full bg-[#050914] border border-slate-800 rounded-lg pl-9 pr-8 py-2 text-[11px] text-white font-mono focus:outline-none focus:border-sky-500/40 placeholder:text-slate-600 transition-colors")}
+                />
+                {faqQuery && (
+                  <button type="button" onClick={() => setFaqQuery("")} aria-label="Clear help search" className={tx("absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 transition-colors")}><X size={11} /></button>
+                )}
+              </div>
+            </div>
+            {faqList.length === 0 ? (
+              <div className={tx("rounded-xl border border-dashed border-slate-800 p-6 text-center")}>
+                <Inbox size={20} className={tx("text-slate-600 mx-auto mb-2")} />
+                <p className={tx("text-[11px] text-slate-500 font-mono")}>No article matches “{faqQuery}”. Send us a message below.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {faqList.map((item, i) => (
+                  <SupportFaqItem key={item.q} item={item} open={openFaq === item.q} onToggle={() => setOpenFaq(openFaq === item.q ? null : item.q)} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Report an issue */}
+          <section className={tx("terminal-card rounded-3xl border border-slate-800/90 p-4 sm:p-5")}>
+            <h3 className={tx("text-sm font-bold text-white font-mono flex items-center gap-2 mb-1")}>
+              <MessageSquare size={15} className={tx("text-sky-400")} /> Report an issue
+            </h3>
+            <p className={tx("text-[11px] text-slate-500 font-mono mb-4")}>Tell us what happened. The more detail, the faster the fix.</p>
+
+            <form onSubmit={submitTicket} className="space-y-3.5">
+              <div>
+                <label className={tx("block text-[9.5px] font-mono font-bold uppercase tracking-[0.1em] text-slate-500 mb-1.5")}>Topic</label>
+                <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Support topic">
+                  {SUPPORT_TOPICS.map((tp) => {
+                    const on = topic === tp.id;
+                    const tone = SUPPORT_TONES[tp.tone];
+                    return (
+                      <button
+                        key={tp.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => setTopic(tp.id)}
+                        className={tx("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10.5px] font-mono font-semibold border transition-all cursor-pointer " + (on ? (tone.bg + " " + tone.bd + " " + tone.ic) : "bg-[#050914] border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700"))}
+                      >
+                        <tp.icon size={11} /> {tp.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="sup-subject" className={tx("block text-[9.5px] font-mono font-bold uppercase tracking-[0.1em] text-slate-500 mb-1.5")}>Subject</label>
+                <input
+                  id="sup-subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  maxLength={140}
+                  placeholder="Short summary of the problem"
+                  className={tx("w-full bg-[#050914] border border-slate-800 rounded-lg px-3 py-2.5 text-[11.5px] text-white font-mono focus:outline-none focus:border-sky-500/40 placeholder:text-slate-600 transition-colors")}
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="sup-message" className={tx("block text-[9.5px] font-mono font-bold uppercase tracking-[0.1em] text-slate-500")}>What happened?</label>
+                  <span className={tx("text-[9px] font-mono " + (message.length > 3800 ? "text-amber-400" : "text-slate-600"))}>{message.length}/4000</span>
+                </div>
+                <textarea
+                  id="sup-message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  maxLength={4000}
+                  rows={5}
+                  placeholder="Describe the issue, what you expected, and the steps to reproduce it."
+                  className={tx("w-full bg-[#050914] border border-slate-800 rounded-lg px-3 py-2.5 text-[11.5px] text-white font-mono leading-relaxed focus:outline-none focus:border-sky-500/40 placeholder:text-slate-600 resize-y transition-colors")}
+                />
+              </div>
+
+              <label className={tx("flex items-start gap-2.5 p-2.5 rounded-lg bg-[#050914] border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors")}>
+                <input type="checkbox" checked={includeDiag} onChange={(e) => setIncludeDiag(e.target.checked)} className="mt-0.5 accent-sky-500 cursor-pointer" />
+                <span className="min-w-0">
+                  <span className={tx("block text-[11px] font-semibold text-slate-300 font-mono")}>Attach diagnostics</span>
+                  <span className={tx("block text-[10px] text-slate-500 font-mono mt-0.5 leading-relaxed")}>
+                    Counts only ({diagnostics.trades} trades · {diagnostics.accounts} accounts · {diagnostics.theme} theme · {diagnostics.viewport}). No trade details, no credentials.
+                  </span>
+                </span>
+              </label>
+
+              {sent && (
+                <div className={tx("flex items-start gap-2.5 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30")}>
+                  <CheckCircle2 size={14} className={tx("text-emerald-300 shrink-0 mt-0.5")} />
+                  <p className={tx("text-[11px] text-emerald-200 font-mono leading-relaxed")}>
+                    Report sent. Your reference is <b>{sent}</b> — it is listed under My requests so you can track the status.
+                  </p>
+                </div>
+              )}
+              {sendErr && (
+                <div className={tx("flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30")}>
+                  <AlertTriangle size={14} className={tx("text-amber-300 shrink-0 mt-0.5")} />
+                  <div className="min-w-0">
+                    <p className={tx("text-[11px] text-amber-200 font-mono leading-relaxed")}>Could not save your report: {sendErr}</p>
+                    <a href={"mailto:support@amiirjournal.app?subject=" + encodeURIComponent("[" + topic + "] " + subject) + "&body=" + mailBody}
+                       className={tx("inline-flex items-center gap-1.5 mt-2 text-[10.5px] font-mono font-bold text-amber-300 hover:text-amber-200 underline underline-offset-2")}>
+                      <Mail size={11} /> Send it by email instead
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2.5 flex-wrap pt-0.5">
+                <button
+                  type="submit"
+                  disabled={!canSend}
+                  className={tx("inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-bold bg-sky-500 text-slate-950 font-mono disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer")}
+                >
+                  {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                  {sending ? "Sending..." : "Send report"}
+                </button>
+                <span className={tx("text-[10px] text-slate-600 font-mono")}>Typical reply within 24 hours.</span>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        {/* ══ RIGHT · channels + my requests ══ */}
+        <div className="space-y-4 sm:space-y-5 min-w-0">
+
+          <section className={tx("terminal-card rounded-3xl border border-slate-800/90 p-4 sm:p-5")}>
+            <h3 className={tx("text-sm font-bold text-white font-mono flex items-center gap-2 mb-3.5")}>
+              <Radio size={15} className={tx("text-sky-400")} /> Contact channels
+            </h3>
+            <div className="space-y-2">
+              <a href="mailto:support@amiirjournal.app" className={tx("flex items-center gap-3 p-3 rounded-xl bg-[#050914] border border-slate-800 hover:border-sky-500/35 transition-colors group")}>
+                <span className={tx("shrink-0 w-8 h-8 rounded-lg bg-sky-500/12 border border-sky-500/25 flex items-center justify-center")}><Mail size={14} className={tx("text-sky-300")} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className={tx("block text-[11.5px] font-bold text-slate-200 font-mono group-hover:text-white transition-colors")}>Email support</span>
+                  <span className={tx("block text-[10px] text-slate-500 font-mono truncate")}>support@amiirjournal.app</span>
+                </span>
+                <ArrowUpRight size={13} className={tx("shrink-0 text-slate-600 group-hover:text-sky-400 transition-colors")} />
+              </a>
+              <a href="https://www.tiktok.com/@amiir_pr" target="_blank" rel="noopener noreferrer" className={tx("flex items-center gap-3 p-3 rounded-xl bg-[#050914] border border-slate-800 hover:border-sky-500/35 transition-colors group")}>
+                <span className={tx("shrink-0 w-8 h-8 rounded-lg bg-violet-500/12 border border-violet-500/25 flex items-center justify-center")}><MessageCircle size={14} className={tx("text-violet-300")} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className={tx("block text-[11.5px] font-bold text-slate-200 font-mono group-hover:text-white transition-colors")}>Direct message</span>
+                  <span className={tx("block text-[10px] text-slate-500 font-mono truncate")}>@amiir_pr on TikTok</span>
+                </span>
+                <ExternalLink size={13} className={tx("shrink-0 text-slate-600 group-hover:text-sky-400 transition-colors")} />
+              </a>
+              <div className={tx("flex items-center gap-3 p-3 rounded-xl bg-[#050914] border border-slate-800")}>
+                <span className={tx("shrink-0 w-8 h-8 rounded-lg bg-emerald-500/12 border border-emerald-500/25 flex items-center justify-center")}><Users size={14} className={tx("text-emerald-300")} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className={tx("block text-[11.5px] font-bold text-slate-200 font-mono")}>Ask the community</span>
+                  <span className={tx("block text-[10px] text-slate-500 font-mono")}>Open the Community tab</span>
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section className={tx("terminal-card rounded-3xl border border-slate-800/90 p-4 sm:p-5")}>
+            <h3 className={tx("text-sm font-bold text-white font-mono flex items-center gap-2 mb-3.5")}>
+              <Inbox size={15} className={tx("text-sky-400")} /> My requests
+              {ticketsState === "ready" && tickets.length > 0 && (
+                <span className={tx("text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/25")}>{tickets.length}</span>
+              )}
+            </h3>
+            {ticketsState === "loading" && (
+              <div className="flex items-center gap-2 py-4 justify-center">
+                <Loader2 size={13} className={tx("animate-spin text-slate-500")} />
+                <span className={tx("text-[10.5px] text-slate-500 font-mono")}>Loading your requests...</span>
+              </div>
+            )}
+            {ticketsState === "denied" && (
+              <div className={tx("rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 flex items-start gap-2.5")}>
+                <AlertTriangle size={13} className={tx("text-amber-300 shrink-0 mt-0.5")} />
+                <p className={tx("text-[10.5px] text-amber-200 font-mono leading-relaxed")}>
+                  Your requests could not be loaded. Firestore rules must allow reading <code>users/&#123;uid&#125;/support_tickets</code>.
+                </p>
+              </div>
+            )}
+            {ticketsState === "ready" && tickets.length === 0 && (
+              <div className={tx("rounded-xl border border-dashed border-slate-800 p-6 text-center")}>
+                <Inbox size={20} className={tx("text-slate-600 mx-auto mb-2")} />
+                <p className={tx("text-[11px] text-slate-500 font-mono")}>No requests yet.</p>
+                <p className={tx("text-[10px] text-slate-600 font-mono mt-1")}>Anything you send will show up here with its status.</p>
+              </div>
+            )}
+            {ticketsState === "ready" && tickets.length > 0 && (
+              <div className="space-y-2">
+                {tickets.map((tk) => <SupportTicketRow key={tk.id} tk={tk} />)}
+              </div>
+            )}
+          </section>
+
+          <section className={tx("terminal-card rounded-3xl border border-slate-800/90 p-4 sm:p-5")}>
+            <h3 className={tx("text-sm font-bold text-white font-mono flex items-center gap-2 mb-2.5")}>
+              <ShieldCheck size={15} className={tx("text-sky-400")} /> Before you write
+            </h3>
+            <ul className="space-y-2">
+              {["Include the steps that led to the problem.",
+                "Mention the tab you were on and the time it happened.",
+                "Never share your password — support will never ask for it."].map((tip) => (
+                <li key={tip} className="flex items-start gap-2">
+                  <Check size={11} className={tx("text-emerald-400 shrink-0 mt-[3px]")} />
+                  <span className={tx("text-[10.5px] text-slate-400 font-mono leading-relaxed")}>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Community() {
   const { t, chatMessages, user, deleteChatMessage, chatImages, removeChatImage, chatInput, setChatInput, chatUploading, sendChatMessage, handleCommunityFiles, setLightbox, setZoomScale, chatScrollRef, onlineCount } = useApp();
   return (
@@ -14282,14 +14960,17 @@ function LoginPage() {
             <p className="aj-eyebrow">
               {(t.heroEyebrow || "DISCIPLINE / PLAN / EXECUTE / GROW").split(" / ").map(function (word, i, arr) {
                 return (
-                  <span key={i}>{word}{i < arr.length - 1 ? <em>/</em> : null}</span>
+                  <React.Fragment key={i}>
+                    <span>{word}</span>
+                    {i < arr.length - 1 ? <em aria-hidden="true">/</em> : null}
+                  </React.Fragment>
                 );
               })}
             </p>
 
             <h1 className="aj-hero-title">
-              <span>{t.heroTitleA || "Better Trades."}</span>
-              <span className="aj-line-grad">{t.heroTitleB || "Bigger Dreams."}</span>
+              <span>{t.heroTitleA || "Better Trades"}</span>
+              <span className="aj-line-grad">{t.heroTitleB || "Bigger Dreams"}</span>
             </h1>
 
             <p className="aj-hero-sub">{t.heroSub || "Track your trades. Analyze your performance. Build consistency."}</p>
@@ -14650,7 +15331,8 @@ function AppShell() {
                       { id: "updates", label: t.updates, icon: Sparkles, visible: true, isGold: true, tone: "amber" },
                       { id: "notes", label: t.notes, icon: BookOpen, visible: true },
                       { id: "mentor", label: "AI Mentor", icon: Bot, visible: true, isMentor: true, tone: "cyan" },
-                      { id: "community", label: t.community, icon: Users, visible: true }
+                      { id: "community", label: t.community, icon: Users, visible: true },
+                      { id: "support", label: t.support || "Support", icon: LifeBuoy, visible: true }
                     ].filter(tabItem => tabItem.visible).map((item) => (
                       <button
                         key={item.id}
@@ -14695,6 +15377,7 @@ function AppShell() {
                 {tab === "trash" && <Trash />}
                 {tab === "notes" && <Notes />}
                 {tab === "community" && <Community />}
+                {tab === "support" && <Support />}
               </div>
             </main>
           </div>
@@ -14715,16 +15398,30 @@ function AppShell() {
           </button>
 
           {/* FOOTER */}
-          <footer className={tx("py-6 border-t border-slate-800/80 text-center text-xs text-slate-500 font-mono")}>
-            <span className="inline-flex items-center justify-center gap-2 flex-wrap">
-              <AmCrownMark size={15} title="Amiir Journal" />
-              <span>Amiir Journal · {t.devBy}</span>
-              <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" title="TikTok — @amiir_pr"
-                className={tx("inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 font-semibold transition-colors")}>
-                <TikTokMark size={13} />
-                <span>@amiir_pr</span>
-              </a>
-            </span>
+          <footer className={tx("py-7 border-t border-slate-800/80")}>
+            <div className="flex flex-col items-center justify-center gap-2.5">
+              <div className="flex items-center justify-center gap-2.5 flex-wrap px-4">
+                <AmCrownMark size={16} title="Amiir Journal" />
+                <span className={tx("text-[12.5px] font-bold tracking-[0.13em] uppercase text-slate-300")}>
+                  Amiir<span className={tx("text-sky-400")}> Journal</span>
+                </span>
+                <span className={tx("hidden sm:inline w-px h-3.5 bg-slate-700/70")} aria-hidden="true" />
+                <span className={tx("text-[11.5px] text-slate-500 tracking-[0.02em]")}>{t.devBy}</span>
+              </div>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                {/* Subtle live indicator */}
+                <span className={tx("inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500")}>
+                  <span className="pm-live-dot" aria-hidden="true" />
+                  Live
+                </span>
+                <span className={tx("w-px h-3 bg-slate-800")} aria-hidden="true" />
+                <a href="https://tiktok.com/@amiir_pr" target="_blank" rel="noreferrer" title="TikTok — @amiir_pr"
+                  className={tx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11.5px] text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 font-semibold tracking-[0.02em] transition-colors")}>
+                  <TikTokMark size={12} />
+                  <span>@amiir_pr</span>
+                </a>
+              </div>
+            </div>
           </footer>
 
           {/* LIGHTBOX MODAL WITH ZOOM */}
@@ -14826,5 +15523,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b1b2008d04aea6',t:'MTc4OTQxMzA2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3bb38d86b0ed981',t:'MTc4OTUxMjk1OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3d5744928137893',t:'MTc4OTc4ODAyMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a39a8356bb3af285',t:'MTc4OTE2OTk3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b1b2008d04aea6',t:'MTc4OTQxMzA2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3bb38d86b0ed981',t:'MTc4OTUxMjk1OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3d65fa99bd3f285',t:'MTc4OTc5NzY2NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
