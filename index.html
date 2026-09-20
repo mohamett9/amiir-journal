@@ -3097,31 +3097,27 @@ function resizeImage(dataUrl, maxWidth = 1600) {
         P([[qx - b + L, qy + qs + b], [qx - b, qy + qs + b], [qx - b, qy + qs + b - L]]);
         P([[qx + qs + b - L, qy + qs + b], [qx + qs + b, qy + qs + b], [qx + qs + b, qy + qs + b - L]]);
         ctx.restore();
-        let qrOk = false;
         try {
-          const qr = qrcode(0, "M");
+          /* ECC "H" + clean matrix (no center logo) so phone cameras scan reliably. */
+          const qr = qrcode(0, "H");
           const qrPayload = "https://amiir-journal.vercel.app/?trade=" + encodeURIComponent(String(tr.id || ""));
           try { canvas.dataset.qr = qrPayload; } catch (e) {}
           qr.addData(qrPayload);
           qr.make();
           const n = qr.getModuleCount();
-          const pad = 16, area = qs - pad * 2, cell = area / n;
-          ctx.fillStyle = "#071328";
+          const pad = 18, area = qs - pad * 2, cell = area / n;
+          /* Solid white quiet zone already painted; draw modules in pure black for max contrast. */
+          ctx.fillStyle = "#000000";
           for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-            if (qr.isDark(r, c)) ctx.fillRect(qx + pad + Math.floor(c * cell), qy + pad + Math.floor(r * cell), Math.ceil(cell), Math.ceil(cell));
+            if (qr.isDark(r, c)) {
+              const x = qx + pad + c * cell;
+              const y = qy + pad + r * cell;
+              ctx.fillRect(Math.floor(x), Math.floor(y), Math.ceil(cell) + 0.5, Math.ceil(cell) + 0.5);
+            }
           }
-          qrOk = true;
         } catch (e) {
           ctx.fillStyle = "#52627A"; ctx.font = "700 15px " + MONO; ctx.textAlign = "center";
           ctx.fillText("QR N/A", qx + qs / 2, qy + qs / 2 + 5);
-          ctx.textAlign = "left";
-        }
-        if (qrOk) { // AM badge at QR center
-          rr(1281, 602, 46, 46, 11);
-          ctx.fillStyle = "#0B1F49"; ctx.fill();
-          ctx.strokeStyle = "rgba(42,214,255,0.7)"; ctx.lineWidth = 1.5; ctx.stroke();
-          ctx.fillStyle = CYAN; ctx.font = "800 19px " + DISP; ctx.textAlign = "center";
-          ctx.fillText("AM", 1304, 631);
           ctx.textAlign = "left";
         }
       }
@@ -3425,57 +3421,142 @@ function LoginThemeSwitch() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   STREAK — consecutive days the user logged a trade (live or backtest)
+   STREAKS
+   · Backtest: consecutive *winning days* (day net R > 0), counted back
+     from the most recent traded day. Lights up from 2+ days.
+   · Live: consecutive *winning trades*, counted back from the latest
+     trade. Lights up from 2+ wins.
+   Both badges stay visible at 0 so the counter never disappears.
    ══════════════════════════════════════════════════════════════════════ */
-function calcStreak(lists) {
-  const days = new Set();
-  (lists || []).forEach((arr) => {
-    (arr || []).forEach((t) => {
-      const k = String((t && t.date) || "").slice(0, 10);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(k)) days.add(k);
-    });
+
+function calcWinDayStreak(list) {
+  const byDay = {};
+  (list || []).forEach((t) => {
+    const k = String((t && t.date) || "").slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+    if (!byDay[k]) byDay[k] = 0;
+    byDay[k] += Number(t.rMultiple) || 0;
   });
-  if (!days.size) return { count: 0, active: false };
-
-  const keyOf = (d) => d.toISOString().slice(0, 10);
-  const today = new Date(); today.setHours(12, 0, 0, 0);
-  const yest = new Date(today); yest.setDate(yest.getDate() - 1);
-
-  // A streak stays "alive" if today OR yesterday has activity.
-  let cursor;
-  if (days.has(keyOf(today))) cursor = today;
-  else if (days.has(keyOf(yest))) cursor = yest;
-  else return { count: 0, active: false };
-
+  const days = Object.keys(byDay).sort();
+  if (!days.length) return { count: 0, lit: false, last: null };
   let n = 0;
-  const walk = new Date(cursor);
-  while (days.has(keyOf(walk))) {
-    n += 1;
-    walk.setDate(walk.getDate() - 1);
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (byDay[days[i]] > 0) n += 1;
+    else break;
   }
-  return { count: n, active: days.has(keyOf(today)) };
+  return { count: n, lit: n >= 2, last: days[days.length - 1] };
 }
 
-/* Small, elegant streak pill for the Backtest header. */
-function StreakBadge({ lists }) {
-  const { count, active } = React.useMemo(() => calcStreak(lists), [lists]);
-  if (!count) return null;
-  const title = active
-    ? count + " day streak — logged today"
-    : count + " day streak — log a trade today to keep it";
+function calcWinTradeStreak(list) {
+  const rows = (list || [])
+    .filter((t) => t && String(t.date || "").slice(0, 10))
+    .slice()
+    .sort((a, b) => {
+      const da = String(a.date || "").slice(0, 10);
+      const db = String(b.date || "").slice(0, 10);
+      if (da !== db) return da < db ? -1 : 1;
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    });
+  if (!rows.length) return { count: 0, lit: false };
+  let n = 0;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const o = String(rows[i].outcome || "").toLowerCase();
+    if (o === "win") n += 1;
+    else break;
+  }
+  return { count: n, lit: n >= 2 };
+}
+
+/* Tier colors: cold → warm → hot → legendary as streak climbs. */
+function streakTier(count) {
+  const n = Number(count) || 0;
+  if (n >= 50) return {
+    key: "legend", label: "Legend",
+    pill: "bg-fuchsia-500/15 border-fuchsia-400/45 text-fuchsia-200",
+    ico: "text-fuchsia-300",
+    border: "border-l-fuchsia-400",
+    num: "text-fuchsia-300",
+    glow: "shadow-[0_0_18px_rgba(232,121,249,0.18)]"
+  };
+  if (n >= 20) return {
+    key: "blaze", label: "Blaze",
+    pill: "bg-orange-500/15 border-orange-400/45 text-orange-200",
+    ico: "text-orange-300",
+    border: "border-l-orange-400",
+    num: "text-orange-300",
+    glow: "shadow-[0_0_16px_rgba(251,146,60,0.16)]"
+  };
+  if (n >= 5) return {
+    key: "hot", label: "Hot",
+    pill: "bg-amber-400/15 border-amber-400/40 text-amber-200",
+    ico: "text-amber-300",
+    border: "border-l-amber-400",
+    num: "text-amber-300",
+    glow: "shadow-[0_0_14px_rgba(251,191,36,0.14)]"
+  };
+  if (n >= 2) return {
+    key: "lit", label: "Lit",
+    pill: "bg-sky-500/12 border-sky-400/35 text-sky-200",
+    ico: "text-sky-300",
+    border: "border-l-sky-400",
+    num: "text-sky-300",
+    glow: ""
+  };
+  return {
+    key: "cold", label: "—",
+    pill: "bg-slate-900 border-slate-700/80 text-slate-400",
+    ico: "text-slate-500",
+    border: "border-l-slate-600",
+    num: "text-white",
+    glow: ""
+  };
+}
+
+/* Minimal streak pill: icon + number + short status. Always visible at 0. */
+function StreakBadge({ list, mode }) {
+  /* mode: "days" | "trades" — small flame; number only when count > 0. */
+  const kind = mode === "trades" ? "trades" : "days";
+  const { count } = React.useMemo(
+    () => (kind === "trades" ? calcWinTradeStreak(list) : calcWinDayStreak(list)),
+    [list, kind]
+  );
+  const tier = streakTier(count);
+  const title = kind === "trades"
+    ? (count > 0 ? count + " win streak" + (count >= 2 ? " · " + tier.label : "") : "Win streak 0 — 2 consecutive wins to light")
+    : (count > 0 ? count + " winning-day streak" + (count >= 2 ? " · " + tier.label : "") : "Win-day streak 0 — 2 winning days to light");
   return (
     <span
       title={title}
-      className={tx(`inline-flex items-center gap-1.5 h-[30px] px-2.5 rounded-full border font-mono text-[11px] font-bold shrink-0 transition-colors ${
-        active
-          ? "bg-amber-400/12 border-amber-400/35 text-amber-300"
-          : "bg-slate-900 border-slate-700/80 text-slate-400"
-      }`)}
+      aria-label={title}
+      className={tx(`inline-flex items-center justify-center gap-0.5 h-8 min-w-8 ${count > 0 ? "px-2" : "px-1.5"} rounded-full border font-mono text-[11px] font-bold shrink-0 transition-colors ${tier.pill} ${tier.glow}`)}
     >
-      <Flame size={13} className={tx(active ? "text-amber-400" : "text-slate-500")} strokeWidth={2.4} />
-      <span className="tnum">{count}</span>
-      <span className={tx("hidden sm:inline font-semibold opacity-80")}>day{count === 1 ? "" : "s"}</span>
+      <Flame size={11} className={tx(tier.ico)} strokeWidth={2.35} aria-hidden="true" />
+      {count > 0 ? <span className="tnum leading-none">{count}</span> : null}
     </span>
+  );
+}
+
+/* Compact dashboard streak tile — same tier system, minimal copy. */
+function WinStreakWidget({ trades }) {
+  const { count } = React.useMemo(() => calcWinTradeStreak(trades), [trades]);
+  const tier = streakTier(count);
+  const title = count ? count + " win streak · " + tier.label : "Win streak 0";
+  return (
+    <div
+      title={title}
+      className={tx(`terminal-card group shrink-0 snap-start md:snap-align-none min-w-[112px] sm:min-w-[120px] px-3 py-2.5 rounded-xl relative overflow-hidden border-l-2 ${tier.border} ${tier.glow}`)}
+    >
+      <div className="flex items-center justify-between gap-1.5">
+        <span className={tx("text-[9px] text-slate-500 uppercase font-bold tracking-wider")}>Streak</span>
+        <Flame size={13} strokeWidth={2.2} className={tx(tier.ico)} />
+      </div>
+      <div className="flex items-baseline gap-1.5 mt-1">
+        <span className={tx(`text-xl font-black tracking-tight tnum leading-none ${tier.num}`)}>{count}</span>
+        <span className={tx(`text-[9px] font-bold uppercase tracking-wide ${count >= 2 ? tier.ico : "text-slate-600"}`)}>
+          {count >= 2 ? tier.label : "W"}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -6333,20 +6414,33 @@ function LiveDrilldown({ trades }) {
   );
 
   const go = (patch) => setDrill((d) => ({ ...d, ...patch }));
-  const goYear = (y) => go({ year: y, quarter: null, month: null, day: null });
-  const goQuarter = (q) => go({ quarter: q, month: null, day: null });
-  const goMonth = (m) => go({ quarter: Math.floor(m / 3), month: m, day: null });
+  const goYear = (y) => go({ year: y, quarter: null, month: null, week: null, day: null });
+  const goQuarter = (q) => go({ quarter: q, month: null, week: null, day: null });
+  const goMonth = (m) => go({ quarter: Math.floor(m / 3), month: m, week: null, day: null });
+  const goWeek = (w) => go({ week: w, day: null });
+  const weekOfDay = (key) => {
+    const d = btParse(key);
+    if (!d || drill.year == null || drill.month == null) return null;
+    const rows = btMonthWeeks(drill.year, drill.month);
+    const i = rows.findIndex((row) => row.days.some((x) => btKey(x) === key));
+    return i >= 0 ? i : null;
+  };
   const goDay = (key) => {
     const d = btParse(key);
     if (!d) return;
-    go({ year: d.getFullYear(), quarter: Math.floor(d.getMonth() / 3), month: d.getMonth(), day: key });
+    const y = d.getFullYear(), m = d.getMonth();
+    const rows = btMonthWeeks(y, m);
+    let wi = rows.findIndex((row) => row.days.some((x) => btKey(x) === key));
+    if (wi < 0) wi = null;
+    go({ year: y, quarter: Math.floor(m / 3), month: m, week: wi, day: key });
   };
-  const depth = drill.day ? 5 : drill.month != null ? 3 : drill.quarter != null ? 2 : drill.year != null ? 1 : 0;
+  const depth = drill.day ? 5 : drill.week != null ? 4 : drill.month != null ? 3 : drill.quarter != null ? 2 : drill.year != null ? 1 : 0;
   const crumbs = useMemo(() => {
     const c = [{ label: "Journal", depth: -1, key: "all" }];
     if (drill.year != null) c.push({ label: String(drill.year), depth: 1, key: btScopeKey({ year: drill.year }) });
     if (drill.quarter != null) c.push({ label: "Q" + (drill.quarter + 1), depth: 2, key: btScopeKey({ year: drill.year, quarter: drill.quarter }) });
     if (drill.month != null) c.push({ label: MONTH_NAMES[drill.month], depth: 3, key: btScopeKey({ year: drill.year, quarter: drill.quarter, month: drill.month }) });
+    if (drill.week != null) c.push({ label: "W" + (drill.week + 1), depth: 4, key: btScopeKey({ year: drill.year, month: drill.month, week: drill.week }) });
     if (drill.day) c.push({ label: btFmtDay(drill.day), depth: 5, key: btScopeKey({ year: drill.year, quarter: drill.quarter, month: drill.month, day: drill.day }) });
     return c;
   }, [drill]);
@@ -6356,6 +6450,7 @@ function LiveDrilldown({ trades }) {
       year: targetDepth >= 1 ? d.year : null,
       quarter: targetDepth >= 2 ? d.quarter : null,
       month: targetDepth >= 3 ? d.month : null,
+      week: targetDepth >= 4 ? d.week : null,
       day: targetDepth >= 5 ? d.day : null
     }));
   };
@@ -6470,7 +6565,7 @@ function LiveDrilldown({ trades }) {
     const qr = btQuarterRange(y, q);
     const stepQuarter = (n) => {
       const t = y * 4 + q + n;
-      go({ year: Math.floor(t / 4), quarter: ((t % 4) + 4) % 4, month: null, day: null });
+      go({ year: Math.floor(t / 4), quarter: ((t % 4) + 4) % 4, month: null, week: null, day: null });
     };
     return (
       <div className="space-y-5">
@@ -6519,11 +6614,11 @@ function LiveDrilldown({ trades }) {
     const today = btTodayKey();
     const prevMonth = () => {
       const nm = m === 0 ? 11 : m - 1, ny = m === 0 ? y - 1 : y;
-      setDrill({ year: ny, quarter: Math.floor(nm / 3), month: nm, day: null });
+      setDrill({ year: ny, quarter: Math.floor(nm / 3), month: nm, week: null, day: null });
     };
     const nextMonth = () => {
       const nm = m === 11 ? 0 : m + 1, ny = m === 11 ? y + 1 : y;
-      setDrill({ year: ny, quarter: Math.floor(nm / 3), month: nm, day: null });
+      setDrill({ year: ny, quarter: Math.floor(nm / 3), month: nm, week: null, day: null });
     };
     return (
       <div className="space-y-5">
@@ -6540,7 +6635,7 @@ function LiveDrilldown({ trades }) {
         </div><div className="min-w-0 space-y-5 xl:col-span-8">
         <div className="terminal-card rounded-2xl overflow-hidden">
           <div className={tx("px-4 sm:px-5 py-3.5 border-b border-slate-800/70 flex items-center justify-between gap-2 flex-wrap")}>
-            <span className={tx("text-[11px] font-bold uppercase tracking-wider text-slate-400")}>Calendar · tap a day to open it</span>
+            <span className={tx("text-[11px] font-bold uppercase tracking-wider text-slate-400")}>Calendar · tap a week or day to open it</span>
             <div className={tx("flex items-center gap-3 text-[10px] text-slate-500 font-semibold")}>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400/80"></span>Profit</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-400/80"></span>Loss</span>
@@ -6549,70 +6644,54 @@ function LiveDrilldown({ trades }) {
           </div>
           <div className="p-3.5 sm:p-5">
             <div className="overflow-x-auto no-scrollbar">
-              <div className="min-w-[700px]">
-                <div className="grid grid-cols-8 gap-1.5 text-center mb-1.5">
-                  {BT_WD.map((d) => <div key={d} className={tx("text-[10px] font-bold text-slate-500 uppercase py-1 tracking-wider")}>{d}</div>)}
-                  <div className={tx("text-[10px] font-bold text-sky-400/90 uppercase py-1 tracking-wider")}>Week</div>
+              <div className="min-w-[620px]">
+                <div className="flex items-stretch gap-1.5 mb-1.5">
+                  <div className="w-11 shrink-0" />
+                  <div className="grid grid-cols-7 gap-1.5 flex-1 text-center">
+                    {BT_WD.map((d) => <div key={d} className={tx("text-[10px] font-bold text-slate-500 uppercase py-1 tracking-wider")}>{d}</div>)}
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   {calWeeks.map((wk, wi) => {
                     const wrows = wk.days.flatMap((dd) => (dd.getMonth() === m ? (dayMap[btKey(dd)] || []) : []));
                     const wr = wrows.reduce((a, t) => a + (Number(t.rMultiple) || 0), 0);
-                    const wd = wrows.reduce((a, t) => a + (Number(t.pnlDollar) || 0), 0);
-                    const hasWeek = wrows.length > 0;
-                    const weekWin = wr > 0 || (wr === 0 && wd >= 0);
                     return (
-                      <div key={`${wk.isoY}-${wk.isoW}`} className="grid grid-cols-8 gap-1.5">
-                        {wk.days.map((dd, i) => {
-                          const k = btKey(dd);
-                          const inMon = dd.getMonth() === m;
-                          const rows = dayMap[k] || [];
-                          const r = rows.reduce((a, t) => a + (Number(t.rMultiple) || 0), 0);
-                          const isFuture = k > today;
-                          const has = rows.length > 0;
-                          const journaled = rows.some((t) => (t.notes && t.notes.trim()) || (t.images || []).length > 0);
-                          return (
-                            <div
-                              key={i}
-                              data-day={k}
-                              onClick={isFuture ? undefined : () => goDay(k)}
-                              className={tx(`min-h-[64px] sm:min-h-[70px] rounded-xl p-2 flex flex-col justify-between border transition-all overflow-hidden ${isFuture ? "" : "cursor-pointer hover:brightness-125"} ${!inMon ? "opacity-35" : ""} ${!has ? "bg-[#060B18] border-slate-800/60" : r > 0 ? "bg-emerald-950/50 border-emerald-500/40" : r < 0 ? "bg-rose-950/50 border-rose-500/40" : "bg-slate-800/50 border-slate-700/60"}`)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className={tx(`text-[10px] font-bold ${inMon ? "text-slate-400" : "text-slate-600"}`)}>{dd.getDate()}</span>
-                                {journaled && <span className="w-1.5 h-1.5 rounded-full bg-sky-400/80" title="Journaled" />}
-                              </div>
-                              {has ? (
-                                <div className="text-center">
-                                  <div className={tx(`text-[13px] font-extrabold tnum ${r > 0 ? "text-emerald-300" : r < 0 ? "text-rose-300" : "text-slate-300"}`)}>{btFmtR(r)}</div>
-                                  <div className={tx("text-[9px] text-slate-500 font-semibold")}>{rows.length} trade{rows.length === 1 ? "" : "s"}</div>
+                      <div key={`${wk.isoY}-${wk.isoW}`} className="flex items-stretch gap-1.5">
+                        <button type="button" onClick={() => goWeek(wi)} title={`Open week ${wi + 1}`} className={tx(`w-11 shrink-0 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer hover:brightness-125 ${wrows.length ? (wr > 0 ? "bg-emerald-950/50 border-emerald-500/40" : wr < 0 ? "bg-rose-950/50 border-rose-500/40" : "bg-slate-800/50 border-slate-700/60") : "bg-[#060B18] border-slate-800/60"}`)}>
+                          <span className={tx("text-[11px] font-extrabold text-sky-300")}>W{wi + 1}</span>
+                          <span className={tx("text-[9px] text-slate-500 font-bold")}>{wrows.length || "—"}</span>
+                        </button>
+                        <div className="grid grid-cols-7 gap-1.5 flex-1">
+                          {wk.days.map((dd, i) => {
+                            const k = btKey(dd);
+                            const inMon = dd.getMonth() === m;
+                            const rows = dayMap[k] || [];
+                            const r = rows.reduce((a, t) => a + (Number(t.rMultiple) || 0), 0);
+                            const isFuture = k > today;
+                            const has = rows.length > 0;
+                            const journaled = rows.some((t) => (t.notes && t.notes.trim()) || (t.images || []).length > 0);
+                            return (
+                              <div
+                                key={i}
+                                data-day={k}
+                                onClick={isFuture ? undefined : () => goDay(k)}
+                                className={tx(`min-h-[64px] sm:min-h-[70px] rounded-xl p-2 flex flex-col justify-between border transition-all overflow-hidden ${isFuture ? "" : "cursor-pointer hover:brightness-125"} ${!inMon ? "opacity-35" : ""} ${!has ? "bg-[#060B18] border-slate-800/60" : r > 0 ? "bg-emerald-950/50 border-emerald-500/40" : r < 0 ? "bg-rose-950/50 border-rose-500/40" : "bg-slate-800/50 border-slate-700/60"}`)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className={tx(`text-[10px] font-bold ${inMon ? "text-slate-400" : "text-slate-600"}`)}>{dd.getDate()}</span>
+                                  {journaled && <span className="w-1.5 h-1.5 rounded-full bg-sky-400/80" title="Journaled" />}
                                 </div>
-                              ) : (
-                                <div className={tx("text-center text-[9px] text-slate-700")}>—</div>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {/* Right-side weekly summary */}
-                        <div
-                          className={tx(`min-h-[64px] sm:min-h-[70px] rounded-xl p-2 flex flex-col justify-between border font-mono overflow-hidden ${
-                            hasWeek
-                              ? weekWin
-                                ? "bg-emerald-950/40 border-emerald-500/35 text-emerald-300"
-                                : "bg-rose-950/40 border-rose-500/35 text-rose-300"
-                              : "bg-slate-900/25 border-slate-800/40 text-slate-500"
-                          }`)}
-                          title={`Week ${wi + 1} summary`}
-                        >
-                          <div className={tx("text-[9px] sm:text-[10px] text-slate-400 font-semibold uppercase tracking-wide truncate")}>Week {wi + 1}</div>
-                          {hasWeek ? (
-                            <div className="text-center">
-                              <div className={tx(`text-[13px] font-extrabold tnum ${wr > 0 ? "text-emerald-300" : wr < 0 ? "text-rose-300" : "text-slate-300"}`)}>{btFmtR(wr)}</div>
-                              <div className={tx("text-[9px] text-slate-500 font-semibold")}>{wrows.length} trade{wrows.length === 1 ? "" : "s"}</div>
-                            </div>
-                          ) : (
-                            <div className={tx("text-center text-[9px] opacity-40")}>—</div>
-                          )}
+                                {has ? (
+                                  <div className="text-center">
+                                    <div className={tx(`text-[13px] font-extrabold tnum ${r > 0 ? "text-emerald-300" : r < 0 ? "text-rose-300" : "text-slate-300"}`)}>{btFmtR(r)}</div>
+                                    <div className={tx("text-[9px] text-slate-500 font-semibold")}>{rows.length} trade{rows.length === 1 ? "" : "s"}</div>
+                                  </div>
+                                ) : (
+                                  <div className={tx("text-center text-[9px] text-slate-700")}>—</div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -6625,6 +6704,69 @@ function LiveDrilldown({ trades }) {
         <div>
           <div className="mb-3"><BTSectionHead icon={<BarChart3 size={15} className={tx("text-sky-400")} />} title="Trades" sub={`${filtered.length} execution${filtered.length === 1 ? "" : "s"} · newest first`} /></div>
           <BTTradesTable list={filtered} onZoom={zoom} emptyTitle={`No trades in ${MONTH_NAMES[m]} ${y}`} emptySub="Live trades logged for this month will show up here automatically." />
+        </div>
+        </div></div>
+      </div>
+    );
+  };
+
+
+  const renderWeek = () => {
+    const { year: y, month: m, week: w } = drill;
+    const rows = btMonthWeeks(y, m);
+    const wk = rows[w] || rows[0];
+    const wi = rows[w] ? w : 0;
+    const startK = btKey(wk.days[0]);
+    const endK = btKey(wk.days[6]);
+    const stepWeek = (n) => {
+      const t = btAddDays(wk.days[3], n * 7);
+      const ny = t.getFullYear(), nm = t.getMonth();
+      const r2 = btMonthWeeks(ny, nm);
+      const tk = btKey(t);
+      let nwi = r2.findIndex((row) => row.days.some((x) => btKey(x) === tk));
+      if (nwi < 0) nwi = 0;
+      go({ year: ny, quarter: Math.floor(nm / 3), month: nm, week: nwi, day: null });
+    };
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => stepWeek(-1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Previous week"><ChevronLeft size={18} /></button>
+            <h2 className={tx("text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight px-1")}>Week {wi + 1} <span className={tx("text-slate-500")}>{btFmtDay(startK)} – {btFmtDay(endK)}</span></h2>
+            <button type="button" onClick={() => stepWeek(1)} className={tx("p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 cursor-pointer transition-colors")} title="Next week"><ChevronRight size={18} /></button>
+          </div>
+          <BTPeriodPill status={btPeriodStatus(startK, endK)} />
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5"><div role="region" aria-label="Dashboard" className="min-w-0 space-y-5 xl:col-span-4">
+        <BTKpiRow s={stats} cols="grid-cols-2" />
+        <DayOfWeekPanel
+          trades={filtered}
+          title="Day of Week"
+          subtitle={`Week ${wi + 1} · ${btFmtDay(startK)} – ${btFmtDay(endK)}`}
+          compact
+        />
+        </div><div className="min-w-0 space-y-5 xl:col-span-8">
+        <div>
+          <div className="mb-3"><BTSectionHead icon={<CalendarRange size={15} className={tx("text-sky-400")} />} title="Days" sub="Tap a day to open it" /></div>
+          <div className="grid grid-cols-7 gap-1.5">
+            {wk.days.map((dd, i) => {
+              const k = btKey(dd);
+              const drows = dayMap[k] || [];
+              const r = drows.reduce((a, t) => a + (Number(t.rMultiple) || 0), 0);
+              const isFuture = k > btTodayKey();
+              return (
+                <button key={i} type="button" onClick={isFuture ? undefined : () => goDay(k)} disabled={isFuture} className={tx(`rounded-xl p-2 flex flex-col items-center gap-0.5 border transition-all min-w-0 ${isFuture ? "opacity-35" : "cursor-pointer hover:brightness-125"} ${drows.length ? (r > 0 ? "bg-emerald-950/50 border-emerald-500/40" : r < 0 ? "bg-rose-950/50 border-rose-500/40" : "bg-slate-800/50 border-slate-700/60") : "bg-[#060B18] border-slate-800/60"}`)}>
+                  <span className={tx("text-[9px] font-bold text-slate-500 uppercase")}>{BT_WD[i]}</span>
+                  <span className={tx("text-sm font-extrabold text-white tnum")}>{dd.getDate()}</span>
+                  {drows.length > 0 && <span className={tx(`text-[10px] font-extrabold tnum ${r > 0 ? "text-emerald-300" : r < 0 ? "text-rose-300" : "text-slate-300"}`)}>{btFmtR(r)}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <div className="mb-3"><BTSectionHead icon={<BarChart3 size={15} className={tx("text-sky-400")} />} title="Trades" sub={`${filtered.length} execution${filtered.length === 1 ? "" : "s"} · newest first`} /></div>
+          <BTTradesTable list={filtered} onZoom={zoom} emptyTitle="No trades this week" emptySub="Live trades logged for these dates will show up here automatically." />
         </div>
         </div></div>
       </div>
@@ -6718,6 +6860,7 @@ function LiveDrilldown({ trades }) {
         {depth === 1 && renderYear()}
         {depth === 2 && renderQuarter()}
         {depth === 3 && renderMonth()}
+        {depth === 4 && renderWeek()}
         {depth === 5 && renderDay()}
       </div>
     </div>
@@ -6735,7 +6878,6 @@ function Journal() {
       {/* COMPACT SEARCH + FILTERS TOOLBAR */}
       <div className="terminal-card p-3.5 sm:p-4 rounded-2xl">
         <div className="flex items-center gap-2.5 sm:gap-3">
-
           {/* Search Input (primary) */}
           <div className="relative flex-1 min-w-0">
             <Search size={15} className={tx("absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none")} />
@@ -6765,7 +6907,7 @@ function Journal() {
 
           {/* Filter control — right of Search, sleek thin icon */}
           <FilterTrigger />
-
+          <StreakBadge list={trades} mode="trades" />
 
         </div>
 
@@ -8755,13 +8897,7 @@ function BacktestRoom() {
             </div>
           </div>
         </div>
-        <DayOfWeekPanel
-          trades={filtered}
-          title="Day of Week"
-          subtitle={`${MONTH_NAMES[m]} ${y} · weekday breakdown`}
-          compact
-        />
-                <div>
+        <div>
           <div className="mb-3"><BTSectionHead icon={<BarChart3 size={15} className={tx("text-sky-400")} />} title="Trades" sub={`${filtered.length} execution${filtered.length === 1 ? "" : "s"} · newest first`} /></div>
           <BTTradesTable list={filtered} onOpen={(tr) => setTradeModal(tr)} onZoom={(src) => { setLightbox(src); setZoomScale(1); }} onLog={logTrade} emptyTitle={`No trades in ${MONTH_NAMES[m]} ${y}`} emptySub="Trades logged for this month will show up here automatically." />
         </div>
@@ -9225,7 +9361,7 @@ function BacktestRoom() {
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className={tx("text-lg sm:text-xl font-extrabold text-white font-display tracking-tight leading-none")}>Backtest</h1>
-                <StreakBadge lists={[backtestTrades, trades]} />
+                <StreakBadge list={backtestTrades} mode="days" />
               </div>
               <div className={tx("text-[11px] text-slate-500 mt-1.5 font-semibold")}>{contextLabel}{activeFilterCount > 0 ? ` · ${activeFilterCount} filter${activeFilterCount === 1 ? "" : "s"}` : ""}</div>
             </div>
@@ -9497,8 +9633,9 @@ function dowMoney(n) {
   return sign + "$" + Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
-function DayOfWeekPanel({ trades, title, subtitle, defaultMetric, compact }) {
+function DayOfWeekPanel({ trades, title, subtitle, defaultMetric, compact, collapsible }) {
   const [metric, setMetric] = useState(defaultMetric || "r");
+  const [collapsed, setCollapsed] = useState(false);
   const rows = useMemo(() => computeDowStats(trades), [trades]);
 
   const traded = rows.filter((r) => r.total > 0);
@@ -9516,47 +9653,79 @@ function DayOfWeekPanel({ trades, title, subtitle, defaultMetric, compact }) {
     ? ((valOf(r) > 0 ? "+" : "") + valOf(r).toFixed(2) + "R")
     : dowMoney(valOf(r)));
 
-  return (
-    <div className={tx("terminal-card rounded-2xl overflow-hidden " + (compact ? "" : ""))}>
-      {/* Header */}
-      <div className={tx("px-4 sm:px-5 py-3 border-b border-slate-800/70 flex items-center justify-between gap-3 flex-wrap")}>
+  const headerRight = (
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <span className={tx(`px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase border ${
+            collapsible && collapsed
+              ? "bg-slate-900 border-slate-800 text-slate-500"
+              : "bg-sky-500/10 border-sky-500/25 text-sky-400"
+          }`)}>
+            {collapsible && collapsed ? "Hidden" : (totalTrades + (totalTrades === 1 ? " trade" : " trades"))}
+          </span>
+          {!collapsed && (
+            <div className={tx("inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-900/60 border border-slate-800")} role="group" aria-label="Metric">
+              {[["r", "R"], ["dollar", "$"]].map(([id, lbl]) => (
+                <button key={id} type="button" onClick={() => setMetric(id)} aria-pressed={metric === id}
+                  className={tx(`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-colors cursor-pointer ${
+                    metric === id ? "bg-sky-500/20 text-sky-300" : "text-slate-500 hover:text-slate-300"
+                  }`)}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          )}
+          {collapsible && (
+            <div className={tx(`p-1 rounded-lg text-slate-400 group-hover:text-white group-hover:bg-slate-800 transition-all ${collapsed ? "" : "rotate-180"}`)} aria-hidden="true">
+              <ChevronDown size={15} strokeWidth={2.4} />
+            </div>
+          )}
+        </div>
+  );
+
+  const headerLeft = (
         <div className="flex items-center gap-2 min-w-0">
           <CalendarDays size={14} className={tx("text-sky-400 shrink-0")} strokeWidth={2.1} />
           <div className="min-w-0">
             <div className={tx("text-[11px] font-bold text-slate-200 uppercase tracking-[0.08em] font-mono leading-none")}>
               {title || "Day of Week"}
             </div>
-            {subtitle ? (
-              <div className={tx("text-[10px] text-slate-500 font-mono mt-1 truncate")}>{subtitle}</div>
+            {subtitle && !collapsed ? (
+              <div className={tx("text-[10px] text-slate-500 font-mono mt-0.5 truncate")}>{subtitle}</div>
             ) : null}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={tx("px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase border bg-sky-500/10 border-sky-500/25 text-sky-400")}>
-            {totalTrades}{totalTrades === 1 ? " trade" : " trades"}
-          </span>
-          <div className={tx("inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-900/60 border border-slate-800")} role="group" aria-label="Metric">
-            {[["r", "R"], ["dollar", "$"]].map(([id, lbl]) => (
-              <button key={id} type="button" onClick={() => setMetric(id)} aria-pressed={metric === id}
-                className={tx(`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-colors cursor-pointer ${
-                  metric === id ? "bg-sky-500/20 text-sky-300" : "text-slate-500 hover:text-slate-300"
-                }`)}>
-                {lbl}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+  );
 
-      <div className="px-4 sm:px-5 py-3.5 sm:py-4">
+  return (
+    <div className={tx("terminal-card rounded-2xl overflow-hidden h-full flex flex-col")}>
+      {/* Header — collapsible toggle matches Sessions / Consistency */}
+      {collapsible ? (
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-expanded={!collapsed}
+          className={tx("w-full px-3.5 sm:px-4 py-2.5 border-b border-slate-800/70 flex items-center justify-between gap-3 group cursor-pointer hover:bg-slate-900/30 transition-colors text-left")}
+        >
+          {headerLeft}
+          {headerRight}
+        </button>
+      ) : (
+        <div className={tx("px-3.5 sm:px-4 py-2.5 border-b border-slate-800/70 flex items-center justify-between gap-3 flex-wrap")}>
+          {headerLeft}
+          {headerRight}
+        </div>
+      )}
+
+      {!collapsed && (
+      <div className={tx("px-3.5 sm:px-4 py-3 flex-1")}>
         {totalTrades === 0 ? (
-          <div className={tx("rounded-xl border border-dashed border-slate-800 px-3 py-6 text-center")}>
+          <div className={tx("rounded-xl border border-dashed border-slate-800 px-3 py-4 text-center")}>
             <p className={tx("text-[11.5px] text-slate-500 font-mono")}>No dated trades in this view yet.</p>
           </div>
         ) : (
           <>
             {/* Compact horizontal progress bars — Mon → Sun (top, clean) */}
-            <div className="space-y-1" role="list" aria-label="Weekday performance">
+            <div className="space-y-0.5" role="list" aria-label="Weekday performance">
               {rows.map((r) => {
                 const v = valOf(r);
                 const has = r.total > 0;
@@ -9604,13 +9773,13 @@ function DayOfWeekPanel({ trades, title, subtitle, defaultMetric, compact }) {
               })}
             </div>
 
-            <div className={tx("flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-800/60 text-[9px] font-mono font-bold uppercase tracking-wider text-slate-600")}>
+            <div className={tx("flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-800/60 text-[9px] font-mono font-bold uppercase tracking-wider text-slate-600")}>
               <span>Mon → Sun</span>
               <span>{metric === "r" ? "Net R" : "Net P&L"} · trades</span>
             </div>
 
             {/* Best / Worst summary badges — below the chart so the header stays clean */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-2.5 mt-3.5" role="group" aria-label="Best and worst days">
+            <div className="grid grid-cols-2 gap-2 mt-2.5" role="group" aria-label="Best and worst days">
               <div className={tx("rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5 min-w-0")}>
                 <div className={tx("text-[9px] uppercase tracking-wider text-emerald-400/80 font-bold font-mono")}>Best day</div>
                 {best ? (
@@ -9637,6 +9806,7 @@ function DayOfWeekPanel({ trades, title, subtitle, defaultMetric, compact }) {
           </>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -9647,52 +9817,46 @@ function Dashboard() {
   return (
     <div className="space-y-6">
 
-      {/* KPI STATS CARDS: Horizontal swipe snap on mobile, full grid on md+ */}
+      {/* KPI STATS — compact high-density strip */}
       <div
-        className="pm-stagger flex md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-4 xl:grid-cols-8 gap-4 font-mono
+        className="pm-stagger flex md:grid md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-2 sm:gap-2.5 font-mono
                    overflow-x-auto md:overflow-visible
                    snap-x snap-mandatory md:snap-none
-                   -mx-1 md:mx-0 px-1 md:px-0 pb-1.5 md:pb-0 no-scrollbar"
+                   -mx-1 md:mx-0 px-1 md:px-0 pb-1 md:pb-0 no-scrollbar"
         style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
       >
         {[
-          { label: t.trades,      value: stats.total,                 sub: "Executions",   icon: Layers,     tone: "slate"   },
-          { label: t.winRate,     value: stats.winRate + "%",         sub: "Accuracy",     icon: Target,     tone: "sky"     },
-          { label: "Winning",     value: stats.wins,                  sub: "Trades",       icon: TrendingUp, tone: "emerald" },
-          { label: "Losing",      value: stats.losses,                sub: "Trades",       icon: TrendingDown, tone: "rose"  },
-          { label: "Breakeven",   value: stats.bes,                   sub: "Neutral",      icon: Minus,      tone: "slate"   },
-          { label: "Average R:R", value: "1:" + stats.avgRR,          sub: "Ratio",        icon: Scale,      tone: "sky"     },
-          { label: t.netReturn,   value: fmtR(stats.netR),            sub: "Cumulative R", icon: Activity,   tone: stats.netR >= 0 ? "emerald" : "rose" },
-          { label: "Total P&L ($)", value: fmtDollar(stats.totalDollar), sub: "Dollar Gain", icon: Wallet,   tone: stats.totalDollar >= 0 ? "emerald" : "rose" },
+          { label: t.trades,      value: stats.total,                 sub: "Exec",     icon: Layers,     tone: "slate"   },
+          { label: t.winRate,     value: stats.winRate + "%",         sub: "WR",       icon: Target,     tone: "sky"     },
+          { label: "Wins",        value: stats.wins,                  sub: "W",        icon: TrendingUp, tone: "emerald" },
+          { label: "Losses",      value: stats.losses,                sub: "L",        icon: TrendingDown, tone: "rose"  },
+          { label: "BE",          value: stats.bes,                   sub: "Flat",     icon: Minus,      tone: "slate"   },
+          { label: "Avg R:R",     value: "1:" + stats.avgRR,          sub: "Ratio",    icon: Scale,      tone: "sky"     },
+          { label: t.netReturn,   value: fmtR(stats.netR),            sub: "Net R",    icon: Activity,   tone: stats.netR >= 0 ? "emerald" : "rose" },
+          { label: "P&L",         value: fmtDollar(stats.totalDollar), sub: "USD",      icon: Wallet,     tone: stats.totalDollar >= 0 ? "emerald" : "rose" },
         ].map((k, i) => (
           <div
             key={i}
-            className={tx(`terminal-card group shrink-0 snap-start md:snap-align-none min-w-[168px] sm:min-w-[184px] p-4 sm:p-5 rounded-2xl relative overflow-hidden ${
+            className={tx(`terminal-card group shrink-0 snap-start md:snap-align-none min-w-[108px] sm:min-w-[118px] px-3 py-2.5 rounded-xl relative overflow-hidden ${
               k.tone === "sky" ? "border-l-2 border-l-sky-400"
               : k.tone === "emerald" ? "border-l-2 border-l-emerald-400"
-              : k.tone === "rose" ? "border-l-2 border-l-rose-400" : ""
+              : k.tone === "rose" ? "border-l-2 border-l-rose-400" : "border-l-2 border-l-slate-700"
             }`)}
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className={tx("text-[10px] text-slate-400 uppercase font-bold tracking-wider leading-tight")}>{k.label}</div>
-              <span
-                className={tx(`pm-ico w-8 h-8 ${
-                  k.tone === "sky" ? "pm-ico-sky" : k.tone === "emerald" ? "pm-ico-emerald" : k.tone === "rose" ? "pm-ico-rose" : "pm-ico-slate"
-                }`)}
-              >
-                <k.icon
-                  size={15}
-                  strokeWidth={2.2}
-                  className={tx(
-                    k.tone === "sky" ? "text-sky-400"
-                    : k.tone === "emerald" ? "text-emerald-400"
-                    : k.tone === "rose" ? "text-rose-400" : "text-slate-400"
-                  )}
-                />
-              </span>
+            <div className="flex items-center justify-between gap-1.5">
+              <div className={tx("text-[9px] text-slate-500 uppercase font-bold tracking-wider leading-none truncate")}>{k.label}</div>
+              <k.icon
+                size={12}
+                strokeWidth={2.2}
+                className={tx(
+                  k.tone === "sky" ? "text-sky-400/90"
+                  : k.tone === "emerald" ? "text-emerald-400/90"
+                  : k.tone === "rose" ? "text-rose-400/90" : "text-slate-500"
+                )}
+              />
             </div>
             <div
-              className={tx(`text-2xl sm:text-[1.65rem] font-black mt-2.5 tracking-tight tnum ${
+              className={tx(`text-lg sm:text-xl font-black mt-1.5 tracking-tight tnum leading-none ${
                 k.tone === "sky" ? "text-sky-400"
                 : k.tone === "emerald" ? "text-emerald-400"
                 : k.tone === "rose" ? "text-rose-400" : "text-white"
@@ -9700,9 +9864,10 @@ function Dashboard() {
             >
               {k.value}
             </div>
-            <div className={tx("text-[10px] text-slate-500 mt-1")}>{k.sub}</div>
+            <div className={tx("text-[9px] text-slate-600 mt-1 font-semibold uppercase tracking-wide")}>{k.sub}</div>
           </div>
         ))}
+        <WinStreakWidget trades={filteredTrades} />
       </div>
 
       {/* ============== CALENDAR BLOCK ============== */}
@@ -9874,28 +10039,31 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* ============== DAY-OF-WEEK PERFORMANCE ============== */}
-      <DayOfWeekPanel
-        trades={filteredTrades}
-        title="Day of Week"
-        subtitle="Net performance by weekday — respects your active filters"
-      />
+      {/* ============== BOTTOM ANALYTICS: DoW · Sessions · Consistency ============== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-3.5 items-stretch">
 
-      {/* ============== SESSIONS + CONSISTENCY (BLOCK BELOW CALENDAR) ============== */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5">
+        {/* ---- DAY OF WEEK ---- */}
+        <div className="min-w-0 md:col-span-2 xl:col-span-1 h-full">
+          <DayOfWeekPanel
+            trades={filteredTrades}
+            title="Day of Week"
+            subtitle="Net by weekday · active filters"
+            compact
+            collapsible
+          />
+        </div>
 
-        {/* ---- MARKET SESSIONS (3 cols on lg+) ---- */}
-        <div className="terminal-card rounded-3xl overflow-hidden lg:col-span-3">
+        {/* ---- MARKET SESSIONS ---- */}
+        <div className="terminal-card rounded-2xl overflow-hidden min-w-0 h-full flex flex-col">
           {/* Section Header (collapsible) */}
           <button
             type="button"
             onClick={() => setSessionsCollapsed(s => !s)}
-            className={tx("w-full px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800/70 flex items-center justify-between group cursor-pointer hover:bg-slate-900/30 transition-colors")}
+            className={tx("w-full px-3.5 sm:px-4 py-2.5 border-b border-slate-800/70 flex items-center justify-between group cursor-pointer hover:bg-slate-900/30 transition-colors")}
           >
-            <div className="flex items-center gap-2.5 font-mono">
-              <Clock size={15} className={tx("text-sky-400")} strokeWidth={2.1} />
-              <span className={tx("text-[11px] sm:text-xs font-bold text-slate-200 uppercase tracking-[0.08em]")}>Market Sessions</span>
-              <span className={tx("text-[10px] text-slate-500 font-normal hidden sm:inline")}>Tap any row for purge breakdown</span>
+            <div className="flex items-center gap-2 font-mono min-w-0">
+              <Clock size={14} className={tx("text-sky-400 shrink-0")} strokeWidth={2.1} />
+              <span className={tx("text-[11px] font-bold text-slate-200 uppercase tracking-[0.08em] truncate")}>Market Sessions</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className={tx(`px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase border ${
@@ -9911,8 +10079,8 @@ function Dashboard() {
 
           {/* Collapsible Body */}
           {!sessionsCollapsed && (
-            <div className="pm-reveal px-5 sm:px-6 py-5 sm:py-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            <div className="pm-reveal px-3.5 sm:px-4 py-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3 gap-2">
                 {allSessions().map((s) => {
                   const st = stats.sessionsStats[s.id] || { count: 0, winRate: 0, netR: 0, netDollar: 0, isLive: false, purges: {} };
                   const isExp = expandedSession === s.id;
@@ -9928,7 +10096,7 @@ function Dashboard() {
                     >
                       <div
                         onClick={() => setExpandedSession(isExp ? null : s.id)}
-                        className="p-3.5 sm:p-4"
+                        className="p-3"
                       >
                         <div className="flex items-center justify-between">
                           <div className={tx("text-[11px] sm:text-xs font-bold text-white flex items-center gap-1.5")}>
@@ -10020,17 +10188,17 @@ function Dashboard() {
           )}
         </div>
 
-        {/* ---- THIS WEEK CONSISTENCY (2 cols on lg+) ---- */}
-        <div className="terminal-card rounded-3xl overflow-hidden lg:col-span-2 border border-sky-500/20 bg-gradient-to-br from-slate-900/60 via-[#061228] to-sky-950/25">
+        {/* ---- THIS WEEK CONSISTENCY ---- */}
+        <div className="terminal-card rounded-2xl overflow-hidden min-w-0 h-full flex flex-col border border-sky-500/20 bg-gradient-to-br from-slate-900/60 via-[#061228] to-sky-950/25">
           {/* Section Header (collapsible) */}
           <button
             type="button"
             onClick={() => setConsistencyCollapsed(s => !s)}
-            className={tx("w-full px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800/60 flex items-center justify-between group cursor-pointer hover:bg-slate-900/30 transition-colors")}
+            className={tx("w-full px-3.5 sm:px-4 py-2.5 border-b border-slate-800/60 flex items-center justify-between group cursor-pointer hover:bg-slate-900/30 transition-colors")}
           >
-            <div className="flex items-center gap-2.5 font-mono">
-              <Award size={15} className={tx("text-sky-400")} strokeWidth={2.1} />
-              <span className={tx("text-[11px] sm:text-xs font-bold text-sky-300 uppercase tracking-[0.08em]")}>{t.thisWeek} Consistency</span>
+            <div className="flex items-center gap-2 font-mono min-w-0">
+              <Award size={14} className={tx("text-sky-400 shrink-0")} strokeWidth={2.1} />
+              <span className={tx("text-[11px] font-bold text-sky-300 uppercase tracking-[0.08em] truncate")}>{t.thisWeek} Consistency</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className={tx("px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30")}>
@@ -10044,16 +10212,16 @@ function Dashboard() {
 
           {/* Collapsible Body */}
           {!consistencyCollapsed && (
-            <div className="pm-reveal px-5 sm:px-6 py-5 sm:py-6">
+            <div className="pm-reveal px-3.5 sm:px-4 py-3">
               {/* Week headline */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className={tx("text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-wider mb-1.5")}>
+              <div className="flex items-start justify-between mb-3 gap-2">
+                <div className="min-w-0">
+                  <div className={tx("text-[9px] font-mono font-semibold text-slate-500 uppercase tracking-wider mb-1")}>
                     Trades this week
                   </div>
-                  <div className={tx("text-2xl sm:text-3xl font-black text-white font-mono tracking-tight leading-none")}>
+                  <div className={tx("text-xl sm:text-2xl font-black text-white font-mono tracking-tight leading-none")}>
                     {weeklyConsistency.count}
-                    <span className={tx("text-sm font-semibold text-slate-500 ml-2")}>Executed</span>
+                    <span className={tx("text-[11px] font-semibold text-slate-500 ml-1.5")}>exec</span>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
@@ -10073,18 +10241,18 @@ function Dashboard() {
               </div>
 
               {/* Win/Loss/BE breakdown */}
-              <div className={tx("grid grid-cols-3 gap-2 sm:gap-3 pt-4 mt-4 border-t border-slate-800/60")}>
-                <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/25 p-3 sm:p-3.5 text-center font-mono">
-                  <div className={tx("text-[9px] font-bold uppercase tracking-wider text-emerald-400/90 mb-1")}>Wins</div>
-                  <div className={tx("text-xl sm:text-2xl font-black text-emerald-400 tracking-tight leading-none")}>{weeklyConsistency.wins}</div>
+              <div className={tx("grid grid-cols-3 gap-2 pt-3 mt-3 border-t border-slate-800/60")}>
+                <div className="rounded-lg bg-emerald-500/8 border border-emerald-500/25 p-2.5 text-center font-mono">
+                  <div className={tx("text-[9px] font-bold uppercase tracking-wider text-emerald-400/90 mb-0.5")}>Wins</div>
+                  <div className={tx("text-lg sm:text-xl font-black text-emerald-400 tracking-tight leading-none")}>{weeklyConsistency.wins}</div>
                 </div>
-                <div className="rounded-xl bg-rose-500/8 border border-rose-500/25 p-3 sm:p-3.5 text-center font-mono">
-                  <div className={tx("text-[9px] font-bold uppercase tracking-wider text-rose-400/90 mb-1")}>Losses</div>
-                  <div className={tx("text-xl sm:text-2xl font-black text-rose-400 tracking-tight leading-none")}>{weeklyConsistency.losses}</div>
+                <div className="rounded-lg bg-rose-500/8 border border-rose-500/25 p-2.5 text-center font-mono">
+                  <div className={tx("text-[9px] font-bold uppercase tracking-wider text-rose-400/90 mb-0.5")}>Losses</div>
+                  <div className={tx("text-lg sm:text-xl font-black text-rose-400 tracking-tight leading-none")}>{weeklyConsistency.losses}</div>
                 </div>
-                <div className={tx("rounded-xl bg-slate-800/40 border border-slate-700/60 p-3 sm:p-3.5 text-center font-mono")}>
-                  <div className={tx("text-[9px] font-bold uppercase tracking-wider text-slate-400/90 mb-1")}>BE</div>
-                  <div className={tx("text-xl sm:text-2xl font-black text-slate-300 tracking-tight leading-none")}>{weeklyConsistency.bes}</div>
+                <div className={tx("rounded-lg bg-slate-800/40 border border-slate-700/60 p-2.5 text-center font-mono")}>
+                  <div className={tx("text-[9px] font-bold uppercase tracking-wider text-slate-400/90 mb-0.5")}>BE</div>
+                  <div className={tx("text-lg sm:text-xl font-black text-slate-300 tracking-tight leading-none")}>{weeklyConsistency.bes}</div>
                 </div>
               </div>
             </div>
@@ -16445,5 +16613,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3d7b9f1f94e8cf6',t:'MTc4OTgxMTg0Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3d9aef049fbd981',t:'MTc4OTgzMjM2OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3d7b9f1f94e8cf6',t:'MTc4OTgxMTg0Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3e176131a207545',t:'MTc4OTkxMzkyNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
